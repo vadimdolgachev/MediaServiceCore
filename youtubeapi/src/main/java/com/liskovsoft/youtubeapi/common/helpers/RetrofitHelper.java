@@ -78,7 +78,7 @@ public class RetrofitHelper {
 
         addCommonHeaders(okBuilder);
 
-        debugSetup(okBuilder);
+//        debugSetup(okBuilder);
 
         OkHttpClient client = okBuilder.build();
 
