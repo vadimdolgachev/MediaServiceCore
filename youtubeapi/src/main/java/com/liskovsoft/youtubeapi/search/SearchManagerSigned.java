@@ -24,6 +24,10 @@ public interface SearchManagerSigned {
     Call<SearchResultContinuation> continueSearchResult(@Body String searchQuery, @Header("Authorization") String auth);
 
     //TODO: hl, gl params take from locale
-    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=ru&gl=ru")
-    Call<SearchTags> getSearchTags(@Query("q") String searchQuery, @Query("tok") String suggestToken, @Header("Authorization") String auth);
+    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t")
+    Call<SearchTags> getSearchTags(@Query("q") String searchQuery,
+                                   @Query("hl") String hl,
+                                   @Query("gl") String gl,
+                                   @Query("tok") String suggestToken,
+                                   @Header("Authorization") String auth);
 }

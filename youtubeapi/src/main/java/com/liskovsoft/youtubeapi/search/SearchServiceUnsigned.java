@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.search;
 
+import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
@@ -7,6 +8,7 @@ import com.liskovsoft.youtubeapi.search.models.SearchTags;
 import retrofit2.Call;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Wraps result from the {@link SearchManagerUnsigned}
@@ -14,14 +16,16 @@ import java.util.List;
 public class SearchServiceUnsigned {
     private static SearchServiceUnsigned sInstance;
     private final SearchManagerUnsigned mSearchManagerUnsigned;
+    private final Locale mLocale;
 
-    private SearchServiceUnsigned() {
+    private SearchServiceUnsigned(Locale locale) {
+        mLocale = locale;
         mSearchManagerUnsigned = RetrofitHelper.withJsonPath(SearchManagerUnsigned.class);
     }
 
-    public static SearchServiceUnsigned instance() {
+    public static SearchServiceUnsigned instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new SearchServiceUnsigned();
+            sInstance = new SearchServiceUnsigned(locale);
         }
 
         return sInstance;
@@ -67,7 +71,9 @@ public class SearchServiceUnsigned {
             searchText = "";
         }
 
-        Call<SearchTags> wrapper = mSearchManagerUnsigned.getSearchTags(searchText);
+        Call<SearchTags> wrapper = mSearchManagerUnsigned.getSearchTags(searchText,
+                mLocale.getLanguage(),
+                mLocale.getCountry());
         SearchTags searchTags = RetrofitHelper.get(wrapper);
 
         if (searchTags != null && searchTags.getSearchTags() != null) {

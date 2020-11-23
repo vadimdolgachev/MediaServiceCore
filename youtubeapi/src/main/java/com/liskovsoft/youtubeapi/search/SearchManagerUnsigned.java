@@ -25,6 +25,6 @@ public interface SearchManagerUnsigned {
     Call<SearchResultContinuation> continueSearchResult(@Body String searchQuery);
 
     //TODO: hl, gl params take from locale
-    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=ru&gl=ru")
-    Call<SearchTags> getSearchTags(@Query("q") String searchQuery);
+    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t")
+    Call<SearchTags> getSearchTags(@Query("q") String searchQuery, @Query("hl") String hl, @Query("gl") String gl);
 }

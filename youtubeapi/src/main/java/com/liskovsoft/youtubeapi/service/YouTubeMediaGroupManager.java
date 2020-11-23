@@ -22,22 +22,25 @@ import io.reactivex.ObservableEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class YouTubeMediaGroupManager implements MediaGroupManager {
     private static final String TAG = YouTubeMediaGroupManager.class.getSimpleName();
     private static YouTubeMediaGroupManager sInstance;
     private final YouTubeSignInManager mSignInManager;
     private MediaGroupManagerInt mMediaGroupManagerReal;
+    private final Locale mLocale;
 
-    private YouTubeMediaGroupManager() {
+    private YouTubeMediaGroupManager(Locale locale) {
         Log.d(TAG, "Starting...");
 
+        mLocale = locale;
         mSignInManager = YouTubeSignInManager.instance();
     }
 
-    public static MediaGroupManager instance() {
+    public static MediaGroupManager instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManager();
+            sInstance = new YouTubeMediaGroupManager(locale);
         }
 
         return sInstance;
@@ -325,12 +328,12 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
         if (mSignInManager.isSigned()) {
             Log.d(TAG, "User signed.");
 
-            mMediaGroupManagerReal = YouTubeMediaGroupManagerSigned.instance();
+            mMediaGroupManagerReal = YouTubeMediaGroupManagerSigned.instance(mLocale);
             YouTubeMediaGroupManagerUnsigned.unhold();
         } else {
             Log.d(TAG, "User doesn't signed.");
 
-            mMediaGroupManagerReal = YouTubeMediaGroupManagerUnsigned.instance();
+            mMediaGroupManagerReal = YouTubeMediaGroupManagerUnsigned.instance(mLocale);
             YouTubeMediaGroupManagerSigned.unhold();
         }
     }

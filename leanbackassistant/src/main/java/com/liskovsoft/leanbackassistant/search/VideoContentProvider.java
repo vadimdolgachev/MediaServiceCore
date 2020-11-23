@@ -14,6 +14,7 @@ import com.liskovsoft.leanbackassistant.R;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.AppSchedulerProvider;
 import com.liskovsoft.sharedutils.rx.SchedulerProvider;
@@ -22,6 +23,7 @@ import io.reactivex.disposables.CompositeDisposable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Provides global search on the app's movie service.<br/>
@@ -66,7 +68,7 @@ public class VideoContentProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        mService = YouTubeMediaService.instance();
+        mService = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(getContext()));
         mUriMatcher = buildUriMatcher();
 
         return true;

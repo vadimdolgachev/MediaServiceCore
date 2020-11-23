@@ -5,6 +5,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.common.tests.TestHelpersV1;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
 import org.junit.Before;
@@ -23,7 +24,7 @@ public class YouTubeMPDBuilderInstrumentedTest {
 
     @Before
     public void setUp() {
-        mService = YouTubeMediaService.instance();
+        mService = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(getContext()));
     }
 
     @Test
