@@ -23,6 +23,7 @@ public interface SearchManagerSigned {
     @POST("https://www.youtube.com/youtubei/v1/search")
     Call<SearchResultContinuation> continueSearchResult(@Body String searchQuery, @Header("Authorization") String auth);
 
-    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=en&gl=us")
+    //TODO: hl, gl params take from locale
+    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=ru&gl=ru")
     Call<SearchTags> getSearchTags(@Query("q") String searchQuery, @Query("tok") String suggestToken, @Header("Authorization") String auth);
 }
