@@ -50,6 +50,10 @@ public class YouTubeAccountManager {
     public Observable<String> signInObserve() {
         return Observable.create(emitter -> {
             UserCode userCodeResult = mAuthService.getUserCode();
+            if (userCodeResult == null) {
+                emitter.onComplete();
+                return;
+            }
 
             emitter.onNext(userCodeResult.getUserCode());
 
