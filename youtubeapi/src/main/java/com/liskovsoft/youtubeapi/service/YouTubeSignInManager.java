@@ -9,6 +9,8 @@ import com.liskovsoft.youtubeapi.auth.models.auth.AccessToken;
 import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
 import com.liskovsoft.youtubeapi.service.internal.YouTubeAccountManager;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
 
@@ -25,9 +27,14 @@ public class YouTubeSignInManager implements SignInManager {
         mAuthService = AuthService.instance();
         mAccountManager = YouTubeAccountManager.instance(this);
 
-        GlobalPreferences.setOnInit(() -> {
-            mAccountManager.init();
-            this.updateAuthorizationHeader();
+        // TODO remake it
+        GlobalPreferences.setOnInitOrNow(() -> {
+            Observable.create(emitter -> {
+                mAccountManager.init();
+                updateAuthorizationHeader();
+                emitter.onComplete();
+            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+            .subscribe();
         });
     }
 
