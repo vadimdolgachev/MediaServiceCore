@@ -57,14 +57,31 @@ public class BrowseServiceSigned {
         return getPart(gridTabs, 1);
     }
 
-    public List<GridTab> getSubscribedChannelsPopular(String authorization) {
+    public List<GridTab> getSubscribedChannelsLastViewed(String authorization) {
         List<GridTab> gridTabs = getGridTabs(BrowseManagerParams.getSubscriptionsQuery(), authorization);
 
-        return getPart(gridTabs, 0);
+        if (gridTabs == null) {
+            return null;
+        }
+
+        List<GridTab> result = getPart(gridTabs, 0);
+
+        // all channels should be unique
+        for (GridTab tab : getPart(gridTabs, 1)) {
+            if (!result.contains(tab)) {
+                result.add(tab);
+            }
+        }
+
+        return result;
     }
 
-    public List<GridTab> getSubscribedChannelsTop(String authorization) {
+    public List<GridTab> getSubscribedChannelsUpdate(String authorization) {
         List<GridTab> subscribedChannelsAZ = getSubscribedChannelsAZ(authorization);
+
+        if (subscribedChannelsAZ == null) {
+            return null;
+        }
 
         Collections.sort(subscribedChannelsAZ, (o1, o2) ->
                 o1.hasNewContent() && !o2.hasNewContent() ? -1 : !o1.hasNewContent() && o2.hasNewContent() ? 1 : 0);
