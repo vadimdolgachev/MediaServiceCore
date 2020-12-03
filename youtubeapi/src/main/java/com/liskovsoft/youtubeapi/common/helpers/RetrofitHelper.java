@@ -78,7 +78,7 @@ public class RetrofitHelper {
 
         addCommonHeaders(okBuilder);
 
-//        debugSetup(okBuilder);
+        debugSetup(okBuilder);
 
         OkHttpClient client = okBuilder.build();
 
@@ -95,7 +95,7 @@ public class RetrofitHelper {
             //    addProfiler(okBuilder);
             //}
 
-            addProfiler(okBuilder);
+//            addProfiler(okBuilder);
 
             addLogger(okBuilder);
 
@@ -118,7 +118,7 @@ public class RetrofitHelper {
 
     private static void addLogger(OkHttpClient.Builder okBuilder) {
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        logging.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         okBuilder.addInterceptor(logging);
     }
 }
