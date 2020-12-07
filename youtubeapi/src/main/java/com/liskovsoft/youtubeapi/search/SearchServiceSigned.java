@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.search;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.browse.BrowseServiceSigned;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.common.tests.TestHelpersV2;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
@@ -68,14 +69,13 @@ public class SearchServiceSigned {
         return searchResult;
     }
 
-    public List<String> getSearchTags(String searchText, String authorization, Locale locale) {
+    public List<String> getSearchTags(String searchText, String authorization) {
         if (searchText == null) {
             searchText = "";
         }
-
         Call<SearchTags> wrapper = mSearchManagerSigned.getSearchTags(searchText,
-                locale.getLanguage(),
-                locale.getCountry(),
+                LocaleManager.instance().getLanguage(),
+                LocaleManager.instance().getCountry(),
                 mBrowseService.getSuggestToken(authorization),
                 authorization);
         SearchTags searchTags = RetrofitHelper.get(wrapper);
