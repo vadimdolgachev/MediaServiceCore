@@ -92,7 +92,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsUpdate();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsAZ();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsLastViewed();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
     }
 
     @Override
@@ -333,7 +333,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
                         mediaGroup);
             case MediaGroup.TYPE_HISTORY:
             case MediaGroup.TYPE_SUBSCRIPTIONS:
-            case MediaGroup.TYPE_PLAYLISTS:
+            case MediaGroup.TYPE_PLAYLISTS_SECTION:
             case MediaGroup.TYPE_UNDEFINED:
                 return YouTubeMediaGroup.from(
                         mMediaGroupManagerReal.continueGridTab(nextKey),
@@ -379,12 +379,27 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
                     if (tabContinuation != null) {
                         ArrayList<MediaGroup> list = new ArrayList<>();
-                        YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_PLAYLISTS);
+                        YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_PLAYLISTS_SECTION);
                         mediaGroup.setTitle(tab.getTitle());
                         list.add(YouTubeMediaGroup.from(tabContinuation, mediaGroup));
                         emitter.onNext(list);
                     }
                 }
+            }
+
+            emitter.onComplete();
+        });
+    }
+
+    @Override
+    public Observable<MediaGroup> getEmptyPlaylistsObserve() {
+        return Observable.create(emitter -> {
+            checkSigned();
+
+            List<GridTab> tabs = mMediaGroupManagerReal.getPlaylists();
+
+            if (tabs != null && tabs.size() > 0) {
+                emitter.onNext(YouTubeMediaGroup.fromTabs(tabs, MediaGroup.TYPE_PLAYLISTS_SECTION));
             }
 
             emitter.onComplete();
