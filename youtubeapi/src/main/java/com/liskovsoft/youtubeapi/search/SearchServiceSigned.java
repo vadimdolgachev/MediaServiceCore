@@ -1,6 +1,5 @@
 package com.liskovsoft.youtubeapi.search;
 
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.browse.BrowseServiceSigned;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
