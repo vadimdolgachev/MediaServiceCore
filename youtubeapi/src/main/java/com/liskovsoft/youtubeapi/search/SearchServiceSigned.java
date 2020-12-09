@@ -1,9 +1,8 @@
 package com.liskovsoft.youtubeapi.search;
 
+import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.BrowseServiceSigned;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
-import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
-import com.liskovsoft.youtubeapi.common.tests.TestHelpersV2;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchTags;
@@ -16,6 +15,7 @@ import java.util.Locale;
  * Wraps result from the {@link SearchManagerSigned}
  */
 public class SearchServiceSigned {
+    private static final String TAG = SearchServiceSigned.class.getSimpleName();
     private static SearchServiceSigned sInstance;
     private final SearchManagerSigned mSearchManagerSigned;
     private final BrowseServiceSigned mBrowseService;
@@ -43,7 +43,7 @@ public class SearchServiceSigned {
 
 
         if (searchResult == null) {
-            throw new IllegalStateException("Invalid search result for text " + searchText);
+            Log.e(TAG, "Empty search result for text %s", searchText);
         }
 
         return searchResult;
