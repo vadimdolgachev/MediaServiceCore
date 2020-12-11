@@ -97,11 +97,10 @@ public class RetrofitHelper {
 
 //            addProfiler(okBuilder);
 
-            addLogger(okBuilder);
-
             // Disable cache (could help with dlfree error on Eltex)
             //okBuilder.cache(null);
         }
+        addLogger(okBuilder);
     }
 
     private static void addCommonHeaders(OkHttpClient.Builder builder) {
