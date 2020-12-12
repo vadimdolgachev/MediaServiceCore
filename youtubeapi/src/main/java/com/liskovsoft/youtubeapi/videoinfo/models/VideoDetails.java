@@ -20,12 +20,16 @@ public class VideoDetails {
     private String mViewCount;
     @JsonPath("$.author")
     private String mAuthor;
+    @JsonPath("$.isLive")
+    private boolean mIsLive;
     @JsonPath("$.isLiveContent")
     private boolean mIsLiveContent;
     @JsonPath("$.isOwnerViewing")
     private boolean mIsOwnerViewing;
     @JsonPath("$.thumbnail.thumbnails[*]")
     private List<Thumbnail> mThumbnails;
+    @JsonPath("$.isLowLatencyLiveStream")
+    private boolean mIsLowLatencyLiveStream;
 
     public String getLengthSeconds() {
         return mLengthSeconds;
@@ -55,8 +59,18 @@ public class VideoDetails {
         return mAuthor;
     }
 
+    /**
+     * Live content != live translation
+     */
     public boolean isLiveContent() {
         return mIsLiveContent;
+    }
+
+    /**
+     * Live translation
+     */
+    public boolean isLive() {
+        return mIsLive;
     }
 
     /**
@@ -68,5 +82,9 @@ public class VideoDetails {
 
     public List<Thumbnail> getThumbnails() {
         return mThumbnails;
+    }
+
+    public boolean isLowLatencyLiveStream() {
+        return mIsLowLatencyLiveStream;
     }
 }
