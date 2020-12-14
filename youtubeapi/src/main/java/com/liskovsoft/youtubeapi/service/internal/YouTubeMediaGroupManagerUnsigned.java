@@ -13,6 +13,7 @@ import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 
 import java.util.List;
+import java.util.Locale;
 
 public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     private static final String TAG = YouTubeMediaGroupManagerUnsigned.class.getSimpleName();
@@ -20,14 +21,14 @@ public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     private final BrowseServiceUnsigned mBrowseServiceUnsigned;
     private final SearchServiceUnsigned mSearchServiceUnsigned;
 
-    private YouTubeMediaGroupManagerUnsigned() {
-        mSearchServiceUnsigned = SearchServiceUnsigned.instance();
+    private YouTubeMediaGroupManagerUnsigned(Locale locale) {
+        mSearchServiceUnsigned = SearchServiceUnsigned.instance(locale);
         mBrowseServiceUnsigned = BrowseServiceUnsigned.instance();
     }
 
-    public static YouTubeMediaGroupManagerUnsigned instance() {
+    public static YouTubeMediaGroupManagerUnsigned instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManagerUnsigned();
+            sInstance = new YouTubeMediaGroupManagerUnsigned(locale);
         }
 
         return sInstance;
@@ -83,7 +84,19 @@ public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     }
 
     @Override
-    public List<GridTab> getSubscribedChannels() {
+    public List<GridTab> getSubscribedChannelsUpdate() {
+        // NOP
+        return null;
+    }
+
+    @Override
+    public List<GridTab> getSubscribedChannelsAZ() {
+        // NOP
+        return null;
+    }
+
+    @Override
+    public List<GridTab> getSubscribedChannelsLastViewed() {
         // NOP
         return null;
     }

@@ -15,7 +15,9 @@ public interface MediaGroupManagerInt {
     SearchResult getSearch(String searchText);
     List<String> getSearchTags(String searchText);
     GridTab getSubscriptions();
-    List<GridTab> getSubscribedChannels();
+    List<GridTab> getSubscribedChannelsUpdate();
+    List<GridTab> getSubscribedChannelsAZ();
+    List<GridTab> getSubscribedChannelsLastViewed();
     GridTab getHistory();
     SectionTab getHomeTab();
     SectionTab getMusicTab();

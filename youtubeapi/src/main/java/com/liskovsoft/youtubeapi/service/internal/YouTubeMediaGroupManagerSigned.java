@@ -15,6 +15,7 @@ import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInManager;
 
 import java.util.List;
+import java.util.Locale;
 
 public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     private static final String TAG = YouTubeMediaGroupManagerSigned.class.getSimpleName();
@@ -22,16 +23,18 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     private final BrowseServiceSigned mBrowseServiceSigned;
     private final YouTubeSignInManager mSignInManager;
     private static YouTubeMediaGroupManagerSigned sInstance;
+    private final Locale mLocale;
 
-    private YouTubeMediaGroupManagerSigned() {
+    private YouTubeMediaGroupManagerSigned(Locale locale) {
+        mLocale = locale;
         mSearchServiceSigned = SearchServiceSigned.instance();
         mBrowseServiceSigned = BrowseServiceSigned.instance();
         mSignInManager = YouTubeSignInManager.instance();
     }
 
-    public static YouTubeMediaGroupManagerSigned instance() {
+    public static YouTubeMediaGroupManagerSigned instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManagerSigned();
+            sInstance = new YouTubeMediaGroupManagerSigned(locale);
         }
 
         return sInstance;
@@ -50,7 +53,7 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
 
     @Override
     public List<String> getSearchTags(String searchText) {
-        return mSearchServiceSigned.getSearchTags(searchText, mSignInManager.getAuthorizationHeader());
+        return mSearchServiceSigned.getSearchTags(searchText, mSignInManager.getAuthorizationHeader(), mLocale);
     }
 
     @Override
@@ -59,8 +62,18 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     }
 
     @Override
-    public List<GridTab> getSubscribedChannels() {
+    public List<GridTab> getSubscribedChannelsUpdate() {
+        return mBrowseServiceSigned.getSubscribedChannelsUpdate(mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public List<GridTab> getSubscribedChannelsAZ() {
         return mBrowseServiceSigned.getSubscribedChannelsAZ(mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public List<GridTab> getSubscribedChannelsLastViewed() {
+        return mBrowseServiceSigned.getSubscribedChannelsLastViewed(mSignInManager.getAuthorizationHeader());
     }
 
     @Override

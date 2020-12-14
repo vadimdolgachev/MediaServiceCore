@@ -22,22 +22,25 @@ import io.reactivex.ObservableEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class YouTubeMediaGroupManager implements MediaGroupManager {
     private static final String TAG = YouTubeMediaGroupManager.class.getSimpleName();
     private static YouTubeMediaGroupManager sInstance;
     private final YouTubeSignInManager mSignInManager;
     private MediaGroupManagerInt mMediaGroupManagerReal;
+    private final Locale mLocale;
 
-    private YouTubeMediaGroupManager() {
+    private YouTubeMediaGroupManager(Locale locale) {
         Log.d(TAG, "Starting...");
 
+        mLocale = locale;
         mSignInManager = YouTubeSignInManager.instance();
     }
 
-    public static MediaGroupManager instance() {
+    public static MediaGroupManager instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManager();
+            sInstance = new YouTubeMediaGroupManager(locale);
         }
 
         return sInstance;
@@ -84,17 +87,45 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
     }
 
     @Override
-    public MediaGroup getSubscribedChannels() {
+    public MediaGroup getSubscribedChannelsUpdate() {
         checkSigned();
 
-        List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannels();
+        List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsUpdate();
 
         return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
     }
 
     @Override
-    public Observable<MediaGroup> getSubscribedChannelsObserve() {
-        return ObservableHelper.fromNullable(this::getSubscribedChannels);
+    public MediaGroup getSubscribedChannelsAZ() {
+        checkSigned();
+
+        List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsAZ();
+
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
+    }
+
+    @Override
+    public MediaGroup getSubscribedChannelsLastViewed() {
+        checkSigned();
+
+        List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsLastViewed();
+
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SUB);
+    }
+
+    @Override
+    public Observable<MediaGroup> getSubscribedChannelsUpdateObserve() {
+        return ObservableHelper.fromNullable(this::getSubscribedChannelsUpdate);
+    }
+
+    @Override
+    public Observable<MediaGroup> getSubscribedChannelsAZObserve() {
+        return ObservableHelper.fromNullable(this::getSubscribedChannelsAZ);
+    }
+
+    @Override
+    public Observable<MediaGroup> getSubscribedChannelsLastViewedObserve() {
+        return ObservableHelper.fromNullable(this::getSubscribedChannelsLastViewed);
     }
 
     @Override
@@ -325,12 +356,12 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
         if (mSignInManager.isSigned()) {
             Log.d(TAG, "User signed.");
 
-            mMediaGroupManagerReal = YouTubeMediaGroupManagerSigned.instance();
+            mMediaGroupManagerReal = YouTubeMediaGroupManagerSigned.instance(mLocale);
             YouTubeMediaGroupManagerUnsigned.unhold();
         } else {
             Log.d(TAG, "User doesn't signed.");
 
-            mMediaGroupManagerReal = YouTubeMediaGroupManagerUnsigned.instance();
+            mMediaGroupManagerReal = YouTubeMediaGroupManagerUnsigned.instance(mLocale);
             YouTubeMediaGroupManagerSigned.unhold();
         }
     }

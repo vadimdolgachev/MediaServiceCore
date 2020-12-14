@@ -7,6 +7,8 @@ import com.liskovsoft.mediaserviceinterfaces.SignInManager;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.app.AppService;
 
+import java.util.Locale;
+
 public class YouTubeMediaService implements MediaService {
     private static final String TAG = YouTubeMediaService.class.getSimpleName();
     private static YouTubeMediaService sInstance;
@@ -14,17 +16,18 @@ public class YouTubeMediaService implements MediaService {
     private final MediaGroupManager mMediaGroupManager;
     private final MediaItemManager mMediaItemManager;
 
-    private YouTubeMediaService() {
+    private YouTubeMediaService(Locale locale) {
         Log.d(TAG, "Starting...");
 
         mSignInManager = YouTubeSignInManager.instance();
-        mMediaGroupManager = YouTubeMediaGroupManager.instance();
+        mMediaGroupManager = YouTubeMediaGroupManager.
+                instance(locale);
         mMediaItemManager = YouTubeMediaItemManager.instance();
     }
 
-    public static MediaService instance() {
+    public static MediaService instance(Locale locale) {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaService();
+            sInstance = new YouTubeMediaService(locale);
         }
 
         return sInstance;

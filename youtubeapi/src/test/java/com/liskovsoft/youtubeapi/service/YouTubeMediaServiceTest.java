@@ -3,6 +3,8 @@ package com.liskovsoft.youtubeapi.service;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.sharedutils.locale.LocaleUtility;
+
 import io.reactivex.Observable;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +28,7 @@ public class YouTubeMediaServiceTest {
         // https://github.com/robolectric/robolectric/issues/5115
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
-        mService = YouTubeMediaService.instance();
+        mService = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(getContext()));
     }
 
     /**

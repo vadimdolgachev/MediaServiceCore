@@ -8,6 +8,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.MediaGroupManager;
+import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class ClipService {
         playlist.setPlaylistUrl(recommendedUrl);
         playlist.setLogoResId(logoResId);
 
-        MediaService service = YouTubeMediaService.instance();
+        MediaService service = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(mContext));
         MediaGroupManager mediaTabManager = service.getMediaGroupManager();
         MediaGroup selectedGroup = callback.call(mediaTabManager);
 
