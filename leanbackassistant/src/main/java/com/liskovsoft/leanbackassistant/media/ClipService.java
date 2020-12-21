@@ -88,7 +88,7 @@ public class ClipService {
         playlist.setPlaylistUrl(recommendedUrl);
         playlist.setLogoResId(logoResId);
 
-        MediaService service = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(mContext));
+        MediaService service = YouTubeMediaService.instance();
         MediaGroupManager mediaTabManager = service.getMediaGroupManager();
         MediaGroup selectedGroup = callback.call(mediaTabManager);
 

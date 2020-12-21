@@ -179,7 +179,11 @@ public class YouTubeMediaGroup implements MediaGroup {
 
         if (tabs != null) {
             for (GridTab tab : tabs) {
-                YouTubeMediaItem item = YouTubeMediaItem.from(tab);
+                if (tab.isUnselectable()) {
+                    continue;
+                }
+
+                YouTubeMediaItem item = YouTubeMediaItem.from(tab, baseGroup.getType());
 
                 if (!item.isEmpty()) {
                     mediaItems.add(item);

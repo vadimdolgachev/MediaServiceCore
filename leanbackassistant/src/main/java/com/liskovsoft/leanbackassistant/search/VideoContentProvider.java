@@ -68,7 +68,7 @@ public class VideoContentProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        mService = YouTubeMediaService.instance(LocaleUtility.getCurrentLocale(getContext()));
+        mService = YouTubeMediaService.instance();
         mUriMatcher = buildUriMatcher();
 
         return true;

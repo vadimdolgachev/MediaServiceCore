@@ -23,18 +23,16 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     private final BrowseServiceSigned mBrowseServiceSigned;
     private final YouTubeSignInManager mSignInManager;
     private static YouTubeMediaGroupManagerSigned sInstance;
-    private final Locale mLocale;
 
-    private YouTubeMediaGroupManagerSigned(Locale locale) {
-        mLocale = locale;
+    private YouTubeMediaGroupManagerSigned() {
         mSearchServiceSigned = SearchServiceSigned.instance();
         mBrowseServiceSigned = BrowseServiceSigned.instance();
         mSignInManager = YouTubeSignInManager.instance();
     }
 
-    public static YouTubeMediaGroupManagerSigned instance(Locale locale) {
+    public static YouTubeMediaGroupManagerSigned instance() {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManagerSigned(locale);
+            sInstance = new YouTubeMediaGroupManagerSigned();
         }
 
         return sInstance;
@@ -53,7 +51,7 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
 
     @Override
     public List<String> getSearchTags(String searchText) {
-        return mSearchServiceSigned.getSearchTags(searchText, mSignInManager.getAuthorizationHeader(), mLocale);
+        return mSearchServiceSigned.getSearchTags(searchText, mSignInManager.getAuthorizationHeader());
     }
 
     @Override

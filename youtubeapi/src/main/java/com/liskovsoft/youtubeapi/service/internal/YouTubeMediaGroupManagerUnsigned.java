@@ -21,14 +21,14 @@ public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     private final BrowseServiceUnsigned mBrowseServiceUnsigned;
     private final SearchServiceUnsigned mSearchServiceUnsigned;
 
-    private YouTubeMediaGroupManagerUnsigned(Locale locale) {
-        mSearchServiceUnsigned = SearchServiceUnsigned.instance(locale);
+    private YouTubeMediaGroupManagerUnsigned() {
+        mSearchServiceUnsigned = SearchServiceUnsigned.instance();
         mBrowseServiceUnsigned = BrowseServiceUnsigned.instance();
     }
 
-    public static YouTubeMediaGroupManagerUnsigned instance(Locale locale) {
+    public static YouTubeMediaGroupManagerUnsigned instance() {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaGroupManagerUnsigned(locale);
+            sInstance = new YouTubeMediaGroupManagerUnsigned();
         }
 
         return sInstance;

@@ -16,18 +16,18 @@ public class YouTubeMediaService implements MediaService {
     private final MediaGroupManager mMediaGroupManager;
     private final MediaItemManager mMediaItemManager;
 
-    private YouTubeMediaService(Locale locale) {
+    private YouTubeMediaService() {
         Log.d(TAG, "Starting...");
 
         mSignInManager = YouTubeSignInManager.instance();
         mMediaGroupManager = YouTubeMediaGroupManager.
-                instance(locale);
+                instance();
         mMediaItemManager = YouTubeMediaItemManager.instance();
     }
 
-    public static MediaService instance(Locale locale) {
+    public static MediaService instance() {
         if (sInstance == null) {
-            sInstance = new YouTubeMediaService(locale);
+            sInstance = new YouTubeMediaService();
         }
 
         return sInstance;

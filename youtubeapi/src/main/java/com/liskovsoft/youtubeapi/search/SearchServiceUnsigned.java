@@ -1,7 +1,8 @@
 package com.liskovsoft.youtubeapi.search;
 
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
+import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchTags;
@@ -14,18 +15,17 @@ import java.util.Locale;
  * Wraps result from the {@link SearchManagerUnsigned}
  */
 public class SearchServiceUnsigned {
+    private static final String TAG = SearchServiceUnsigned.class.getSimpleName();
     private static SearchServiceUnsigned sInstance;
     private final SearchManagerUnsigned mSearchManagerUnsigned;
-    private final Locale mLocale;
 
-    private SearchServiceUnsigned(Locale locale) {
-        mLocale = locale;
+    private SearchServiceUnsigned() {
         mSearchManagerUnsigned = RetrofitHelper.withJsonPath(SearchManagerUnsigned.class);
     }
 
-    public static SearchServiceUnsigned instance(Locale locale) {
+    public static SearchServiceUnsigned instance() {
         if (sInstance == null) {
-            sInstance = new SearchServiceUnsigned(locale);
+            sInstance = new SearchServiceUnsigned();
         }
 
         return sInstance;
@@ -41,7 +41,7 @@ public class SearchServiceUnsigned {
 
 
         if (searchResult == null) {
-            throw new IllegalStateException("Invalid search result for text " + searchText);
+            Log.e(TAG, "Empty search result for text %s", searchText);
         }
 
         return searchResult;
@@ -72,8 +72,8 @@ public class SearchServiceUnsigned {
         }
 
         Call<SearchTags> wrapper = mSearchManagerUnsigned.getSearchTags(searchText,
-                mLocale.getLanguage(),
-                mLocale.getCountry());
+                LocaleManager.instance().getLanguage(),
+                LocaleManager.instance().getCountry());
         SearchTags searchTags = RetrofitHelper.get(wrapper);
 
         if (searchTags != null && searchTags.getSearchTags() != null) {

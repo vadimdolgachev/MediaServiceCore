@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.videoinfo.models;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryString;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
+import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.RegularVideoFormat;
 
@@ -47,6 +48,12 @@ public class VideoInfo {
 
     @JsonPath("$.playabilityStatus.status")
     private String mPlayabilityStatus;
+
+    @JsonPath("$.playabilityStatus.reason")
+    private String mPlayabilityReason;
+
+    @JsonPath("$.playabilityStatus.errorScreen.playerErrorMessageRenderer.subreason.runs[0].text")
+    private String mPlayabilityDescription;
 
     @JsonPath("$.storyboards.playerStoryboardSpecRenderer.spec")
     private String mStoryboardSpec;
@@ -114,6 +121,10 @@ public class VideoInfo {
         return STATUS_UNPLAYABLE.equals(mPlayabilityStatus);
     }
 
+    public String getPlayabilityStatus() {
+        return AppHelper.itemsToDescription(mPlayabilityReason, mPlayabilityDescription);
+    }
+
     /**
      * Age restricted video
      */
@@ -124,6 +135,10 @@ public class VideoInfo {
 
     public String getStoryboardSpec() {
         return mStoryboardSpec;
+    }
+
+    public boolean isHfr() {
+        return mDashManifestUrl != null && mDashManifestUrl.contains("/hfr/all");
     }
 
     private void parseTrackingParams() {

@@ -28,11 +28,16 @@ public interface MediaItemFormatInfo {
     void setVideoId(String videoId);
     String getChannelId();
     void setChannelId(String channelId);
+    boolean isLive();
     boolean containsDashInfo();
-    boolean containsHlsInfo();
+    boolean containsHlsUrl();
+    boolean containsDashUrl();
     boolean containsUrlListInfo();
     InputStream createMpdStream();
     Observable<InputStream> createMpdStreamObservable();
     List<String> createUrlList();
     MediaItemStoryboard createStoryboard();
+    boolean isUnplayable();
+    String getPlayabilityStatus();
+    boolean isStreamSeekable();
 }

@@ -21,6 +21,7 @@ public class YouTubeMediaItem implements MediaItem {
     private String mChannelId;
     private String mPlaylistId;
     private String mMediaUrl;
+    private String mChannelUrl;
     private String mDescription;
     private String mCardImageUrl;
     private String mBackgroundImageUrl;
@@ -93,6 +94,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mPlaylistIndex = item.getPlaylistIndex();
         video.mChannelId = item.getChannelId();
         video.mMediaUrl = AppHelper.videoIdToFullUrl(item.getVideoId());
+        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
         video.mDurationMs = AppHelper.timeTextToMillis(item.getLengthText());
         video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
@@ -125,6 +127,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mPlaylistIndex = item.getPlaylistIndex();
         video.mChannelId = item.getChannelId();
         video.mMediaUrl = AppHelper.videoIdToFullUrl(item.getVideoId());
+        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
         video.mDurationMs = AppHelper.timeTextToMillis(item.getLengthText());
         video.mBadgeText = item.getLengthText();
@@ -147,6 +150,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mCardImageUrl = highResThumbnailUrl;
         video.mBackgroundImageUrl = highResThumbnailUrl;
         video.mChannelId = item.getChannelId();
+        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
 
         addCommonProps(video);
 
@@ -220,10 +224,10 @@ public class YouTubeMediaItem implements MediaItem {
         return video;
     }
 
-    public static YouTubeMediaItem from(GridTab tab) {
+    public static YouTubeMediaItem from(GridTab tab, int type) {
         YouTubeMediaItem item = new YouTubeMediaItem();
-
-        item.mMediaItemType = MediaItem.TYPE_CHANNEL_SUB;
+        
+        item.mMediaItemType = type;
         item.mTitle = tab.getTitle();
         String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(tab.getThumbnails());
         item.mCardImageUrl = highResThumbnailUrl;
@@ -355,6 +359,11 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     @Override
+    public String getChannelUrl() {
+        return mChannelUrl;
+    }
+
+    @Override
     public String getPlaylistId() {
         return mPlaylistId;
     }
@@ -394,6 +403,11 @@ public class YouTubeMediaItem implements MediaItem {
         return mFeedbackToken;
     }
 
+    @Override
+    public boolean hasUploads() {
+        return mReloadPageKey != null;
+    }
+
     public void sync(MediaItemMetadata metadata) {
         if (metadata == null) {
             return;
@@ -417,6 +431,6 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     public boolean isEmpty() {
-        return mTitle == null || mCardImageUrl == null;
+        return mTitle == null && mCardImageUrl == null;
     }
 }
