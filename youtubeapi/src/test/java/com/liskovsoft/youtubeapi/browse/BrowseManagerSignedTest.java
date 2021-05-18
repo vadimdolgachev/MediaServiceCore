@@ -3,6 +3,8 @@ package com.liskovsoft.youtubeapi.browse;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabContinuation;
 import com.liskovsoft.youtubeapi.browse.models.guide.Guide;
+import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
+import com.liskovsoft.youtubeapi.browse.models.sections.Section;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionContinuation;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabList;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionTabList;
@@ -155,6 +157,20 @@ public class BrowseManagerSignedTest extends BrowseManagerTestBase {
     }
 
     @Test
+    public void testThatGamesNotEmpty() throws IOException {
+        Call<SectionTabList> wrapper = mService.getSectionTabList(BrowseManagerParams.getGamingQuery(), TestHelpersV2.getAuthorization());
+
+        SectionTabList browseResult = wrapper.execute().body();
+
+        tabbedResultNotEmpty(browseResult);
+
+        assertNotNull("Contains tabs", browseResult.getTabs());
+
+        List<ItemWrapper> itemWrappers = browseResult.getTabs().get(0).getSections().get(0).getItemWrappers();
+        assertNotNull("Items not null", itemWrappers);
+    }
+
+    @Test
     public void testThatPlaylistsNotEmpty() {
         Call<GridTabList> wrapper = mService.getGridTabList(BrowseManagerParams.getMyLibraryQuery(), TestHelpersV2.getAuthorization());
 
@@ -185,6 +201,33 @@ public class BrowseManagerSignedTest extends BrowseManagerTestBase {
         assertTrue("Guide contains items", guide.getItems().size() > 5);
 
         assertNotNull("Guide contains suggest token", guide.getSuggestToken());
+    }
+
+    @Test
+    public void testThatHomeChipsNotEmpty() throws IOException {
+        Call<SectionTabList> wrapper = mService.getSectionTabList(BrowseManagerParams.getHomeQuery(), TestHelpersV2.getAuthorization());
+
+        SectionTabList browseResult = wrapper.execute().body();
+
+        tabbedResultNotEmpty(browseResult);
+
+        assertNotNull("Contains tabs", browseResult.getTabs());
+
+        Section section = browseResult.getTabs().get(0).getSections().get(0);
+
+        assertNotNull("Contains chips", section.getChips());
+
+        Chip firstChip = section.getChips().get(0);
+
+        assertNotNull("Chip contains title", firstChip.getTitle());
+        
+        assertNotNull("Chip contains reload key", firstChip.getReloadPageKey());
+
+        Call<SectionContinuation> next = mService.continueSection(BrowseManagerParams.getContinuationQuery(firstChip.getReloadPageKey()), TestHelpersV2.getAuthorization());
+        Response<SectionContinuation> execute = next.execute();
+        SectionContinuation browseResult2 = execute.body();
+
+        tabbedNextResultNotEmpty(browseResult2);
     }
 
     private void tabbedNextResultNotEmpty(SectionContinuation browseResult) {

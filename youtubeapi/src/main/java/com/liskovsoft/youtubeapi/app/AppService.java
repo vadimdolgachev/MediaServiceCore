@@ -6,7 +6,7 @@ import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.squareup.duktape.Duktape;
 
 import java.util.Arrays;
@@ -15,7 +15,8 @@ import java.util.List;
 public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
     // Interval doesn't matter because we have MediaService.invalidateCache()
-    private static final long CACHE_REFRESH_PERIOD_MS = 24 * 60 * 60 * 1_000; // one day
+    private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // 30 min
+    //private static final long CACHE_REFRESH_PERIOD_MS = 24 * 60 * 60 * 1_000; // one day
     private static AppService sInstance;
     private final AppManagerWrapper mAppManager;
     private Duktape mDuktape;
@@ -186,9 +187,9 @@ public class AppService {
         AppInfo appInfo = mAppManager.getAppInfo(AppConstants.APP_USER_AGENT);
 
         if (appInfo != null) {
-            mCachedPlayerUrl = AppHelper.tidyUrl(appInfo.getPlayerUrl());
+            mCachedPlayerUrl = ServiceHelper.tidyUrl(appInfo.getPlayerUrl());
 
-            mCachedBaseUrl = AppHelper.tidyUrl(appInfo.getBaseUrl());
+            mCachedBaseUrl = ServiceHelper.tidyUrl(appInfo.getBaseUrl());
 
             mAppInfoUpdateTimeMS = System.currentTimeMillis();
         }

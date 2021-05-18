@@ -10,6 +10,7 @@ import com.liskovsoft.youtubeapi.browse.models.sections.SectionList;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionTabContinuation;
 import com.liskovsoft.youtubeapi.browse.models.sections.Section;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionTab;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
@@ -21,6 +22,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class YouTubeMediaGroupManager implements MediaGroupManager {
@@ -89,7 +91,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsUpdate();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNEL_UPLOADS);
     }
 
     @Override
@@ -98,7 +100,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsAZ();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNEL_UPLOADS);
     }
 
     @Override
@@ -107,7 +109,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         List<GridTab> subscribedChannels = mMediaGroupManagerReal.getSubscribedChannelsLastViewed();
 
-        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNELS_SECTION);
+        return YouTubeMediaGroup.fromTabs(subscribedChannels, MediaGroup.TYPE_CHANNEL_UPLOADS);
     }
 
     @Override
@@ -141,7 +143,9 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
             recommended = rows.get(0); // first one is recommended
         }
 
-        return YouTubeMediaGroup.from(recommended, MediaGroup.TYPE_RECOMMENDED);
+        MediaGroup result = YouTubeMediaGroup.from(recommended, MediaGroup.TYPE_RECOMMENDED);
+
+        return result != null && result.isEmpty() ? continueGroup(result) : result; // Maybe Chip?
     }
 
     @Override
@@ -191,6 +195,13 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
         if (groups.isEmpty()) {
             Log.e(TAG, "Home group is empty");
+        }
+
+        // Chips?
+        for (MediaGroup group : groups) {
+            if (group.isEmpty()) {
+                continueGroup(group);
+            }
         }
 
         while (!groups.isEmpty()) {
@@ -285,7 +296,16 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
             ObservableHelper.onError(emitter, msg);
         } else {
             while (!groups.isEmpty()) {
-                emitter.onNext(groups);
+                for (MediaGroup group : groups) { // Preserve positions
+                    if (group.isEmpty()) { // Contains Chips (nested sections)?
+                        group = continueGroup(group);
+                    }
+
+                    if (group != null) {
+                        emitter.onNext(Collections.singletonList(group));
+                    }
+                }
+
                 SectionTabContinuation continuation = mMediaGroupManagerReal.continueSectionTab(nextPageKey);
 
                 if (continuation != null) {
@@ -335,7 +355,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
                         mediaGroup);
             case MediaGroup.TYPE_HISTORY:
             case MediaGroup.TYPE_SUBSCRIPTIONS:
-            case MediaGroup.TYPE_PLAYLISTS_SECTION:
+            case MediaGroup.TYPE_USER_PLAYLISTS:
             case MediaGroup.TYPE_UNDEFINED:
                 return YouTubeMediaGroup.from(
                         mMediaGroupManagerReal.continueGridTab(nextKey),
@@ -355,7 +375,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
     }
 
     private void checkSigned() {
-        if (mSignInManager.isSigned()) {
+        if (mSignInManager.checkAuthHeader()) {
             Log.d(TAG, "User signed.");
 
             mMediaGroupManagerReal = YouTubeMediaGroupManagerSigned.instance();
@@ -381,7 +401,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
                     if (tabContinuation != null) {
                         ArrayList<MediaGroup> list = new ArrayList<>();
-                        YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_PLAYLISTS_SECTION);
+                        YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_USER_PLAYLISTS);
                         mediaGroup.setTitle(tab.getTitle());
                         list.add(YouTubeMediaGroup.from(tabContinuation, mediaGroup));
                         emitter.onNext(list);
@@ -403,7 +423,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
             List<GridTab> tabs = mMediaGroupManagerReal.getPlaylists();
 
             if (tabs != null && tabs.size() > 0) {
-                emitter.onNext(YouTubeMediaGroup.fromTabs(tabs, MediaGroup.TYPE_PLAYLISTS_SECTION));
+                emitter.onNext(YouTubeMediaGroup.fromTabs(tabs, MediaGroup.TYPE_USER_PLAYLISTS));
                 emitter.onComplete();
             } else {
                 ObservableHelper.onError(emitter, "getEmptyPlaylistsObserve: tab is null");

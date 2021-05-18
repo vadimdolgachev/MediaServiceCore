@@ -3,7 +3,7 @@ package com.liskovsoft.youtubeapi.videoinfo.models;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryString;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.RegularVideoFormat;
 
@@ -103,10 +103,24 @@ public class VideoInfo {
         return mEventId;
     }
 
+    /**
+     * Intended to merge signed and unsigned infos (no-playback fix)
+     */
+    public void setEventId(String eventId) {
+        mEventId = eventId;
+    }
+
     public String getVisitorMonitoringData() {
         parseTrackingParams();
 
         return mVisitorMonitoringData;
+    }
+
+    /**
+     * Intended to merge signed and unsigned infos (no-playback fix)
+     */
+    public void setVisitorMonitoringData(String visitorMonitoringData) {
+        mVisitorMonitoringData = visitorMonitoringData;
     }
 
     public String getPlaybackUrl() {
@@ -121,18 +135,18 @@ public class VideoInfo {
      * Video cannot be embedded
      */
     public boolean isUnplayable() {
-        return AppHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_UNPLAYABLE, STATUS_ERROR);
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_UNPLAYABLE, STATUS_ERROR);
     }
 
     public String getPlayabilityStatus() {
-        return AppHelper.itemsToDescription(mPlayabilityReason, mPlayabilityDescription);
+        return ServiceHelper.itemsToDescription(mPlayabilityReason, mPlayabilityDescription);
     }
 
     /**
      * Age restricted video
      */
     public boolean isAgeRestricted() {
-        return AppHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_LOGIN_REQUIRED, STATUS_AGE_CHECK_REQUIRED, STATUS_CONTENT_CHECK_REQUIRED);
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_LOGIN_REQUIRED, STATUS_AGE_CHECK_REQUIRED, STATUS_CONTENT_CHECK_REQUIRED);
     }
 
     public String getStoryboardSpec() {

@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.lounge.models;
 
 import com.liskovsoft.youtubeapi.common.converters.regexp.RegExp;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
 public class PairingCode {
     @RegExp(".*")
@@ -15,7 +15,7 @@ public class PairingCode {
 
         // Format pairing code to XXX-XXX-XXX-XXX
         if (mPairingCodeAlt == null) {
-            mPairingCodeAlt = AppHelper.insertSeparator(mPairingCode, " ", 3);
+            mPairingCodeAlt = ServiceHelper.insertSeparator(mPairingCode, " ", 3);
         }
 
         return mPairingCodeAlt;

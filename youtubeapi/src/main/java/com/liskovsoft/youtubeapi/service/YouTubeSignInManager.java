@@ -62,12 +62,17 @@ public class YouTubeSignInManager implements SignInManager {
         });
     }
 
-    @Override
-    public boolean isSigned() {
+    public boolean checkAuthHeader() {
         // get or create authorization on fly
         updateAuthorizationHeader();
 
         return mAuthorizationHeaderCached != null;
+    }
+
+    @Override
+    public boolean isSigned() {
+        // Condition created for the case when a device in offline mode.
+        return mAccountManager.getSelectedAccount() != null;
     }
 
     @Override
