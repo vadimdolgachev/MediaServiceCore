@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.actions;
 
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
 public class ActionsManagerParams {
     private static final String VIDEO_ID_TEMPLATE = "\"target\":{\"videoId\":\"%s\"}";
@@ -8,11 +8,11 @@ public class ActionsManagerParams {
 
     public static String getLikeActionQuery(String videoId) {
         String likeTemplate = String.format(VIDEO_ID_TEMPLATE, videoId);
-        return AppHelper.createQuery(likeTemplate);
+        return ServiceHelper.createQuery(likeTemplate);
     }
 
     public static String getSubscribeActionQuery(String channelId) {
         String channelTemplate = String.format(CHANNEL_ID_TEMPLATE, channelId);
-        return AppHelper.createQuery(channelTemplate);
+        return ServiceHelper.createQuery(channelTemplate);
     }
 }

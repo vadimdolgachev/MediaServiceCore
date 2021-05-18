@@ -5,8 +5,11 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.SponsorSegment;
 import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.block.SponsorBlockService;
+import com.liskovsoft.youtubeapi.block.data.SegmentList;
 import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.next.result.WatchNextResult;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
@@ -14,6 +17,7 @@ import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItem;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemMetadata;
+import com.liskovsoft.youtubeapi.service.data.YouTubeSponsorSegment;
 import com.liskovsoft.youtubeapi.service.data.YouTubeVideoPlaylistInfo;
 import com.liskovsoft.youtubeapi.service.internal.MediaItemManagerInt;
 import com.liskovsoft.youtubeapi.service.internal.YouTubeMediaItemManagerSigned;
@@ -22,15 +26,18 @@ import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import io.reactivex.Observable;
 
 import java.util.List;
+import java.util.Set;
 
 public class YouTubeMediaItemManager implements MediaItemManager {
     private static final String TAG = YouTubeMediaItemManager.class.getSimpleName();
     private static MediaItemManager sInstance;
     private final YouTubeSignInManager mSignInManager;
+    private final SponsorBlockService mSponsorBlockService;
     private MediaItemManagerInt mMediaItemManagerReal;
 
     private YouTubeMediaItemManager() {
         mSignInManager = YouTubeSignInManager.instance();
+        mSponsorBlockService = SponsorBlockService.instance();
     }
 
     public static MediaItemManager instance() {
@@ -46,30 +53,24 @@ public class YouTubeMediaItemManager implements MediaItemManager {
      */
     @Override
     public YouTubeMediaItemFormatInfo getFormatInfo(MediaItem item) {
-        checkSigned();
-
-        YouTubeMediaItem ytMediaItem = (YouTubeMediaItem) item;
-
-        YouTubeMediaItemFormatInfo formatInfo = ytMediaItem.getFormatInfo();
-
-        if (formatInfo == null) {
-            VideoInfo videoInfo = mMediaItemManagerReal.getVideoInfo(item.getVideoId());
-
-            formatInfo = YouTubeMediaItemFormatInfo.from(videoInfo);
-
-            ytMediaItem.setFormatInfo(formatInfo);
-        }
-
-        return formatInfo;
+        return getFormatInfo(item.getVideoId());
     }
 
     @Override
     public YouTubeMediaItemFormatInfo getFormatInfo(String videoId) {
         checkSigned();
 
-        VideoInfo videoInfo = mMediaItemManagerReal.getVideoInfo(videoId);
+        YouTubeMediaItemFormatInfo formatInfo = YouTubeMediaItem.getCachedFormatInfo(videoId);
 
-        return YouTubeMediaItemFormatInfo.from(videoInfo);
+        if (formatInfo == null) {
+            VideoInfo videoInfo = mMediaItemManagerReal.getVideoInfo(videoId);
+
+            formatInfo = YouTubeMediaItemFormatInfo.from(videoInfo);
+
+            YouTubeMediaItem.setCachedFormatInfo(videoId, formatInfo);
+        }
+
+        return formatInfo;
     }
 
     @Override
@@ -84,14 +85,18 @@ public class YouTubeMediaItemManager implements MediaItemManager {
 
     @Override
     public YouTubeMediaItemMetadata getMetadata(MediaItem item) {
-        return getMetadata(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex());
+        return getMetadata(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex(), item.getPlaylistParams());
     }
 
     @Override
     public YouTubeMediaItemMetadata getMetadata(String videoId, String playlistId, int playlistIndex) {
+        return getMetadata(videoId, playlistId, playlistIndex, null);
+    }
+
+    private YouTubeMediaItemMetadata getMetadata(String videoId, String playlistId, int playlistIndex, String playlistParams) {
         checkSigned();
 
-        WatchNextResult watchNextResult = mMediaItemManagerReal.getWatchNextResult(videoId, playlistId, playlistIndex);
+        WatchNextResult watchNextResult = mMediaItemManagerReal.getWatchNextResult(videoId, playlistId, playlistIndex, playlistParams);
 
         return YouTubeMediaItemMetadata.from(watchNextResult);
     }
@@ -125,23 +130,21 @@ public class YouTubeMediaItemManager implements MediaItemManager {
             if (metadata != null) {
                 ((YouTubeMediaItem) item).sync(metadata);
                 emitter.onNext(metadata);
+                emitter.onComplete();
+            } else {
+                ObservableHelper.onError(emitter, "getMetadataObserve result is null");
             }
-
-            emitter.onComplete();
         });
     }
 
     @Override
     public Observable<MediaItemMetadata> getMetadataObserve(String videoId) {
-        return Observable.create(emitter -> {
-            YouTubeMediaItemMetadata metadata = getMetadata(videoId);
+        return ObservableHelper.fromNullable(() -> getMetadata(videoId));
+    }
 
-            if (metadata != null) {
-                emitter.onNext(metadata);
-            }
-
-            emitter.onComplete();
-        });
+    @Override
+    public Observable<MediaItemMetadata> getMetadataObserve(String videoId, String playlistId, int playlistIndex) {
+        return ObservableHelper.fromNullable(() -> getMetadata(videoId, playlistId, playlistIndex));
     }
 
     @Override
@@ -187,8 +190,18 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
+    public Observable<Void> subscribeObserve(String channelId) {
+        return ObservableHelper.fromVoidable(() -> subscribe(channelId));
+    }
+
+    @Override
     public Observable<Void> unsubscribeObserve(MediaItem item) {
         return ObservableHelper.fromVoidable(() -> unsubscribe(item));
+    }
+
+    @Override
+    public Observable<Void> unsubscribeObserve(String channelId) {
+        return ObservableHelper.fromVoidable(() -> unsubscribe(channelId));
     }
 
     @Override
@@ -241,16 +254,26 @@ public class YouTubeMediaItemManager implements MediaItemManager {
 
     @Override
     public void subscribe(MediaItem item) {
+        subscribe(item.getChannelId());
+    }
+
+    @Override
+    public void subscribe(String channelId) {
         checkSigned();
 
-        mMediaItemManagerReal.subscribe(item.getChannelId());
+        mMediaItemManagerReal.subscribe(channelId);
     }
 
     @Override
     public void unsubscribe(MediaItem item) {
+        unsubscribe(item.getChannelId());
+    }
+
+    @Override
+    public void unsubscribe(String channelId) {
         checkSigned();
 
-        mMediaItemManagerReal.unsubscribe(item.getChannelId());
+        mMediaItemManagerReal.unsubscribe(channelId);
     }
 
     @Override
@@ -289,6 +312,20 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
+    public List<SponsorSegment> getSponsorSegments(String videoId) {
+        SegmentList segmentList = mSponsorBlockService.getSegmentList(videoId);
+
+        return YouTubeSponsorSegment.from(segmentList);
+    }
+
+    @Override
+    public List<SponsorSegment> getSponsorSegments(String videoId, Set<String> categories) {
+        SegmentList segmentList = mSponsorBlockService.getSegmentList(videoId, categories);
+
+        return YouTubeSponsorSegment.from(segmentList);
+    }
+
+    @Override
     public Observable<List<VideoPlaylistInfo>> getVideoPlaylistsInfosObserve(String videoId) {
         return Observable.fromCallable(() -> getVideoPlaylistsInfos(videoId));
     }
@@ -303,8 +340,18 @@ public class YouTubeMediaItemManager implements MediaItemManager {
         return ObservableHelper.fromVoidable(() -> removeFromPlaylist(playlistId, videoId));
     }
 
+    @Override
+    public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId) {
+        return ObservableHelper.fromNullable(() -> getSponsorSegments(videoId));
+    }
+
+    @Override
+    public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId, Set<String> categories) {
+        return ObservableHelper.fromNullable(() -> getSponsorSegments(videoId, categories));
+    }
+
     private void checkSigned() {
-        if (mSignInManager.isSigned()) {
+        if (mSignInManager.checkAuthHeader()) {
             Log.d(TAG, "User signed.");
 
             mMediaItemManagerReal = YouTubeMediaItemManagerSigned.instance();

@@ -7,6 +7,7 @@ import com.liskovsoft.youtubeapi.auth.V2.AuthService;
 import com.liskovsoft.youtubeapi.auth.models.auth.RefreshToken;
 import com.liskovsoft.youtubeapi.auth.models.auth.UserCode;
 import com.liskovsoft.youtubeapi.auth.models.info.AccountInt;
+import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInManager;
 import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
 import io.reactivex.Observable;
@@ -50,8 +51,9 @@ public class YouTubeAccountManager {
     public Observable<String> signInObserve() {
         return Observable.create(emitter -> {
             UserCode userCodeResult = mAuthService.getUserCode();
+
             if (userCodeResult == null) {
-                emitter.onComplete();
+                ObservableHelper.onError(emitter, "User code result is empty");
                 return;
             }
 

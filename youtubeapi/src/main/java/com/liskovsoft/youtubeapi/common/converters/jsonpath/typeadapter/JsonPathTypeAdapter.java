@@ -36,12 +36,10 @@ public class JsonPathTypeAdapter<T> {
         mType = (Class<?>) type;
     }
 
-    private Class<?> getGenericType() {
-        return mType;
-    }
-
     @SuppressWarnings("unchecked")
     public final T read(InputStream is) {
+        is = process(is);
+
         Object jsonContent = null;
 
         String[] jsonPath = getJsonPath(getGenericType());
@@ -61,6 +59,17 @@ public class JsonPathTypeAdapter<T> {
         }
 
         return (T) readType(getGenericType(), jsonContent);
+    }
+
+    /**
+     * Enable additional processing like skipping first line etc
+     */
+    protected InputStream process(InputStream is) {
+        return is;
+    }
+
+    private Class<?> getGenericType() {
+        return mType;
     }
 
     private Object readType(Class<?> type, Object jsonContent) {
@@ -100,7 +109,7 @@ public class JsonPathTypeAdapter<T> {
                         jsonVal = parser.read(path);
                         break;
                     } catch (PathNotFoundException e) {
-//                         Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
+//                        Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
                     }
                 }
 
@@ -108,43 +117,47 @@ public class JsonPathTypeAdapter<T> {
                     continue;
                 }
 
-                if (jsonVal instanceof JsonArray) {
-                    List<Object> list = null;
-                    Class<?> myType = ReflectionHelper.getGenericParamType(field);
+                try {
+                    if (jsonVal instanceof JsonArray) {
+                        List<Object> list = null;
+                        Class<?> myType = ReflectionHelper.getGenericParamType(field);
 
-                    if (myType == null) {
-                        throw new IllegalStateException("Please, supply generic field for the list type: " + field);
-                    }
-
-                    for (Object jsonObj : (JsonArray) jsonVal) {
-                        Object item;
-
-                        if (jsonObj instanceof JsonPrimitive) {
-                            item = parsePrimitive((JsonPrimitive) jsonObj);
-                        } else {
-                            item = readType(myType, jsonObj.toString());
+                        if (myType == null) {
+                            throw new IllegalStateException("Please, supply generic field for the list type: " + field);
                         }
 
-                        if (item != null) {
-                            if (list == null) {
-                                list = new ArrayList<>();
+                        for (Object jsonObj : (JsonArray) jsonVal) {
+                            Object item;
+
+                            if (jsonObj instanceof JsonPrimitive) {
+                                item = parsePrimitive((JsonPrimitive) jsonObj);
+                            } else {
+                                item = readType(myType, jsonObj.toString());
                             }
 
-                            list.add(item);
+                            if (item != null) {
+                                if (list == null) {
+                                    list = new ArrayList<>();
+                                }
+
+                                list.add(item);
+                            }
                         }
+
+                        field.set(obj, list);
+                    } else if (jsonVal instanceof JsonPrimitive) {
+                        Object val = parsePrimitive((JsonPrimitive) jsonVal);
+
+                        field.set(obj, val);
+                    } else if (jsonVal instanceof JsonObject) {
+                        Object val = readType(field.getType(), jsonVal.toString());
+                        field.set(obj, val);
                     }
 
-                    field.set(obj, list);
-                } else if (jsonVal instanceof JsonPrimitive) {
-                    Object val = parsePrimitive((JsonPrimitive) jsonVal);
-
-                    field.set(obj, val);
-                } else if (jsonVal instanceof JsonObject) {
-                    Object val = readType(field.getType(), jsonVal.toString());
-                    field.set(obj, val);
+                    done = true; // at least one field is set
+                } catch (IllegalArgumentException e) {
+                    Log.d(TAG, "%s: Incompatible json value found %s. Same path on different types?", field.getType().getSimpleName(), jsonVal);
                 }
-
-                done = true; // at least one field is set
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -179,7 +192,11 @@ public class JsonPathTypeAdapter<T> {
         Object val;
 
         if (jsonVal.isNumber()) {
-            val = jsonVal.getAsInt(); // Integer
+            if (jsonVal.toString().contains(".")) {
+                val = jsonVal.getAsFloat(); // Float
+            } else {
+                val = jsonVal.getAsInt(); // Integer
+            }
         } else if (jsonVal.isBoolean()) {
             val = jsonVal.getAsBoolean(); // Boolean
         } else {

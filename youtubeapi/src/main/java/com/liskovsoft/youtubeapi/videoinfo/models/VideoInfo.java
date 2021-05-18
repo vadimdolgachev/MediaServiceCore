@@ -3,7 +3,7 @@ package com.liskovsoft.youtubeapi.videoinfo.models;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryString;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.RegularVideoFormat;
 
@@ -13,8 +13,10 @@ public class VideoInfo {
     private static final String PARAM_EVENT_ID = "ei";
     private static final String PARAM_VM = "vm";
     private static final String STATUS_UNPLAYABLE = "UNPLAYABLE";
+    private static final String STATUS_ERROR = "ERROR";
     private static final String STATUS_LOGIN_REQUIRED = "LOGIN_REQUIRED";
     private static final String STATUS_AGE_CHECK_REQUIRED = "AGE_CHECK_REQUIRED";
+    private static final String STATUS_CONTENT_CHECK_REQUIRED = "CONTENT_CHECK_REQUIRED";
 
     @JsonPath("$.streamingData.formats[*]")
     private List<RegularVideoFormat> mRegularFormats;
@@ -52,7 +54,8 @@ public class VideoInfo {
     @JsonPath("$.playabilityStatus.reason")
     private String mPlayabilityReason;
 
-    @JsonPath("$.playabilityStatus.errorScreen.playerErrorMessageRenderer.subreason.runs[0].text")
+    @JsonPath({"$.playabilityStatus.errorScreen.playerErrorMessageRenderer.subreason.simpleText",
+               "$.playabilityStatus.errorScreen.playerErrorMessageRenderer.subreason.runs[0].text"})
     private String mPlayabilityDescription;
 
     @JsonPath("$.storyboards.playerStoryboardSpecRenderer.spec")
@@ -100,10 +103,24 @@ public class VideoInfo {
         return mEventId;
     }
 
+    /**
+     * Intended to merge signed and unsigned infos (no-playback fix)
+     */
+    public void setEventId(String eventId) {
+        mEventId = eventId;
+    }
+
     public String getVisitorMonitoringData() {
         parseTrackingParams();
 
         return mVisitorMonitoringData;
+    }
+
+    /**
+     * Intended to merge signed and unsigned infos (no-playback fix)
+     */
+    public void setVisitorMonitoringData(String visitorMonitoringData) {
+        mVisitorMonitoringData = visitorMonitoringData;
     }
 
     public String getPlaybackUrl() {
@@ -118,19 +135,18 @@ public class VideoInfo {
      * Video cannot be embedded
      */
     public boolean isUnplayable() {
-        return STATUS_UNPLAYABLE.equals(mPlayabilityStatus);
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_UNPLAYABLE, STATUS_ERROR);
     }
 
     public String getPlayabilityStatus() {
-        return AppHelper.itemsToDescription(mPlayabilityReason, mPlayabilityDescription);
+        return ServiceHelper.itemsToDescription(mPlayabilityReason, mPlayabilityDescription);
     }
 
     /**
      * Age restricted video
      */
-    public boolean isLoginRequired() {
-        return STATUS_LOGIN_REQUIRED.equals(mPlayabilityStatus) ||
-               STATUS_AGE_CHECK_REQUIRED.equals(mPlayabilityStatus);
+    public boolean isAgeRestricted() {
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_LOGIN_REQUIRED, STATUS_AGE_CHECK_REQUIRED, STATUS_CONTENT_CHECK_REQUIRED);
     }
 
     public String getStoryboardSpec() {

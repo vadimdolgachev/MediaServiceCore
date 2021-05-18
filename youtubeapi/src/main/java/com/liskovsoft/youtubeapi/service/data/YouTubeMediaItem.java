@@ -1,9 +1,12 @@
 package com.liskovsoft.youtubeapi.service.data;
 
+import android.util.Pair;
+import androidx.annotation.NonNull;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.models.items.ChannelItem;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
 import com.liskovsoft.youtubeapi.common.models.items.MusicItem;
@@ -39,7 +42,7 @@ public class YouTubeMediaItem implements MediaItem {
     private int mRatingStyle;
     private double mRatingScore;
     private int mMediaItemType;
-    private YouTubeMediaItemFormatInfo mFormatInfo;
+    private static Pair<String, YouTubeMediaItemFormatInfo> sCachedFormatInfo;
     private int mPercentWatched;
     private String mAuthor;
     private String mVideoPreviewUrl;
@@ -47,6 +50,7 @@ public class YouTubeMediaItem implements MediaItem {
     private String mReloadPageKey;
     private boolean mHasNewContent;
     private String mFeedbackToken;
+    private String mPlaylistParams;
 
     public static YouTubeMediaItem from(ItemWrapper item, int position) {
         YouTubeMediaItem mediaItem = from(item);
@@ -81,6 +85,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaItemType = MediaItem.TYPE_VIDEO;
         video.mTitle = item.getTitle();
         video.mDescription = YouTubeMediaServiceHelper.createDescription(
+                item.getDescBadgeText(), // Mostly it's a 4K label
                 item.getUserName(),
                 item.getPublishedTime(),
                 item.getShortViewCountText() != null ? item.getShortViewCountText() : item.getViewCountText(),
@@ -93,10 +98,10 @@ public class YouTubeMediaItem implements MediaItem {
         video.mPlaylistId = item.getPlaylistId();
         video.mPlaylistIndex = item.getPlaylistIndex();
         video.mChannelId = item.getChannelId();
-        video.mMediaUrl = AppHelper.videoIdToFullUrl(item.getVideoId());
-        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
+        video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
+        video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
-        video.mDurationMs = AppHelper.timeTextToMillis(item.getLengthText());
+        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
         video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
         video.mPercentWatched = item.getPercentWatched();
         video.mAuthor = item.getUserName();
@@ -126,10 +131,10 @@ public class YouTubeMediaItem implements MediaItem {
         video.mPlaylistId = item.getPlaylistId();
         video.mPlaylistIndex = item.getPlaylistIndex();
         video.mChannelId = item.getChannelId();
-        video.mMediaUrl = AppHelper.videoIdToFullUrl(item.getVideoId());
-        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
+        video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
+        video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
-        video.mDurationMs = AppHelper.timeTextToMillis(item.getLengthText());
+        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
         video.mBadgeText = item.getLengthText();
         video.mPercentWatched = item.getPercentWatched();
         video.mAuthor = item.getUserName();
@@ -150,7 +155,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mCardImageUrl = highResThumbnailUrl;
         video.mBackgroundImageUrl = highResThumbnailUrl;
         video.mChannelId = item.getChannelId();
-        video.mChannelUrl = AppHelper.channelIdToFullUrl(item.getChannelId());
+        video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
 
         addCommonProps(video);
 
@@ -218,7 +223,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
         video.mPlaylistIndex = item.getPlaylistItemIndex();
-        video.mMediaUrl = AppHelper.videoIdToFullUrl(item.getVideoId());
+        video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
         addCommonProps(video);
 
         return video;
@@ -369,6 +374,15 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     @Override
+    public String getPlaylistParams() {
+        return mPlaylistParams;
+    }
+
+    public void setPlaylistParams(String params) {
+        mPlaylistParams = params;
+    }
+
+    @Override
     public int getPercentWatched() {
         return mPercentWatched;
     }
@@ -418,12 +432,32 @@ public class YouTubeMediaItem implements MediaItem {
         mChannelId = metadata.getChannelId();
     }
 
-    public YouTubeMediaItemFormatInfo getFormatInfo() {
-        return mFormatInfo;
+    /**
+     * Returns cached FormatInfo<br/>
+     * Use global static var to minimize RAM usage.
+     */
+    public static YouTubeMediaItemFormatInfo getCachedFormatInfo(String videoId) {
+        if (videoId == null) {
+            return null;
+        }
+
+        if (sCachedFormatInfo != null && videoId.equals(sCachedFormatInfo.first)) {
+            return sCachedFormatInfo.second;
+        }
+
+        return null;
     }
 
-    public void setFormatInfo(YouTubeMediaItemFormatInfo formatInfo) {
-        mFormatInfo = formatInfo;
+    /**
+     * Updates cached FormatInfo<br/>
+     * Use global static var to minimize RAM usage.
+     */
+    public static void setCachedFormatInfo(String videoId, YouTubeMediaItemFormatInfo formatInfo) {
+        if (videoId == null || formatInfo == null) {
+            return;
+        }
+
+        sCachedFormatInfo = new Pair<>(videoId, formatInfo);
     }
 
     public String getReloadPageKey() {
@@ -432,5 +466,39 @@ public class YouTubeMediaItem implements MediaItem {
 
     public boolean isEmpty() {
         return mTitle == null && mCardImageUrl == null;
+    }
+
+    public static void invalidateCache() {
+        sCachedFormatInfo = null;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return String.format("%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s", mReloadPageKey, mTitle, mDescription, mCardImageUrl, mVideoId, mPlaylistId, mChannelId);
+    }
+
+    public static MediaItem fromString(String spec) {
+        if (spec == null) {
+            return null;
+        }
+
+        String[] split = spec.split("&mi;");
+
+        if (split.length != 7) {
+            return null;
+        }
+
+        YouTubeMediaItem mediaItem = new YouTubeMediaItem();
+
+        mediaItem.mReloadPageKey = Helpers.parseStr(split[0]);
+        mediaItem.mTitle = Helpers.parseStr(split[1]);
+        mediaItem.mDescription = Helpers.parseStr(split[2]);
+        mediaItem.mCardImageUrl = Helpers.parseStr(split[3]);
+        mediaItem.mVideoId = Helpers.parseStr(split[4]);
+        mediaItem.mPlaylistId = Helpers.parseStr(split[5]);
+        mediaItem.mChannelId = Helpers.parseStr(split[6]);
+
+        return mediaItem;
     }
 }

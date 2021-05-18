@@ -3,6 +3,8 @@ package com.liskovsoft.youtubeapi.service.data;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
 import com.liskovsoft.youtubeapi.next.models.SuggestedSection;
 import com.liskovsoft.youtubeapi.next.models.CurrentVideo;
 import com.liskovsoft.youtubeapi.next.models.VideoOwner;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class YouTubeMediaItemMetadata implements MediaItemMetadata {
+    private static final String TAG = YouTubeMediaItemMetadata.class.getSimpleName();
     private String mTitle;
     private String mAuthor;
     private String mViewCount;
@@ -30,6 +33,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private String mDescription;
     private String mDescriptionAlt;
     private boolean mIsLive;
+    private boolean mIsUpcoming;
 
     public static YouTubeMediaItemMetadata from(WatchNextResult watchNextResult) {
         if (watchNextResult == null) {
@@ -40,6 +44,11 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
 
         CurrentVideo videoMetadata = watchNextResult.getVideoMetadata();
         VideoOwner videoOwner = watchNextResult.getVideoOwner();
+
+        if (videoMetadata == null || videoOwner == null) {
+            Log.e(TAG, "Oops. Next format has been changed. Please upgrade parser.");
+            return null;
+        }
 
         mediaItemMetadata.mTitle = videoMetadata.getTitle();
         mediaItemMetadata.mDescription = YouTubeMediaServiceHelper.createDescription(
@@ -60,6 +69,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
         mediaItemMetadata.mPercentWatched = videoMetadata.getPercentWatched();
         mediaItemMetadata.mPublishedDate = videoMetadata.getPublishedDate();
         mediaItemMetadata.mIsLive = videoMetadata.isLive();
+        mediaItemMetadata.mIsUpcoming = videoMetadata.isUpcoming();
         mediaItemMetadata.mAuthor = videoOwner.getVideoAuthor();
         mediaItemMetadata.mChannelId = videoOwner.getChannelId();
         Boolean subscribed = videoOwner.isSubscribed();
@@ -82,6 +92,13 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
             mediaItemMetadata.mSuggestions = new ArrayList<>();
 
             for (SuggestedSection section : suggestedSections) {
+                if (section.getChips() != null) {
+                    // Contains multiple nested sections
+                    for (Chip chip : section.getChips()) {
+                        mediaItemMetadata.mSuggestions.add(YouTubeMediaGroup.from(chip));
+                    }
+                }
+
                 mediaItemMetadata.mSuggestions.add(YouTubeMediaGroup.from(section));
             }
         }
@@ -135,13 +152,18 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     }
 
     @Override
-    public Boolean isSubscribed() {
+    public boolean isSubscribed() {
         return mSubscribed;
     }
 
     @Override
     public boolean isLive() {
         return mIsLive;
+    }
+
+    @Override
+    public boolean isUpcoming() {
+        return mIsUpcoming;
     }
 
     @Override

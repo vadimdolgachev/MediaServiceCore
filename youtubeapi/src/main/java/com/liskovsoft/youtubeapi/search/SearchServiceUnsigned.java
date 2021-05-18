@@ -2,14 +2,12 @@ package com.liskovsoft.youtubeapi.search;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
-import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchTags;
 import retrofit2.Call;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Wraps result from the {@link SearchManagerUnsigned}
@@ -53,14 +51,14 @@ public class SearchServiceUnsigned {
      */
     public SearchResultContinuation continueSearch(String nextSearchPageKey) {
         if (nextSearchPageKey == null) {
-            throw new IllegalStateException("Can't get next search page. Next search key is empty.");
+            Log.e(TAG, "Can't get next search page. Next search key is empty.");
         }
         
         Call<SearchResultContinuation> wrapper = mSearchManagerUnsigned.continueSearchResult(SearchManagerParams.getContinuationQuery(nextSearchPageKey));
         SearchResultContinuation searchResult = RetrofitHelper.get(wrapper);
 
         if (searchResult == null) {
-            throw new IllegalStateException("Invalid next page search result for key " + nextSearchPageKey);
+            Log.e(TAG, "Empty next search page result for key %s", nextSearchPageKey);
         }
 
         return searchResult;
@@ -71,9 +69,7 @@ public class SearchServiceUnsigned {
             searchText = "";
         }
 
-        Call<SearchTags> wrapper = mSearchManagerUnsigned.getSearchTags(searchText,
-                LocaleManager.instance().getLanguage(),
-                LocaleManager.instance().getCountry());
+        Call<SearchTags> wrapper = mSearchManagerUnsigned.getSearchTags(searchText);
         SearchTags searchTags = RetrofitHelper.get(wrapper);
 
         if (searchTags != null && searchTags.getSearchTags() != null) {

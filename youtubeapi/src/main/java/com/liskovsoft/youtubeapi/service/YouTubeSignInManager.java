@@ -27,14 +27,12 @@ public class YouTubeSignInManager implements SignInManager {
         mAuthService = AuthService.instance();
         mAccountManager = YouTubeAccountManager.instance(this);
 
-        // TODO remake it
-        GlobalPreferences.setOnInitOrNow(() -> {
+        GlobalPreferences.setOnInit(() -> {
             Observable.create(emitter -> {
                 mAccountManager.init();
                 updateAuthorizationHeader();
                 emitter.onComplete();
-            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-            .subscribe();
+            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe();
         });
     }
 
@@ -64,12 +62,17 @@ public class YouTubeSignInManager implements SignInManager {
         });
     }
 
-    @Override
-    public boolean isSigned() {
+    public boolean checkAuthHeader() {
         // get or create authorization on fly
         updateAuthorizationHeader();
 
         return mAuthorizationHeaderCached != null;
+    }
+
+    @Override
+    public boolean isSigned() {
+        // Condition created for the case when a device in offline mode.
+        return mAccountManager.getSelectedAccount() != null;
     }
 
     @Override
@@ -92,6 +95,14 @@ public class YouTubeSignInManager implements SignInManager {
         updateAuthorizationHeader();
 
         return mAuthorizationHeaderCached;
+    }
+
+    /**
+     * For testing purposes
+     */
+    public void setAuthorizationHeader(String authorizationHeader) {
+        mAuthorizationHeaderCached = authorizationHeader;
+        mLastUpdateTime = System.currentTimeMillis();
     }
 
     @Override

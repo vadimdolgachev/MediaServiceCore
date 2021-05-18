@@ -3,13 +3,14 @@ package com.liskovsoft.youtubeapi.browse;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabContinuation;
 import com.liskovsoft.youtubeapi.browse.models.guide.Guide;
+import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
+import com.liskovsoft.youtubeapi.browse.models.sections.Section;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionContinuation;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabList;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionTabList;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
-import com.liskovsoft.youtubeapi.common.tests.TestHelpersV2;
+import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
-import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(RobolectricTestRunner.class)
-public class BrowseManagerSignedTest {
+public class BrowseManagerSignedTest extends BrowseManagerTestBase {
     /**
      * Authorization should be updated each hour
      */
@@ -135,16 +136,6 @@ public class BrowseManagerSignedTest {
         return browseResult.getTabs().get(0).getSections().get(0).getItemWrappers();
     }
 
-    private void testFields(ItemWrapper itemWrapper) {
-        testFields(itemWrapper.getVideoItem());
-    }
-
-    private void testFields(VideoItem videoItem) {
-        assertNotNull("Field not null", videoItem.getTitle());
-        assertNotNull("Field not null", videoItem.getUserName());
-        assertNotNull("Field not null", videoItem.getThumbnails());
-    }
-
     @Test
     public void testThatHomeNotEmpty() throws IOException {
         Call<SectionTabList> wrapper = mService.getSectionTabList(BrowseManagerParams.getHomeQuery(), TestHelpersV2.getAuthorization());
@@ -163,6 +154,20 @@ public class BrowseManagerSignedTest {
         SectionContinuation browseResult2 = execute.body();
 
         tabbedNextResultNotEmpty(browseResult2);
+    }
+
+    @Test
+    public void testThatGamesNotEmpty() throws IOException {
+        Call<SectionTabList> wrapper = mService.getSectionTabList(BrowseManagerParams.getGamingQuery(), TestHelpersV2.getAuthorization());
+
+        SectionTabList browseResult = wrapper.execute().body();
+
+        tabbedResultNotEmpty(browseResult);
+
+        assertNotNull("Contains tabs", browseResult.getTabs());
+
+        List<ItemWrapper> itemWrappers = browseResult.getTabs().get(0).getSections().get(0).getItemWrappers();
+        assertNotNull("Items not null", itemWrappers);
     }
 
     @Test
@@ -196,6 +201,33 @@ public class BrowseManagerSignedTest {
         assertTrue("Guide contains items", guide.getItems().size() > 5);
 
         assertNotNull("Guide contains suggest token", guide.getSuggestToken());
+    }
+
+    @Test
+    public void testThatHomeChipsNotEmpty() throws IOException {
+        Call<SectionTabList> wrapper = mService.getSectionTabList(BrowseManagerParams.getHomeQuery(), TestHelpersV2.getAuthorization());
+
+        SectionTabList browseResult = wrapper.execute().body();
+
+        tabbedResultNotEmpty(browseResult);
+
+        assertNotNull("Contains tabs", browseResult.getTabs());
+
+        Section section = browseResult.getTabs().get(0).getSections().get(0);
+
+        assertNotNull("Contains chips", section.getChips());
+
+        Chip firstChip = section.getChips().get(0);
+
+        assertNotNull("Chip contains title", firstChip.getTitle());
+        
+        assertNotNull("Chip contains reload key", firstChip.getReloadPageKey());
+
+        Call<SectionContinuation> next = mService.continueSection(BrowseManagerParams.getContinuationQuery(firstChip.getReloadPageKey()), TestHelpersV2.getAuthorization());
+        Response<SectionContinuation> execute = next.execute();
+        SectionContinuation browseResult2 = execute.body();
+
+        tabbedNextResultNotEmpty(browseResult2);
     }
 
     private void tabbedNextResultNotEmpty(SectionContinuation browseResult) {

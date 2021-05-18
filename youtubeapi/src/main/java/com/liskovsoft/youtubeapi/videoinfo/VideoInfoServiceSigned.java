@@ -1,6 +1,8 @@
 package com.liskovsoft.youtubeapi.videoinfo;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.app.AppService;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
@@ -9,12 +11,14 @@ import retrofit2.Call;
 public class VideoInfoServiceSigned extends VideoInfoServiceBase {
     private static final String TAG = VideoInfoServiceSigned.class.getSimpleName();
     private static VideoInfoServiceSigned sInstance;
-    private final VideoInfoManagerSigned mVideoInfoManagerSigned;
+    private final VideoInfoManagerSignedV3 mVideoInfoManagerSigned;
     private final LocaleManager mLocaleManager;
+    private final AppService mAppService;
 
     private VideoInfoServiceSigned() {
-        mVideoInfoManagerSigned = RetrofitHelper.withQueryString(VideoInfoManagerSigned.class);
+        mVideoInfoManagerSigned = RetrofitHelper.withQueryString(VideoInfoManagerSignedV3.class);
         mLocaleManager = LocaleManager.instance();
+        mAppService = AppService.instance();
     }
 
     public static VideoInfoServiceSigned instance() {
@@ -28,10 +32,10 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
     public VideoInfo getVideoInfo(String videoId, String authorization) {
         VideoInfo result = getVideoInfoHls(videoId, authorization);
 
-        if (result != null && result.isLoginRequired()) {
+        if (result != null && result.isAgeRestricted()) {
             Log.e(TAG, "Seems that video age restricted. Retrying with different query method...");
             result = getVideoInfoRestricted(videoId, authorization);
-        } else if (result != null && result.getVideoDetails().isOwnerViewing()) {
+        } else if (result != null && result.getVideoDetails() != null && result.getVideoDetails().isOwnerViewing()) {
             Log.e(TAG, "Seems that this is user video. Retrying with different query method...");
             result = getVideoInfoRegular(videoId, authorization);
         }
@@ -47,19 +51,19 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
     }
 
     private VideoInfo getVideoInfoHls(String videoId, String authorization) {
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoHls(videoId, mLocaleManager.getLanguage(), authorization);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoHls(videoId, ServiceHelper.getToken(authorization), mLocaleManager.getLanguage(), mAppService.getClientPlaybackNonce());
 
         return RetrofitHelper.get(wrapper);
     }
 
     private VideoInfo getVideoInfoRegular(String videoId, String authorization) {
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRegular(videoId, mLocaleManager.getLanguage(), authorization);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRegular(videoId, ServiceHelper.getToken(authorization), mLocaleManager.getLanguage(), mAppService.getClientPlaybackNonce());
 
         return RetrofitHelper.get(wrapper);
     }
 
     private VideoInfo getVideoInfoRestricted(String videoId, String authorization) {
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRestricted(videoId, authorization);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRestricted(videoId, ServiceHelper.getToken(authorization), mLocaleManager.getLanguage(), mAppService.getClientPlaybackNonce());
 
         return RetrofitHelper.get(wrapper);
     }

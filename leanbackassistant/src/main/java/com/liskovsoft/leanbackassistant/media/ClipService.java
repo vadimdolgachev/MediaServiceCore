@@ -8,7 +8,6 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.MediaGroupManager;
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
 
 import java.util.ArrayList;
@@ -51,7 +50,8 @@ public class ClipService {
                 SUBS_PROGRAMS_IDS,
                 SUBSCRIPTIONS_URL,
                 R.drawable.generic_channels,
-                MediaGroupManager::getSubscriptions
+                MediaGroupManager::getSubscriptions,
+                false
         );
     }
 
@@ -63,7 +63,8 @@ public class ClipService {
                 HISTORY_PROGRAMS_IDS,
                 HISTORY_URL,
                 R.drawable.generic_channels,
-                MediaGroupManager::getHistory);
+                MediaGroupManager::getHistory,
+                false);
     }
 
     public Playlist getRecommendedPlaylist() {
@@ -74,15 +75,17 @@ public class ClipService {
                 RECOMMENDED_PROGRAMS_IDS,
                 RECOMMENDED_URL,
                 R.drawable.generic_channels,
-                MediaGroupManager::getRecommended);
+                MediaGroupManager::getRecommended,
+                true);
     }
 
     private Playlist createPlaylist(
             int titleResId, int id, String channelId, String programId,
-            String recommendedUrl, int logoResId, GroupCallback callback) {
+            String recommendedUrl, int logoResId, GroupCallback callback, boolean isDefault) {
         Playlist playlist = new Playlist(
                 mContext.getResources().getString(titleResId),
-                Integer.toString(id));
+                Integer.toString(id),
+                isDefault);
         playlist.setChannelKey(channelId);
         playlist.setProgramsKey(programId);
         playlist.setPlaylistUrl(recommendedUrl);
@@ -122,6 +125,7 @@ public class ClipService {
                 clips.add(new Clip(
                         v.getTitle(),
                         v.getDescription(),
+                        v.getDurationMs(),
                         v.getBackgroundImageUrl(),
                         v.getCardImageUrl(),
                         v.getVideoUrl(),

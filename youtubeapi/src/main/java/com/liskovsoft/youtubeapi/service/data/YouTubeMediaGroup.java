@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabContinuation;
+import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionContinuation;
 import com.liskovsoft.youtubeapi.browse.models.sections.Section;
 import com.liskovsoft.youtubeapi.common.models.items.ChannelItem;
@@ -27,6 +28,7 @@ public class YouTubeMediaGroup implements MediaGroup {
     public String mNextPageKey;
     private String mChannelUrl;
     private String mChannelId;
+    private String mPlaylistParams;
 
     public YouTubeMediaGroup(int type) {
         mType = type;
@@ -45,13 +47,20 @@ public class YouTubeMediaGroup implements MediaGroup {
     }
 
     public static MediaGroup from(GridTabContinuation continuation, MediaGroup baseGroup) {
-        if (continuation == null) {
+        if (continuation == null || baseGroup == null) {
             return null;
         }
 
         // Subscribed channel view. Add details.
-        ((YouTubeMediaGroup) baseGroup).setChannelId(continuation.getBrowseId());
-        ((YouTubeMediaGroup) baseGroup).setChannelUrl(continuation.getCanonicalBaseUrl());
+        if (continuation.getBrowseId() != null) {
+            ((YouTubeMediaGroup) baseGroup).mChannelId = continuation.getBrowseId();
+        }
+        if (continuation.getParams() != null) {
+            ((YouTubeMediaGroup) baseGroup).mPlaylistParams = continuation.getParams();
+        }
+        if (continuation.getCanonicalBaseUrl() != null) {
+            ((YouTubeMediaGroup) baseGroup).mChannelUrl = continuation.getCanonicalBaseUrl();
+        }
 
         return create((YouTubeMediaGroup) baseGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
     }
@@ -74,6 +83,18 @@ public class YouTubeMediaGroup implements MediaGroup {
         youTubeMediaGroup.mNextPageKey = section.getNextPageKey();
 
         return create(youTubeMediaGroup, section.getItemWrappers(), section.getNextPageKey());
+    }
+
+    public static MediaGroup from(Chip chip, int type) {
+        if (chip == null) {
+            return null;
+        }
+
+        YouTubeMediaGroup youTubeMediaGroup = new YouTubeMediaGroup(type);
+        youTubeMediaGroup.mTitle = chip.getTitle();
+        youTubeMediaGroup.mNextPageKey = chip.getReloadPageKey();
+
+        return create(youTubeMediaGroup, null, chip.getReloadPageKey());
     }
 
     public static MediaGroup from(SectionContinuation continuation, MediaGroup baseGroup) {
@@ -102,6 +123,17 @@ public class YouTubeMediaGroup implements MediaGroup {
                 nextSearchResult.getChannelItems(), nextSearchResult.getRadioItems(), nextSearchResult.getPlaylistItems(), nextSearchResult.getNextPageKey());
     }
 
+    public static MediaGroup from(Chip chip) {
+        if (chip == null) {
+            return null;
+        }
+
+        YouTubeMediaGroup youTubeMediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_SUGGESTIONS);
+        youTubeMediaGroup.mTitle = chip.getTitle();
+
+        return create(youTubeMediaGroup, chip.getItemWrappers(), chip.getNextPageKey());
+    }
+
     public static MediaGroup from(SuggestedSection section) {
         if (section == null) {
             return null;
@@ -118,7 +150,14 @@ public class YouTubeMediaGroup implements MediaGroup {
 
         if (sections != null && sections.size() > 0) {
             for (Section section : sections) {
-                result.add(YouTubeMediaGroup.from(section, type));
+                // Section contains chips (nested sections) or items. Not both.
+                if (section.getChips() != null) {
+                    for (Chip chip : section.getChips()) {
+                        result.add(YouTubeMediaGroup.from(chip, type));
+                    }
+                } else {
+                    result.add(YouTubeMediaGroup.from(section, type));
+                }
             }
         }
 
@@ -166,12 +205,14 @@ public class YouTubeMediaGroup implements MediaGroup {
         return mChannelUrl;
     }
 
-    private void setChannelUrl(String channelUrl) {
-        mChannelUrl = channelUrl;
+    @Override
+    public String getPlaylistParams() {
+        return mPlaylistParams;
     }
 
-    private void setChannelId(String browseId) {
-        mChannelId = browseId;
+    @Override
+    public boolean isEmpty() {
+        return mMediaItems == null || mMediaItems.isEmpty();
     }
 
     private static MediaGroup create(YouTubeMediaGroup baseGroup, List<GridTab> tabs) {
@@ -204,7 +245,9 @@ public class YouTubeMediaGroup implements MediaGroup {
         if (items != null) {
             for (int i = 0; i < items.size(); i++) {
                 ItemWrapper item = items.get(i);
-                mediaItems.add(YouTubeMediaItem.from(item, i));
+                YouTubeMediaItem mediaItem = YouTubeMediaItem.from(item, i);
+                mediaItem.setPlaylistParams(baseGroup.mPlaylistParams);
+                mediaItems.add(mediaItem);
             }
         }
 

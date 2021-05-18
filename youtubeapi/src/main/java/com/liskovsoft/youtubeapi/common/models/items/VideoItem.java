@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.items;
 
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
-import com.liskovsoft.youtubeapi.common.helpers.AppHelper;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
 import java.util.List;
 
@@ -39,7 +39,9 @@ public class VideoItem {
     @JsonPath({"$.publishedTimeText.simpleText", "$.publishedTimeText.runs[0].text"})
     private String mPublishedTime;
     @JsonPath({"$.viewCountText.simpleText", "$.viewCountText.runs[0].text"})
-    private String mViewCountText;
+    private String mViewCountText1;
+    @JsonPath("$.viewCountText.runs[1].text")
+    private String mViewCountText2;
     @JsonPath({"$.shortViewCountText.simpleText", "$.shortViewCountText.runs[0].text"})
     private String mShortViewCountText1;
     @JsonPath("$.shortViewCountText.runs[1].text")
@@ -52,6 +54,8 @@ public class VideoItem {
                "$.badges[0].liveBadge.label.runs[0].text",
                "$.badges[0].upcomingEventBadge.label.simpleText"})
     private String mBadgeText;
+    @JsonPath("$.badges[0].metadataBadgeRenderer.label")
+    private String mDescBadgeText;
     // Sometimes live video contains percent watched as first item
     @JsonPath({"$.thumbnailOverlays[0].thumbnailOverlayTimeStatusRenderer.style",
                "$.thumbnailOverlays[1].thumbnailOverlayTimeStatusRenderer.style"})
@@ -110,11 +114,11 @@ public class VideoItem {
     }
 
     public String getViewCountText() {
-        return mViewCountText;
+        return ServiceHelper.combineText(mViewCountText1, mViewCountText2);
     }
 
     public String getShortViewCountText() {
-        return AppHelper.combineText(mShortViewCountText1, mShortViewCountText2);
+        return ServiceHelper.combineText(mShortViewCountText1, mShortViewCountText2);
     }
 
     public String getLengthText() {
@@ -150,10 +154,17 @@ public class VideoItem {
     }
 
     /**
+     * Mostly it's a 4K label
+     */
+    public String getDescBadgeText() {
+        return mDescBadgeText;
+    }
+
+    /**
      * Example: Premieres 10/8/20, 1:00 AM
      */
     public String getUpcomingEventText() {
-        return AppHelper.combineText(mUpcomingEventText1, mUpcomingEventText2);
+        return ServiceHelper.combineText(mUpcomingEventText1, mUpcomingEventText2);
     }
 
     /**

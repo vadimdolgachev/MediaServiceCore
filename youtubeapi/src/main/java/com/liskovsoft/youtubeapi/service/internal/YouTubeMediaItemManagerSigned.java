@@ -10,6 +10,7 @@ import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInManager;
 import com.liskovsoft.youtubeapi.track.TrackingService;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceSigned;
+import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceUnsigned;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 
 public class YouTubeMediaItemManagerSigned implements MediaItemManagerInt {
@@ -51,8 +52,8 @@ public class YouTubeMediaItemManagerSigned implements MediaItemManagerInt {
     }
 
     @Override
-    public WatchNextResult getWatchNextResult(String videoId, String playlistId, int playlistIndex) {
-        return mWatchNextServiceSigned.getWatchNextResult(videoId, playlistId, playlistIndex, mSignInManager.getAuthorizationHeader());
+    public WatchNextResult getWatchNextResult(String videoId, String playlistId, int playlistIndex, String playlistParams) {
+        return mWatchNextServiceSigned.getWatchNextResult(videoId, playlistId, playlistIndex, playlistParams, mSignInManager.getAuthorizationHeader());
     }
 
     @Override
@@ -60,9 +61,37 @@ public class YouTubeMediaItemManagerSigned implements MediaItemManagerInt {
         return mWatchNextServiceSigned.continueWatchNext(nextKey, mSignInManager.getAuthorizationHeader());
     }
 
+    //@Override
+    //public VideoInfo getVideoInfo(String videoId) {
+    //    // Enable history (temporally, until no playback be fixed)
+    //    VideoInfo signedInfo = mVideoInfoServiceSigned.getVideoInfo(videoId, mSignInManager.getAuthorizationHeader());
+    //    VideoInfo unsignedInfo = VideoInfoServiceUnsigned.instance().getVideoInfo(videoId); // Fix no playback bug (temporal fix)
+    //    if (signedInfo != null && unsignedInfo != null) { // Merge signed info with unsigned (otherwise history won't work)
+    //        unsignedInfo.setEventId(signedInfo.getEventId());
+    //        unsignedInfo.setVisitorMonitoringData(signedInfo.getVisitorMonitoringData());
+    //    }
+    //
+    //    // Original code
+    //    //return mVideoInfoServiceSigned.getVideoInfo(videoId, mSignInManager.getAuthorizationHeader());
+    //
+    //    return unsignedInfo;
+    //}
+
     @Override
     public VideoInfo getVideoInfo(String videoId) {
-        return mVideoInfoServiceSigned.getVideoInfo(videoId, mSignInManager.getAuthorizationHeader());
+        // Enable history (temporally, until no playback be fixed)
+        VideoInfo result = mVideoInfoServiceSigned.getVideoInfo(videoId, mSignInManager.getAuthorizationHeader());
+
+        // Fix no playback bug (temporal fix)
+        // Check that history data is valid
+        if (result == null || result.getEventId() == null || result.getVisitorMonitoringData() == null) {
+            result = VideoInfoServiceUnsigned.instance().getVideoInfo(videoId);
+        }
+
+        // Original code
+        //return mVideoInfoServiceSigned.getVideoInfo(videoId, mSignInManager.getAuthorizationHeader());
+
+        return result;
     }
 
     @Override

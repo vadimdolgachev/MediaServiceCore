@@ -12,16 +12,19 @@ public interface MediaGroup {
     int TYPE_MUSIC = 5;
     int TYPE_NEWS = 6;
     int TYPE_GAMING = 7;
-    int TYPE_PLAYLISTS_SECTION = 8;
+    int TYPE_USER_PLAYLISTS = 8;
     int TYPE_SUGGESTIONS = 9;
     int TYPE_CHANNEL = 10;
     int TYPE_SETTINGS = 11;
-    int TYPE_CHANNELS_SECTION = 12;
+    int TYPE_CHANNEL_UPLOADS = 12;
     int getType();
     List<MediaItem> getMediaItems();
     void setMediaItems(List<MediaItem> tabs);
     String getTitle();
     void setTitle(String title);
+    // Below settings for Channel section group
     String getChannelId();
+    String getPlaylistParams();
     String getChannelUrl();
+    boolean isEmpty();
 }

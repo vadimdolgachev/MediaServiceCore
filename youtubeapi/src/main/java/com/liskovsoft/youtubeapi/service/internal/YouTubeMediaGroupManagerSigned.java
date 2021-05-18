@@ -15,7 +15,6 @@ import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInManager;
 
 import java.util.List;
-import java.util.Locale;
 
 public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     private static final String TAG = YouTubeMediaGroupManagerSigned.class.getSimpleName();

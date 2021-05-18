@@ -427,3 +427,81 @@ authorization: Bearer ya29.A0AfH6SMB9e-3IzROa4KPojfHa2_hR_7EqTfZUTHBnT0WJMz93hg1
 user-agent: Mozilla/5.0 (DirectFB; Linux x86_64) Cobalt/120 (unlike Gecko) Starboard/1
 
 {"context":{"client":{"tvAppInfo":{"zylonLeftNav":true},"clientName":"TVHTML5","clientVersion":"7.20201103.00.00","webpSupport":false,"animatedWebpSupport":true,"acceptRegion":"RU","acceptLanguage":"ru","utcOffsetMinutes":"120"},"user":{"enableSafetyMode":false}},"browseId":"FEtopics"}
+
+###
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=75b10d12-6060-459d-b6d9-708d5e11ea7e&name=YouTube%20on%20TV&app=lb-v4&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&loungeIdToken=AGdO5p9ZLrDijMnwDXrz1HvKmGEDwvNRVYlNvW5iw9NiMC47zBhuxVMIpWt9xvkm_o-K3Q6lmWEA0iM6hzrNKXjWrbBNnV7pityWiJqQj56Z40ZefkuQQGE&VER=8&v=2&RID=58471&CVER=1&zx=wbzc8ohqyz93&t=1
+content-type: application/x-www-form-urlencoded
+
+count=0
+
+###
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=75b10d12-6060-459d-b6d9-708d5e11ea7e&name=YouTube%20on%20TV&app=lb-v4&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&loungeIdToken=AGdO5p9ZLrDijMnwDXrz1HvKmGEDwvNRVYlNvW5iw9NiMC47zBhuxVMIpWt9xvkm_o-K3Q6lmWEA0iM6hzrNKXjWrbBNnV7pityWiJqQj56Z40ZefkuQQGE&VER=8&v=2&RID=58471&CVER=1&zx=wbzc8ohqyz93&t=1
+content-type: application/x-www-form-urlencoded
+
+count=0
+
+###
+
+GET https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&VER=8&v=2&t=1&RID=rpc&CI=0&app=lb-v4&id=2a026ce9-4429-4c5e-8ef5-0101eddf5671&AID=42&zx=xxxxxxxxxxxx&name=TubeNext&loungeIdToken=AGdO5p8cH1tKYW3OIVFhSMRfjAjV5OxqYdjCezBGrDAaX7be3bcttKQAVKucSpEcoi8qh6rYs_r04DXQhd0_xEZY69s8W5J7rqEMmeaYwJsSi5VivgnFKv4&SID=382906C18CBCD492&gsessionid=y4LapfllLJ0jpekZD2sW3FvQu3o-mz0S
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: X8zbNRcWQ2VGQ+rtd6PrRQ==
+Sec-WebSocket-Version: 13
+
+###
+
+# Lounge
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&id=75b10d12-6060-459d-b6d9-708d5e11ea7e&name=YouTube%20on%20TV&app=lb-v4&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&loungeIdToken=AGdO5p8gDmbHPjrpJoAXHP5VTK_2XhddyaTGBK_LiLTUqKqPlJRsgp37Iy6W-LukEoPFl6hEv9lIVl0rdh8k-OrvaJc08nPlxFmnmpucvB9Qiw6DZpbOIEA&VER=8&v=2&RID=96295&CVER=1&zx=x4wxnmayacxv&t=1
+Content-Type: application/x-www-form-urlencoded
+
+count=0
+
+###
+
+# Lounge new
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&VER=8&v=2&t=1&app=lb-v4&id=2a026ce9-4429-4c5e-8ef5-0101eddf5671&AID=42&zx=xxxxxxxxxxxx&RID=1337&name=SmartTube%20Next%20Beta%20%28Yuriy%27s%20Fire%20TV%29&loungeIdToken=AGdO5p8HOIM4V1xYVNt-_cPkLflgHypNwlFAPqHkV-o-7SGxOjqtFvNSlALV9DZuojiwasKy9hwkjINX2_Ql4V-DwLyqCzY994t52FStGyiGnn_Cg7t2Hn4
+Content-Type: application/x-www-form-urlencoded
+
+count=0
+
+###
+
+# Lounge test
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&VER=8&v=2&t=1&app=lb-v4&id=2a026ce9-4429-4c5e-8ef5-0101eddf5671&AID=42&zx=xxxxxxxxxxxx&RID=1337&name=TubeNext&loungeIdToken=AGdO5p8JJgD6i5hUrdGRkq9v5fM11ocXVIeiDh8IgCQKE9BOzsWaBql6JWEr22oiu83fvk4RRVMaiBPD5J8FgeqNX1M7bHjJYrEr1Sn2Tqdz5BCV1kwQA8o
+Content-Type: application/x-www-form-urlencoded
+User-Agent: User-Agent: Mozilla/5.0 (DirectFB; Linux x86_64) Cobalt/40.13031-qa (unlike Gecko) Starboard/1
+
+count=0
+
+###
+
+# Lounge test
+
+POST https://www.youtube.com/api/lounge/bc/bind?device=LOUNGE_SCREEN&theme=cl&capabilities=dsp%2Cmic%2Cdpa&mdxVersion=2&VER=8&v=2&t=1&app=lb-v4&id=2a026ce9-4429-4c5e-8ef5-0101eddf5671&AID=42&zx=xxxxxxxxxxxx&RID=1337&name=SmartTubeNext%20on%20Yuriy%27s%20Fire%20TV&loungeIdToken=AGdO5p-IRMDTZHHW3EtJN26YLqcM_a1UqaC8WwXGENvetjadXhf0a3tiTZqSUEO5SzNbft-ASL5gG9oW7jKspjLpMD5nFTcKXIWtTyHU4HtLioA9COHHVwE
+Content-Type: application/x-www-form-urlencoded
+User-Agent: User-Agent: Mozilla/5.0 (DirectFB; Linux x86_64) Cobalt/40.13031-qa (unlike Gecko) Starboard/1
+
+count=0
+
+###
+
+POST https://www.youtube.com/o/oauth2/token
+Content-Type: application/json
+User-Agent: Mozilla/5.0 (DirectFB; Linux x86_64) Cobalt/120 (unlike Gecko) Starboard/1
+
+{"refresh_token":"1//09FlwLOjV_2VQCgYIARAAGAkSNwF-L9IrMevaPP0zPbJv4RJd70hr8q2r4JVSbhDVSZpXwzMdpc40W391OT0sjqZsCEizbhTI8xw","client_id":"861556708454-912i5jlic99ecvu3ro5kqirg0hldli5t.apps.googleusercontent.com","client_secret":"ju2WuMJMOjilz_h_1dPgFdeU","grant_type":"refresh_token"}
+
+
+###
+
+POST https://www.youtube.com/youtubei/v1/browse
+Content-Type: application/json
+Authorization: Bearer ya29.a0AfH6SMDW9Z5kCjzA9121AJ-vSwmS0rOJhbAZ0sb-bvFX0GhzO4leTvopRC_3dBEIbKrWXEi8XaFSkFwBApJZLYgptX8VTdSEecFZLzlWg8mAI2I5un03rWKAiMM0J8wZsIMc4Cyxbi8gGSarQnipf_oU7ZqD4KVAxufI3M8
+User-Agent: Mozilla/5.0 (DirectFB; Linux x86_64) Cobalt/120 (unlike Gecko) Starboard/1
+
+{"context":{"client":{"tvAppInfo":{"zylonLeftNav":true},"clientName":"TVHTML5","clientVersion":"7.20210428.10.00","webpSupport":false,"animatedWebpSupport":true,"acceptRegion":"UA","acceptLanguage":"uk-UA","utcOffsetMinutes":"180"},"user":{"enableSafetyMode":false}},"browseId":"FEtopics","params":"-gIGZ2FtaW5n"}

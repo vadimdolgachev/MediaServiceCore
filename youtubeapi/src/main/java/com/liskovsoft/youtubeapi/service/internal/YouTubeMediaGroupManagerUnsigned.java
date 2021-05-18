@@ -13,7 +13,6 @@ import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 
 import java.util.List;
-import java.util.Locale;
 
 public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     private static final String TAG = YouTubeMediaGroupManagerUnsigned.class.getSimpleName();
