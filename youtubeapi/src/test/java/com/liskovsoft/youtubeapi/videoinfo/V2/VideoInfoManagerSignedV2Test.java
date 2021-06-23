@@ -1,9 +1,9 @@
-package com.liskovsoft.youtubeapi.videoinfo;
+package com.liskovsoft.youtubeapi.videoinfo.V2;
 
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV1;
+import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
-import com.liskovsoft.youtubeapi.videoinfo.V1.VideoInfoManagerUnsignedV2;
 import com.liskovsoft.youtubeapi.videoinfo.models.CaptionTrack;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
@@ -14,17 +14,19 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.shadows.ShadowLog;
 import retrofit2.Call;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * NOTE: testing with Duktape (native libs)!!!
+ */
 @RunWith(RobolectricTestRunner.class)
-public class VideoInfoManagerUnsignedTest {
-    private VideoInfoManagerUnsignedV2 mService;
+public class VideoInfoManagerSignedV2Test {
+    private VideoInfoManagerSigned mService;
     private LocaleManager mLocaleManager;
 
     @Before
@@ -37,7 +39,7 @@ public class VideoInfoManagerUnsignedTest {
 
         RetrofitHelper.sForceEnableProfiler = true;
 
-        mService = RetrofitHelper.withQueryString(VideoInfoManagerUnsignedV2.class);
+        mService = RetrofitHelper.withJsonPath(VideoInfoManagerSigned.class);
         mLocaleManager = LocaleManager.instance();
     }
 
@@ -64,7 +66,8 @@ public class VideoInfoManagerUnsignedTest {
     private void testThatLiveVideoContainsSpecificFields(VideoInfo result) {
         assertNotNull("Result not null", result);
         assertNotNull("Contains dash url", result.getDashManifestUrl());
-        assertNotNull("Contains hls url", result.getHlsManifestUrl());
+        // V2 doesn't contains legacy hls urls
+        //assertNotNull("Contains hls url", result.getHlsManifestUrl());
 
         testThatVideoInfoContainsRequiredFields(result);
     }
@@ -105,15 +108,17 @@ public class VideoInfoManagerUnsignedTest {
         assertNotNull("Contains video details", result.getVideoDetails());
         assertNotNull("Contains event id", result.getEventId());
         assertNotNull("Contains vm tracking param", result.getVisitorMonitoringData());
+        // Url's signature isn't decoded yet!
+        //assertTrue("Video url is available", TestHelpersV1.urlExists(formats.get(0).getUrl()));
     }
 
     private VideoInfo getVideoInfoRestricted(String videoId) throws IOException {
-        Call<VideoInfo> wrapper = mService.getVideoInfoRestricted(videoId, mLocaleManager.getLanguage());
+        Call<VideoInfo> wrapper = mService.getVideoInfo(VideoInfoManagerParamsV2.getVideoInfoQuery(videoId), TestHelpersV2.getAuthorization());
         return wrapper.execute().body();
     }
 
     private VideoInfo getVideoInfo(String videoId) throws IOException {
-        Call<VideoInfo> wrapper = mService.getVideoInfo(videoId, mLocaleManager.getLanguage());
+        Call<VideoInfo> wrapper = mService.getVideoInfo(VideoInfoManagerParamsV2.getVideoInfoQuery(videoId), TestHelpersV2.getAuthorization());
         return wrapper.execute().body();
     }
 }

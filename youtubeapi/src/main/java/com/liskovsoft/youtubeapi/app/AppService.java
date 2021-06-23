@@ -1,12 +1,10 @@
 package com.liskovsoft.youtubeapi.app;
 
-import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
-import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.squareup.duktape.Duktape;
 
 import java.util.Arrays;
@@ -15,17 +13,13 @@ import java.util.List;
 public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
     // Interval doesn't matter because we have MediaService.invalidateCache()
-    private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // 30 min
-    //private static final long CACHE_REFRESH_PERIOD_MS = 24 * 60 * 60 * 1_000; // one day
+    private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
     private static AppService sInstance;
     private final AppManagerWrapper mAppManager;
     private Duktape mDuktape;
-    private String mCachedDecipherFunction;
-    private String mCachedClientPlaybackNonceFunction;
-    private String mCachedPlayerUrl;
-    private String mCachedBaseUrl;
-    private String mCachedClientId;
-    private String mCachedClientSecret;
+    private AppInfo mCachedAppInfo;
+    private PlayerData mCachedPlayerData;
+    private ClientData mCachedBaseData;
     private long mAppInfoUpdateTimeMS;
     private long mPlayerDataUpdateTimeMS;
     private long mBaseDataUpdateTimeMS;
@@ -91,7 +85,8 @@ public class AppService {
     public String getClientId() {
         updateBaseData();
 
-        return mCachedClientId;
+        // TODO: NPE 1.6K!!!
+        return mCachedBaseData != null ? mCachedBaseData.getClientId() : null;
     }
 
     /**
@@ -100,7 +95,13 @@ public class AppService {
     public String getClientSecret() {
         updateBaseData();
 
-        return mCachedClientSecret;
+        return mCachedBaseData.getClientSecret();
+    }
+
+    public String getSignatureTimestamp() {
+        updatePlayerData();
+
+        return mCachedPlayerData.getSignatureTimestamp();
     }
 
     private static boolean isAllNulls(List<String> ciphered) {
@@ -155,112 +156,75 @@ public class AppService {
     private String getDecipherFunction() {
         updatePlayerData();
 
-        return mCachedDecipherFunction;
+        return mCachedPlayerData.getDecipherFunction();
     }
 
     private String getClientPlaybackNonceFunction() {
         updatePlayerData();
 
-        return mCachedClientPlaybackNonceFunction;
+        // TODO: NPE 10K!!!
+        return mCachedPlayerData != null ? mCachedPlayerData.getClientPlaybackNonceFunction() : null;
     }
 
     private String getPlayerUrl() {
         updateAppInfoData();
 
-        return mCachedPlayerUrl;
+        // TODO: NPE 2.5K
+        return mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
     }
 
     private String getBaseUrl() {
         updateAppInfoData();
 
-        return mCachedBaseUrl;
+        // TODO: NPE 143K!!!
+        return mCachedAppInfo != null ? mCachedAppInfo.getBaseUrl() : null;
     }
 
     private void updateAppInfoData() {
-        if (System.currentTimeMillis() - mAppInfoUpdateTimeMS < CACHE_REFRESH_PERIOD_MS &&
-            mCachedPlayerUrl != null && mCachedBaseUrl != null) {
+        if (mCachedAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
         Log.d(TAG, "updateAppInfoData");
 
-        AppInfo appInfo = mAppManager.getAppInfo(AppConstants.APP_USER_AGENT);
+        mCachedAppInfo = mAppManager.getAppInfo(AppConstants.APP_USER_AGENT);
 
-        if (appInfo != null) {
-            mCachedPlayerUrl = ServiceHelper.tidyUrl(appInfo.getPlayerUrl());
-
-            mCachedBaseUrl = ServiceHelper.tidyUrl(appInfo.getBaseUrl());
-
+        if (mCachedAppInfo != null) {
             mAppInfoUpdateTimeMS = System.currentTimeMillis();
         }
     }
 
     private void updatePlayerData() {
-        if (System.currentTimeMillis() - mPlayerDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS &&
-                mCachedDecipherFunction != null && mCachedClientPlaybackNonceFunction != null) {
+        if (mCachedPlayerData != null && System.currentTimeMillis() - mPlayerDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
         Log.d(TAG, "updatePlayerData");
 
-        String playerUrl = getPlayerUrl();
+        mCachedPlayerData = mAppManager.getPlayerData(getPlayerUrl());
 
-        if (playerUrl != null) {
-            PlayerData playerData = mAppManager.getPlayerData(playerUrl);
-
-            if (playerData != null) {
-                String decipherFunction = playerData.getDecipherFunction();
-
-                if (decipherFunction != null) {
-                    mCachedDecipherFunction = Helpers.replace(decipherFunction, AppConstants.SIGNATURE_DECIPHER, "function decipherSignature");
-                }
-
-                String clientPlaybackNonce = playerData.getClientPlaybackNonce();
-
-                if (clientPlaybackNonce != null) {
-                    mCachedClientPlaybackNonceFunction =
-                            Helpers.replace(clientPlaybackNonce, AppConstants.SIGNATURE_CLIENT_PLAYBACK_NONCE, "function getClientPlaybackNonce()");
-                }
-
-                mPlayerDataUpdateTimeMS = System.currentTimeMillis();
-            }
+        if (mCachedPlayerData != null) {
+            mPlayerDataUpdateTimeMS = System.currentTimeMillis();
         }
     }
 
     private void updateBaseData() {
-        if (System.currentTimeMillis() - mBaseDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS &&
-                mCachedClientId != null && mCachedClientSecret != null) {
+        if (mCachedBaseData != null && System.currentTimeMillis() - mBaseDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
         Log.d(TAG, "updateBaseData");
 
-        String baseUrl = getBaseUrl();
+        mCachedBaseData = mAppManager.getBaseData(getBaseUrl());
 
-        if (baseUrl != null) {
-            ClientData baseData = mAppManager.getBaseData(baseUrl);
-
-            if (baseData != null) {
-                String clientId = baseData.getClientId();
-
-                if (clientId != null) {
-                    mCachedClientId = clientId;
-                }
-
-                String clientSecret = baseData.getClientSecret();
-
-                if (clientSecret != null) {
-                    mCachedClientSecret = clientSecret;
-                }
-
-                mBaseDataUpdateTimeMS = System.currentTimeMillis();
-            }
+        if (mCachedBaseData != null) {
+            mBaseDataUpdateTimeMS = System.currentTimeMillis();
         }
     }
 
     public void invalidateCache() {
-        mAppInfoUpdateTimeMS = 0;
-        mPlayerDataUpdateTimeMS = 0;
-        mBaseDataUpdateTimeMS = 0;
+        mCachedAppInfo = null;
+        mCachedPlayerData = null;
+        mCachedBaseData = null;
     }
 }

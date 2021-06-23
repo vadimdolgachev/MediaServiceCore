@@ -1,4 +1,4 @@
-package com.liskovsoft.youtubeapi.videoinfo;
+package com.liskovsoft.youtubeapi.videoinfo.V1;
 
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
@@ -34,6 +34,6 @@ public interface VideoInfoManagerSigned {
     /**
      * Unlock personal videos: <code>c=TVHTML5&cver=7.20201103.00.00</code><br/>
      */
-    @GET("https://www.youtube.com/get_video_info?ps=leanback&el=leanback&eurl=https%3A%2F%2Fwww.youtube.com%2Ftv&c=TVHTML5&cver=" + AppConstants.CLIENT_VERSION)
+    @GET("https://www.youtube.com/get_video_info?ps=leanback&el=leanback&eurl=https%3A%2F%2Fwww.youtube.com%2Ftv&c=TVHTML5&cver=" + AppConstants.CLIENT_VERSION_TV)
     Call<VideoInfo> getVideoInfoRegular(@Query("video_id") String videoId, @Query("hl") String lang, @Header("Authorization") String auth);
 }

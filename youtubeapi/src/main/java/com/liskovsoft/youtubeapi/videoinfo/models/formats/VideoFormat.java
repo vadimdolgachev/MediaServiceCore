@@ -17,6 +17,7 @@ public class VideoFormat {
     public static final String PARAM_CIPHER = "cipher";
     public static final String PARAM_TYPE = "type";
     public static final String PARAM_ITAG = "itag";
+    public static final String PARAM_CPN = "cpn";
     public static final String PARAM_SIGNATURE = "signature";
     public static final String PARAM_SIGNATURE_SPECIAL = "sig";
     public static final String PARAM_SIGNATURE_SPECIAL_MARK = "lsig";
@@ -117,6 +118,29 @@ public class VideoFormat {
             mUrl = url.toString();
 
             mRealSignature = signature;
+        }
+    }
+
+    public void setAdditionalParams(String clientPlaybackNonce) {
+        if (mUrl != null) {
+            UrlQueryString url = UrlQueryStringFactory.parse(mUrl);
+
+            url.set("alr", "yes");
+            //url.set(PARAM_CPN, clientPlaybackNonce);
+            //url.set("cver", "7.20210615.10.00");
+
+            //url.set("range", "0-500");
+            //url.set("rn", "1");
+            //url.set("rbuf", "0");
+
+            //url.set("redirect_counter", "1");
+            //url.set("cms_redirect", "yes");
+
+            //url.set("keepalive", "no");
+            //url.set("pcm2cms", "yes");
+            //url.set("lsparams", "mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpcm2cms%2Cpl%2Cinitcwndbps");
+
+            mUrl = url.toString();
         }
     }
 
