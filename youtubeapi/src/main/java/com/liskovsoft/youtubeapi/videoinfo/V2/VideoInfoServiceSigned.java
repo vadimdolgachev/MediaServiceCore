@@ -23,8 +23,8 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         return sInstance;
     }
 
-    public VideoInfo getVideoInfo(String videoId, String authorization) {
-        VideoInfo result = getVideoInfoRegular(videoId, authorization);
+    public VideoInfo getVideoInfo(String videoId, String clickTrackingParams, String authorization) {
+        VideoInfo result = getVideoInfoRegular(videoId, clickTrackingParams, authorization);
 
         if (result != null) {
             decipherFormats(result.getAdaptiveFormats());
@@ -36,8 +36,10 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         return result;
     }
 
-    private VideoInfo getVideoInfoRegular(String videoId, String authorization) {
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfo(VideoInfoManagerParams.getVideoInfoQuery(videoId), authorization);
+    private VideoInfo getVideoInfoRegular(String videoId, String clickTrackingParams, String authorization) {
+        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQuery(videoId, clickTrackingParams);
+        Log.d(TAG, videoInfoQuery);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfo(videoInfoQuery, authorization, mAppService.getVisitorData());
 
         return RetrofitHelper.get(wrapper);
     }

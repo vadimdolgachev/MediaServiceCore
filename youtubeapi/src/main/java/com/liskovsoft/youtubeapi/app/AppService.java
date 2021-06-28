@@ -67,6 +67,23 @@ public class AppService {
     }
 
     /**
+     * Throttle strings using js code
+     */
+    public List<String> throttleFix(List<String> throttled) {
+        if (isAllNulls(throttled)) {
+            return throttled;
+        }
+
+        String throttleCode = createThrottleCode(throttled);
+
+        if (throttleCode == null) {
+            return throttled;
+        }
+
+        return runDecipherCode(throttleCode);
+    }
+
+    /**
      * A nonce is a unique value chosen by an entity in a protocol, and it is used to protect that entity against attacks which fall under the very large umbrella of "replay".
      */
     public String getClientPlaybackNonce() {
@@ -95,13 +112,26 @@ public class AppService {
     public String getClientSecret() {
         updateBaseData();
 
-        return mCachedBaseData.getClientSecret();
+        return mCachedBaseData != null ? mCachedBaseData.getClientSecret() : null;
     }
 
+    /**
+     * Used in get_video_info
+     */
     public String getSignatureTimestamp() {
         updatePlayerData();
 
-        return mCachedPlayerData.getSignatureTimestamp();
+        // TODO: NPE 300!!!
+        return mCachedPlayerData != null ? mCachedPlayerData.getSignatureTimestamp() : null;
+    }
+
+    /**
+     * Used in get_video_info
+     */
+    public String getVisitorData() {
+        updateAppInfoData();
+
+        return mCachedAppInfo.getVisitorData();
     }
 
     private static boolean isAllNulls(List<String> ciphered) {
@@ -135,6 +165,27 @@ public class AppService {
         return result.toString();
     }
 
+    private String createThrottleCode(List<String> throttled) {
+        String throttleFunction = getThrottleFunction();
+
+        if (throttleFunction == null) {
+            Log.e(TAG, "Oops. ThrottleFunction is null...");
+            return null;
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append(throttleFunction);
+        result.append("var result = [];");
+
+        for (String cipher : throttled) {
+            result.append(String.format("result.push(throttleSignature('%s'));", cipher));
+        }
+
+        result.append("result.toString();");
+
+        return result.toString();
+    }
+
     private List<String> runDecipherCode(String decipherCode) {
         String result = getDuktape().evaluate(decipherCode).toString();
 
@@ -157,6 +208,12 @@ public class AppService {
         updatePlayerData();
 
         return mCachedPlayerData.getDecipherFunction();
+    }
+
+    private String getThrottleFunction() {
+        updatePlayerData();
+
+        return mCachedPlayerData.getThrottleFunction();
     }
 
     private String getClientPlaybackNonceFunction() {
