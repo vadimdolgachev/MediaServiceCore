@@ -8,7 +8,7 @@ import java.util.List;
 
 public abstract class VideoInfoServiceBase {
     private static final String TAG = VideoInfoServiceBase.class.getSimpleName();
-    private final AppService mAppService;
+    public final AppService mAppService;
 
     protected VideoInfoServiceBase() {
         mAppService = AppService.instance();
@@ -41,6 +41,8 @@ public abstract class VideoInfoServiceBase {
 
         for (int i = 0; i < formats.size(); i++) {
             formats.get(i).setSignature(deciphered.get(i));
+            // TODO: testing
+            //formats.get(i).setAdditionalParams(AppService.instance().getClientPlaybackNonce());
         }
     }
 }

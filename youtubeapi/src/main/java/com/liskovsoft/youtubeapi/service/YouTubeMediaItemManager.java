@@ -5,6 +5,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
 import com.liskovsoft.mediaserviceinterfaces.data.SponsorSegment;
 import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -30,17 +31,18 @@ import java.util.Set;
 
 public class YouTubeMediaItemManager implements MediaItemManager {
     private static final String TAG = YouTubeMediaItemManager.class.getSimpleName();
-    private static MediaItemManager sInstance;
+    private static YouTubeMediaItemManager sInstance;
     private final YouTubeSignInManager mSignInManager;
     private final SponsorBlockService mSponsorBlockService;
     private MediaItemManagerInt mMediaItemManagerReal;
+    private YouTubeMediaItemFormatInfo mCachedFormatInfo;
 
     private YouTubeMediaItemManager() {
         mSignInManager = YouTubeSignInManager.instance();
         mSponsorBlockService = SponsorBlockService.instance();
     }
 
-    public static MediaItemManager instance() {
+    public static YouTubeMediaItemManager instance() {
         if (sInstance == null) {
             sInstance = new YouTubeMediaItemManager();
         }
@@ -58,20 +60,31 @@ public class YouTubeMediaItemManager implements MediaItemManager {
 
     @Override
     public YouTubeMediaItemFormatInfo getFormatInfo(String videoId) {
+        if (mCachedFormatInfo != null && mCachedFormatInfo.getVideoId().equals(videoId)) {
+            return mCachedFormatInfo;
+        }
+
         checkSigned();
 
-        YouTubeMediaItemFormatInfo formatInfo = YouTubeMediaItem.getCachedFormatInfo(videoId);
+        VideoInfo videoInfo = mMediaItemManagerReal.getVideoInfo(videoId);
 
-        if (formatInfo == null) {
-            VideoInfo videoInfo = mMediaItemManagerReal.getVideoInfo(videoId);
+        YouTubeMediaItemFormatInfo formatInfo = YouTubeMediaItemFormatInfo.from(videoInfo);
 
-            formatInfo = YouTubeMediaItemFormatInfo.from(videoInfo);
-
-            YouTubeMediaItem.setCachedFormatInfo(videoId, formatInfo);
-        }
+        mCachedFormatInfo = formatInfo;
 
         return formatInfo;
     }
+
+    ///**
+    // * Cache format info per video playback session.
+    // */
+    //private YouTubeMediaItemFormatInfo getCachedFormatInfo(String videoId) {
+    //    if (mCachedFormatInfo != null && mCachedFormatInfo.getVideoId().equals(videoId)) {
+    //        return mCachedFormatInfo;
+    //    }
+    //
+    //    return getFormatInfo(videoId);
+    //}
 
     @Override
     public Observable<MediaItemFormatInfo> getFormatInfoObserve(MediaItem item) {
@@ -81,6 +94,26 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     @Override
     public Observable<MediaItemFormatInfo> getFormatInfoObserve(String videoId) {
         return ObservableHelper.fromNullable(() -> getFormatInfo(videoId));
+    }
+
+    @Override
+    public MediaItemStoryboard getStoryboard(MediaItem item) {
+        return getStoryboard(item.getVideoId());
+    }
+
+    @Override
+    public MediaItemStoryboard getStoryboard(String videoId) {
+        return getFormatInfo(videoId).createStoryboard();
+    }
+
+    @Override
+    public Observable<MediaItemStoryboard> getStoryboardObserve(MediaItem item) {
+        return ObservableHelper.fromNullable(() -> getStoryboard(item));
+    }
+
+    @Override
+    public Observable<MediaItemStoryboard> getStoryboardObserve(String videoId) {
+        return ObservableHelper.fromNullable(() -> getStoryboard(videoId));
     }
 
     @Override
@@ -348,6 +381,10 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     @Override
     public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId, Set<String> categories) {
         return ObservableHelper.fromNullable(() -> getSponsorSegments(videoId, categories));
+    }
+
+    public void invalidateCache() {
+        mCachedFormatInfo = null;
     }
 
     private void checkSigned() {
