@@ -1,11 +1,16 @@
 package com.liskovsoft.youtubeapi.common.converters.regexp.typeadapter;
 
+import android.content.Context;
 import com.jayway.jsonpath.PathNotFoundException;
+import com.liskovsoft.sharedutils.helpers.FileHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.converters.regexp.RegExp;
 import com.liskovsoft.youtubeapi.common.helpers.ReflectionHelper;
 
+import java.io.File;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -48,6 +53,7 @@ public class RegExpTypeAdapter<T> {
 
         Object obj = null;
         boolean done = false;
+        boolean unset = false;
 
         try {
             Constructor<?> constructor = type.getConstructor();
@@ -88,6 +94,7 @@ public class RegExpTypeAdapter<T> {
                 }
 
                 if (regExpVal == null) {
+                    unset = true; // at least one field is unset
                     continue;
                 }
 
@@ -97,6 +104,10 @@ public class RegExpTypeAdapter<T> {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (unset) {
+            ReflectionHelper.dumpDebugInfo(type, regExpContent);
         }
 
         return done ? obj : null;

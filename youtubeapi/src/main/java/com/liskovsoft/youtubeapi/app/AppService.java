@@ -2,8 +2,8 @@ package com.liskovsoft.youtubeapi.app;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
-import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
+import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
 import com.squareup.duktape.Duktape;
 
@@ -12,7 +12,6 @@ import java.util.List;
 
 public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
-    // Interval doesn't matter because we have MediaService.invalidateCache()
     private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
     private static AppService sInstance;
     private final AppManagerWrapper mAppManager;
@@ -208,13 +207,14 @@ public class AppService {
     private String getDecipherFunction() {
         updatePlayerData();
 
-        return mCachedPlayerData.getDecipherFunction();
+        return mCachedPlayerData != null ? mCachedPlayerData.getDecipherFunction() : null;
     }
 
     private String getThrottleFunction() {
         updatePlayerData();
 
-        return mCachedPlayerData.getThrottleFunction();
+        // TODO: NPE 24 events
+        return mCachedPlayerData != null ? mCachedPlayerData.getThrottleFunction() : null;
     }
 
     private String getClientPlaybackNonceFunction() {

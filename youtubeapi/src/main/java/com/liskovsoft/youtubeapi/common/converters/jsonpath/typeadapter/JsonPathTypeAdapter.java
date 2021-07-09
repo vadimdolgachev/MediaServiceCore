@@ -10,6 +10,7 @@ import com.liskovsoft.sharedutils.helpers.FileHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
+import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPathNullable;
 import com.liskovsoft.youtubeapi.common.helpers.ReflectionHelper;
 
 import java.io.InputStream;
@@ -40,7 +41,7 @@ public class JsonPathTypeAdapter<T> {
     public final T read(InputStream is) {
         is = process(is);
 
-        Object jsonContent = null;
+        String jsonContent = null;
 
         String[] jsonPath = getJsonPath(getGenericType());
 
@@ -48,17 +49,24 @@ public class JsonPathTypeAdapter<T> {
             DocumentContext parser = mParser.parse(is);
             for (String path : jsonPath) {
                 try {
-                    jsonContent = parser.read(path);
+                    jsonContent = parser.read(path).toString();
                     break;
                 } catch (PathNotFoundException e) {
 //                    Log.e(TAG, e.getMessage());
                 }
             }
         } else { // annotation on field
-            jsonContent = is;
+            jsonContent = Helpers.toString(is);
         }
 
-        return (T) readType(getGenericType(), jsonContent);
+        T result = (T) readType(getGenericType(), jsonContent);
+
+        if (result == null) {
+            // Dump root object
+            ReflectionHelper.dumpDebugInfo(getGenericType(), jsonContent);
+        }
+
+        return result;
     }
 
     /**
@@ -72,7 +80,7 @@ public class JsonPathTypeAdapter<T> {
         return mType;
     }
 
-    private Object readType(Class<?> type, Object jsonContent) {
+    private Object readType(Class<?> type, String jsonContent) {
         if (type == null || jsonContent == null) {
             return null;
         }
@@ -86,11 +94,7 @@ public class JsonPathTypeAdapter<T> {
 
             DocumentContext parser;
 
-            if (jsonContent instanceof InputStream) {
-                parser = mParser.parse((InputStream) jsonContent);
-            } else {
-                parser = mParser.parse((String) jsonContent);
-            }
+            parser = mParser.parse(jsonContent);
 
             List<Field> fields = ReflectionHelper.getAllFields(type);
 
@@ -186,6 +190,18 @@ public class JsonPathTypeAdapter<T> {
         }
 
         return null;
+    }
+
+    private boolean isNullable(Field field) {
+        Annotation[] annotations = field.getAnnotations();
+
+        for (Annotation annotation : annotations) {
+            if (annotation instanceof JsonPathNullable) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Object parsePrimitive(JsonPrimitive jsonVal) {
