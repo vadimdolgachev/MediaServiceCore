@@ -52,7 +52,7 @@ public class JsonPathTypeAdapter<T> {
                     jsonContent = parser.read(path).toString();
                     break;
                 } catch (PathNotFoundException e) {
-                    Log.e(TAG, e.getMessage());
+//                    Log.e(TAG, e.getMessage());
                 }
             }
         } else { // annotation on field
@@ -113,7 +113,7 @@ public class JsonPathTypeAdapter<T> {
                         jsonVal = parser.read(path);
                         break;
                     } catch (PathNotFoundException e) {
-                        Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
+//                        Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
                     }
                 }
 

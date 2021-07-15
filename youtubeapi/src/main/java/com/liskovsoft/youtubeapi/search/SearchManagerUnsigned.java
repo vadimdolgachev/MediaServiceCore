@@ -24,6 +24,6 @@ public interface SearchManagerUnsigned {
     @POST("https://www.youtube.com/youtubei/v1/search?key=" + AppConstants.API_KEY)
     Call<SearchResultContinuation> continueSearchResult(@Body String searchQuery);
 
-    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=en&gl=us")
+    @GET("https://clients1.google.com/complete/search?client=youtube-lr&ds=yt&xhr=t&hl=ru&gl=ru")
     Call<SearchTags> getSearchTags(@Query("q") String searchQuery);
 }

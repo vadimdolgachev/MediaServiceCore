@@ -80,7 +80,7 @@ public class ReflectionHelper {
 
         File destination = new File(FileHelpers.getCacheDir(context), type.getSimpleName());
 
-        MessageHelpers.showLongMessage(context, String.format("Debug info has been dumped to %s", destination));
+//        MessageHelpers.showLongMessage(context, String.format("Debug info has been dumped to %s", destination));
 
         FileHelpers.streamToFile(content, destination);
     }
