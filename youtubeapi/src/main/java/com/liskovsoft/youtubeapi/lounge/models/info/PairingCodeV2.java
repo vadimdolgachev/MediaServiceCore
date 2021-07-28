@@ -1,10 +1,10 @@
-package com.liskovsoft.youtubeapi.lounge.models;
+package com.liskovsoft.youtubeapi.lounge.models.info;
 
-import com.liskovsoft.youtubeapi.common.converters.regexp.RegExp;
+import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
-public class PairingCode {
-    @RegExp(".*")
+public class PairingCodeV2 {
+    @JsonPath("$.code")
     private String mPairingCode;
     private String mPairingCodeAlt;
 

@@ -7,14 +7,14 @@ import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathTypeAdapter;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
-import com.liskovsoft.youtubeapi.lounge.models.PairingCode;
-import com.liskovsoft.youtubeapi.lounge.models.ScreenId;
-import com.liskovsoft.youtubeapi.lounge.models.StateResult;
+import com.liskovsoft.youtubeapi.lounge.models.bind.PairingCode;
+import com.liskovsoft.youtubeapi.lounge.models.bind.ScreenId;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandItem;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandList;
 import com.liskovsoft.youtubeapi.lounge.models.commands.PlaylistParams;
-import com.liskovsoft.youtubeapi.lounge.models.info.ScreenItem;
-import com.liskovsoft.youtubeapi.lounge.models.info.ScreenList;
+import com.liskovsoft.youtubeapi.lounge.models.info.PairingCodeV2;
+import com.liskovsoft.youtubeapi.lounge.models.info.TokenInfo;
+import com.liskovsoft.youtubeapi.lounge.models.info.TokenInfoList;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -29,13 +29,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class LoungeService {
     private static final String TAG = LoungeService.class.getSimpleName();
     private static LoungeService sInstance;
     private final BindManager mBindManager;
-    private final InfoManager mScreenManager;
+    private final InfoManager mInfoManager;
     private final CommandManager mCommandManager;
     private final JsonPathTypeAdapter<CommandList> mLineSkipAdapter;
     private String mScreenName;
@@ -49,7 +50,7 @@ public class LoungeService {
 
     public LoungeService() {
         mBindManager = RetrofitHelper.withRegExp(BindManager.class);
-        mScreenManager = RetrofitHelper.withJsonPath(InfoManager.class);
+        mInfoManager = RetrofitHelper.withJsonPath(InfoManager.class);
         mCommandManager = RetrofitHelper.withJsonPathSkip(CommandManager.class);
         mLineSkipAdapter = RetrofitHelper.adaptJsonPathSkip(CommandList.class);
     }
@@ -73,13 +74,15 @@ public class LoungeService {
             return null;
         }
 
-        Call<PairingCode> pairingCodeWrapper = mBindManager.getPairingCode(
-                BindParams.ACCESS_TYPE,
-                BindParams.APP,
+        Call<PairingCodeV2> pairingCodeWrapper = mInfoManager.getPairingCodeV2(
                 mLoungeToken,
                 mScreenId,
-                mScreenName);
-        PairingCode pairingCode = RetrofitHelper.get(pairingCodeWrapper);
+                mScreenName,
+                BindParams.ACCESS_TYPE,
+                BindParams.APP,
+                BindParams.DEVICE_ID,
+                BindParams.QR);
+        PairingCodeV2 pairingCode = RetrofitHelper.get(pairingCodeWrapper);
 
         // Pairing code XXX-XXX-XXX-XXX
         return pairingCode != null ? pairingCode.getPairingCode() : null;
@@ -109,13 +112,13 @@ public class LoungeService {
         if (mScreenName == null) {
             mScreenName = String.format(
                     "%s (%s)",
-                    AppInfoHelpers.getAppLabel(GlobalPreferences.sInstance.getContext()),
-                    Helpers.getUserDeviceName()
+                    Helpers.getUserDeviceName(GlobalPreferences.sInstance.getContext()),
+                    AppInfoHelpers.getAppLabel(GlobalPreferences.sInstance.getContext())
             );
         }
 
         if (mLoungeToken == null) {
-            ScreenItem screen = getScreen();
+            TokenInfo screen = getTokenInfo();
 
             if (screen != null) {
                 mLoungeToken = screen.getLoungeToken();
@@ -197,7 +200,8 @@ public class LoungeService {
     }
 
     public void postStartPlaying(String videoId, long positionMs, long durationMs, boolean isPlaying) {
-        postNowPlaying(videoId, positionMs, durationMs, mCtt, mPlaylistId, mPlaylistIndex);
+        Log.d(TAG, "Post nowPlaying id: %s, pos: %s, dur: %s...", videoId, positionMs, durationMs);
+        postCommand(CommandParams.getNowPlaying(videoId, positionMs, durationMs, mCtt, mPlaylistId, mPlaylistIndex));
         postStateChange(positionMs, durationMs, isPlaying);
     }
 
@@ -208,39 +212,26 @@ public class LoungeService {
         }
 
         if (durationMs > 0 && positionMs <= durationMs) {
-            postOnStateChange(positionMs, durationMs, isPlaying ? CommandParams.STATE_PLAYING : CommandParams.STATE_PAUSED);
+            Log.d(TAG, "Post onStateChange pos: %s, dur: %s...", positionMs, durationMs);
+
+            Map<String, String> stateChange = CommandParams.getOnStateChange(
+                    positionMs,
+                    durationMs,
+                    isPlaying ? CommandParams.STATE_PLAYING : CommandParams.STATE_PAUSED
+            );
+
+            postCommand(stateChange);
         }
+    }
+
+    public void postVolumeChange(int volume) {
+        Log.d(TAG, "Post onVolumeChanged: %s...", volume);
+        postCommand(CommandParams.getOnVolumeChanged(volume));
     }
 
     public void resetData() {
         MediaServiceData.instance().setScreenId(null);
         mLoungeToken = null;
-    }
-
-    private void postNowPlaying(String videoId, long positionMs, long durationMs, String ctt, String playlistId, String playlistIndex) {
-        if (!ServiceHelper.checkNonNull(mSessionId, mGSessionId)) {
-            return;
-        }
-
-        Log.d(TAG, "Post nowPlaying id: %s, pos: %s, dur: %s...", videoId, positionMs, durationMs);
-
-        Call<Void> wrapper = mCommandManager.postCommand(
-                mScreenName, mLoungeToken, mSessionId, mGSessionId,
-                CommandParams.getNowPlaying(videoId, positionMs, durationMs, ctt, playlistId, playlistIndex));
-        RetrofitHelper.get(wrapper);
-    }
-
-    private void postOnStateChange(long positionMs, long durationMs, int state) {
-        if (!ServiceHelper.checkNonNull(mSessionId, mGSessionId)) {
-            return;
-        }
-
-        Log.d(TAG, "Post onStateChange pos: %s, dur: %s...", positionMs, durationMs);
-
-        Call<Void> wrapper = mCommandManager.postCommand(
-                mScreenName, mLoungeToken, mSessionId, mGSessionId,
-                CommandParams.getOnStateChange(positionMs, durationMs, state));
-        RetrofitHelper.get(wrapper);
     }
 
     private void postOnPrevNextChange() {
@@ -250,10 +241,7 @@ public class LoungeService {
 
         Log.d(TAG, "Post onPrevNextChange...");
 
-        Call<Void> wrapper = mCommandManager.postCommand(
-                mScreenName, mLoungeToken, mSessionId, mGSessionId,
-                CommandParams.getOnPrevNextChange());
-        RetrofitHelper.get(wrapper);
+        postCommand(CommandParams.getOnPrevNextChange());
     }
 
     private void updateData(CommandItem info) {
@@ -265,8 +253,8 @@ public class LoungeService {
         }
     }
 
-    private ScreenItem getScreen() {
-        ScreenItem screenItem = null;
+    private TokenInfo getTokenInfo() {
+        TokenInfo tokenInfo = null;
         String screenId = MediaServiceData.instance().getScreenId();
 
         if (screenId == null) {
@@ -279,15 +267,15 @@ public class LoungeService {
         }
 
         if (screenId != null) {
-            Call<ScreenList> screenInfosWrapper = mScreenManager.getScreenInfo(screenId);
-            ScreenList screenInfos = RetrofitHelper.get(screenInfosWrapper);
+            Call<TokenInfoList> tokenInfoListWrapper = mInfoManager.getTokenInfo(screenId);
+            TokenInfoList tokenInfoList = RetrofitHelper.get(tokenInfoListWrapper);
 
-            if (screenInfos != null) {
-                screenItem = screenInfos.getScreens().get(0);
+            if (tokenInfoList != null && tokenInfoList.getTokenInfos() != null) {
+                tokenInfo = tokenInfoList.getTokenInfos().get(0);
             }
         }
 
-        return screenItem;
+        return tokenInfo;
     }
 
     private CommandList getSessionBind() {
@@ -298,6 +286,18 @@ public class LoungeService {
 
     private CommandList toCommandInfos(String result) {
         return mLineSkipAdapter.read(new ByteArrayInputStream(result.getBytes(Charset.forName("UTF-8"))));
+    }
+
+    private void postCommand(Map<String, String> command) {
+        if (!ServiceHelper.checkNonNull(mSessionId, mGSessionId)) {
+            Log.e(TAG, "Can't send command. Error: mSessionId, mGSessionId is null");
+            return;
+        }
+
+        Call<Void> wrapper = mCommandManager.postCommand(
+                mScreenName, mLoungeToken, mSessionId, mGSessionId,
+                command);
+        RetrofitHelper.get(wrapper);
     }
 
     public interface OnCommand {
