@@ -41,6 +41,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private String mStoryboardSpec;
     private boolean mIsUnplayable;
     private String mPlayabilityStatus;
+    private boolean mIsAgeRestricted;
 
     public static YouTubeMediaItemFormatInfo from(VideoInfo videoInfo) {
         if (videoInfo == null) {
@@ -87,6 +88,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mIsUnplayable = videoInfo.isUnplayable();
         formatInfo.mPlayabilityStatus = videoInfo.getPlayabilityStatus();
         formatInfo.mIsStreamSeekable = videoInfo.isHfr();
+        formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
 
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
 
@@ -306,5 +308,9 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     public void setVisitorMonitoringData(String visitorMonitoringData) {
         mVisitorMonitoringData = visitorMonitoringData;
+    }
+
+    public boolean isAgeRestricted() {
+        return mIsAgeRestricted;
     }
 }

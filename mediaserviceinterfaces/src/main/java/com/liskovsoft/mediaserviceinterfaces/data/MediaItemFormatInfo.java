@@ -41,4 +41,5 @@ public interface MediaItemFormatInfo {
     boolean isUnplayable();
     String getPlayabilityStatus();
     boolean isStreamSeekable();
+    boolean isAgeRestricted();
 }
