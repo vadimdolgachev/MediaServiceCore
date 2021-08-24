@@ -5,6 +5,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
+import com.liskovsoft.youtubeapi.next.models.ButtonStates;
 import com.liskovsoft.youtubeapi.next.models.SuggestedSection;
 import com.liskovsoft.youtubeapi.next.models.VideoMetadata;
 import com.liskovsoft.youtubeapi.next.models.VideoOwner;
@@ -23,7 +24,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private String mDislikesCount;
     private String mFullDescription;
     private String mPublishedDate;
-    private boolean mSubscribed;
+    private boolean mIsSubscribed;
     private int mLikeStatus;
     private String mMediaId;
     private String mChannelId;
@@ -47,44 +48,53 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
 
         if (videoMetadata == null || videoOwner == null) {
             Log.e(TAG, "Oops. Next format has been changed. Please upgrade parser.");
-            return null;
         }
 
-        mediaItemMetadata.mTitle = videoMetadata.getTitle();
-        mediaItemMetadata.mDescription = YouTubeMediaServiceHelper.createDescription(
-                videoOwner.getVideoAuthor(),
-                videoMetadata.getPublishedTime(),
-                videoMetadata.getShortViewCount(),
-                videoMetadata.isLive() ? "LIVE" : "");
-        mediaItemMetadata.mDescriptionAlt = YouTubeMediaServiceHelper.createDescription(
-                videoOwner.getVideoAuthor(),
-                videoMetadata.getPublishedDate(),
-                videoMetadata.getShortViewCount(),
-                videoMetadata.isLive() ? "LIVE" : "");
-        mediaItemMetadata.mMediaId = videoMetadata.getVideoId();
-        mediaItemMetadata.mFullDescription = videoMetadata.getDescription();
-        mediaItemMetadata.mDislikesCount = videoMetadata.getDislikesCount();
-        mediaItemMetadata.mLikesCount = videoMetadata.getLikesCount();
-        mediaItemMetadata.mViewCount = videoMetadata.getViewCount();
-        mediaItemMetadata.mPercentWatched = videoMetadata.getPercentWatched();
-        mediaItemMetadata.mPublishedDate = videoMetadata.getPublishedDate();
-        mediaItemMetadata.mIsLive = videoMetadata.isLive();
-        mediaItemMetadata.mIsUpcoming = videoMetadata.isUpcoming();
-        mediaItemMetadata.mAuthor = videoOwner.getVideoAuthor();
-        mediaItemMetadata.mChannelId = videoOwner.getChannelId();
-        Boolean subscribed = videoOwner.isSubscribed();
-        mediaItemMetadata.mSubscribed = subscribed != null && subscribed;
+        if (videoOwner != null) {
+            mediaItemMetadata.mAuthor = videoOwner.getVideoAuthor();
+            mediaItemMetadata.mChannelId = videoOwner.getChannelId();
+            Boolean subscribed = videoOwner.isSubscribed();
+            mediaItemMetadata.mIsSubscribed = subscribed != null && subscribed;
+        }
+
+        if (videoMetadata != null) {
+            String author = mediaItemMetadata.mAuthor != null ? mediaItemMetadata.mAuthor : videoMetadata.getByLine();
+            String publishedTime = videoMetadata.getPublishedTime() != null ? videoMetadata.getPublishedTime() : videoMetadata.getAlbumName();
+            mediaItemMetadata.mTitle = videoMetadata.getTitle();
+            mediaItemMetadata.mDescription = YouTubeMediaServiceHelper.createDescription(
+                    author, publishedTime,
+                    videoMetadata.getShortViewCount(),
+                    videoMetadata.isLive() ? "LIVE" : "");
+            mediaItemMetadata.mDescriptionAlt = YouTubeMediaServiceHelper.createDescription(
+                    author,
+                    videoMetadata.getPublishedDate(),
+                    videoMetadata.getShortViewCount(),
+                    videoMetadata.isLive() ? "LIVE" : "");
+            mediaItemMetadata.mMediaId = videoMetadata.getVideoId();
+            mediaItemMetadata.mFullDescription = videoMetadata.getDescription();
+            mediaItemMetadata.mDislikesCount = videoMetadata.getDislikesCount();
+            mediaItemMetadata.mLikesCount = videoMetadata.getLikesCount();
+            mediaItemMetadata.mViewCount = videoMetadata.getViewCount();
+            mediaItemMetadata.mPercentWatched = videoMetadata.getPercentWatched();
+            mediaItemMetadata.mPublishedDate = videoMetadata.getPublishedDate();
+            mediaItemMetadata.mIsLive = videoMetadata.isLive();
+            mediaItemMetadata.mIsUpcoming = videoMetadata.isUpcoming();
+
+            String likeStatus = videoMetadata.getLikeStatus();
+
+            if (likeStatus != null) {
+                switch (likeStatus) {
+                    case VideoMetadata.LIKE_STATUS_LIKE:
+                        mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_LIKE;
+                        break;
+                    case VideoMetadata.LIKE_STATUS_DISLIKE:
+                        mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_DISLIKE;
+                        break;
+                }
+            }
+        }
 
         mediaItemMetadata.mNextVideo = YouTubeMediaItem.from(watchNextResult.getNextVideo());
-
-        switch (videoMetadata.getLikeStatus()) {
-            case VideoMetadata.LIKE_STATUS_LIKE:
-                mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_LIKE;
-                break;
-            case VideoMetadata.LIKE_STATUS_DISLIKE:
-                mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_DISLIKE;
-                break;
-        }
 
         List<SuggestedSection> suggestedSections = watchNextResult.getSuggestedSections();
 
@@ -100,6 +110,27 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
                 }
 
                 mediaItemMetadata.mSuggestions.add(YouTubeMediaGroup.from(section));
+            }
+        }
+
+        ButtonStates buttonStates = watchNextResult.getButtonStates();
+
+        // Alt path to get like/subscribe status (when no such info in metadata section, e.g. YouTube Music items)
+        if (buttonStates != null) {
+            if (buttonStates.isSubscribeToggled() != null) {
+                mediaItemMetadata.mIsSubscribed = buttonStates.isSubscribeToggled();
+            }
+
+            if (buttonStates.isLikeToggled() != null && buttonStates.isLikeToggled()) {
+                mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_LIKE;
+            }
+
+            if (buttonStates.isDislikeToggled() != null && buttonStates.isDislikeToggled()) {
+                mediaItemMetadata.mLikeStatus = MediaItemMetadata.LIKE_STATUS_DISLIKE;
+            }
+
+            if (buttonStates.getChannelId() != null) {
+                mediaItemMetadata.mChannelId = buttonStates.getChannelId();
             }
         }
 
@@ -153,7 +184,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
 
     @Override
     public boolean isSubscribed() {
-        return mSubscribed;
+        return mIsSubscribed;
     }
 
     @Override

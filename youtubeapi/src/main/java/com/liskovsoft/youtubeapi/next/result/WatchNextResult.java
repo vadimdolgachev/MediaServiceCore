@@ -2,6 +2,7 @@ package com.liskovsoft.youtubeapi.next.result;
 
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
+import com.liskovsoft.youtubeapi.next.models.ButtonStates;
 import com.liskovsoft.youtubeapi.next.models.VideoMetadata;
 import com.liskovsoft.youtubeapi.next.models.NextVideo;
 import com.liskovsoft.youtubeapi.next.models.Playlist;
@@ -16,7 +17,8 @@ public class WatchNextResult {
      */
     @JsonPath("$.contents.singleColumnWatchNextResults.pivot.pivot.contents[*].shelfRenderer")
     private List<SuggestedSection> mSuggestedSections;
-    @JsonPath("$.contents.singleColumnWatchNextResults.results.results.contents[0].itemSectionRenderer.contents[0].videoMetadataRenderer")
+    @JsonPath({"$.contents.singleColumnWatchNextResults.results.results.contents[0].itemSectionRenderer.contents[0].videoMetadataRenderer",
+               "$.contents.singleColumnWatchNextResults.results.results.contents[0].itemSectionRenderer.contents[0].musicWatchMetadataRenderer"}) // youtube music format
     private VideoMetadata mVideoMetadata;
     @JsonPath("$.contents.singleColumnWatchNextResults.results.results.contents[0].itemSectionRenderer.contents[0].videoMetadataRenderer.owner.videoOwnerRenderer")
     private VideoOwner mVideoOwner;
@@ -27,6 +29,8 @@ public class WatchNextResult {
     private Playlist mPlaylist;
     @JsonPath("$.contents.singleColumnWatchNextResults.autoplay.autoplay.replayVideoRenderer")
     private ItemWrapper mReplayItem;
+    @JsonPath("$.transportControls.transportControlsRenderer")
+    private ButtonStates mButtonStates;
 
     public List<SuggestedSection> getSuggestedSections() {
         return mSuggestedSections;
@@ -54,5 +58,9 @@ public class WatchNextResult {
      */
     public ItemWrapper getReplayItem() {
         return mReplayItem;
+    }
+
+    public ButtonStates getButtonStates() {
+        return mButtonStates;
     }
 }
