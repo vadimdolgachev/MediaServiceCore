@@ -1,6 +1,7 @@
 package com.liskovsoft.youtubeapi.service.data;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
@@ -13,6 +14,7 @@ import com.liskovsoft.youtubeapi.common.models.items.PlaylistItem;
 import com.liskovsoft.youtubeapi.common.models.items.RadioItem;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
 import com.liskovsoft.youtubeapi.next.models.NextVideo;
+import com.liskovsoft.youtubeapi.search.models.V2.TitleItem;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper;
 
 public class YouTubeMediaItem implements MediaItem {
@@ -76,6 +78,44 @@ public class YouTubeMediaItem implements MediaItem {
         }
 
         return null;
+    }
+
+    public static YouTubeMediaItem from(TitleItem item) {
+        YouTubeMediaItem video = new YouTubeMediaItem();
+
+        video.mMediaItemType = MediaItem.TYPE_SEARCH_TITLE;
+
+        video.mTitle = item.getTitle();
+        video.mDescription = YouTubeMediaServiceHelper.createDescription(
+                item.getDescBadgeText(), // Mostly it's a 4K label
+                item.getUserName(),
+                item.getPublishedTime(),
+                item.getViewCountText(),
+                item.getUpcomingEventText());
+        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
+        video.mCardImageUrl = highResThumbnailUrl;
+        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mProductionDate = item.getPublishedTime();
+        video.mVideoId = item.getVideoId();
+        video.mPlaylistId = item.getPlaylistId();
+        video.mPlaylistIndex = item.getPlaylistIndex();
+        video.mChannelId = item.getChannelId();
+        video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
+        video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
+        // TODO: time conversion doesn't take into account locale's specific delimiters
+        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
+        video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
+        video.mPercentWatched = item.getPercentWatched();
+        video.mAuthor = item.getUserName();
+        video.mVideoPreviewUrl = item.getRichThumbnailUrl();
+        video.mIsLive = item.isLive();
+        video.mIsUpcoming = item.isUpcoming();
+        video.mFeedbackToken = item.getFeedbackToken();
+        video.mClickTrackingParams = item.getClickTrackingParams();
+
+        addCommonProps(video);
+
+        return video;
     }
 
     public static YouTubeMediaItem from(VideoItem item) {
@@ -473,5 +513,33 @@ public class YouTubeMediaItem implements MediaItem {
         mediaItem.mChannelId = Helpers.parseStr(split[6]);
 
         return mediaItem;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj instanceof YouTubeMediaItem) {
+            if (mVideoId != null) {
+                return mVideoId.equals(((YouTubeMediaItem) obj).mVideoId);
+            }
+
+            if (mPlaylistId != null) {
+                return mPlaylistId.equals(((YouTubeMediaItem) obj).mPlaylistId);
+            }
+
+            if (mChannelId != null) {
+                return mChannelId.equals(((YouTubeMediaItem) obj).mChannelId);
+            }
+
+            if (mReloadPageKey != null) {
+                return mReloadPageKey.equals(((YouTubeMediaItem) obj).mReloadPageKey);
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Helpers.hashCode(mVideoId, mPlaylistId, mChannelId, mReloadPageKey);
     }
 }

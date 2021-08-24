@@ -42,6 +42,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private boolean mIsUnplayable;
     private String mPlayabilityStatus;
     private boolean mIsAgeRestricted;
+    private final long mCreatedTimeMs;
+
+    public YouTubeMediaItemFormatInfo() {
+        mCreatedTimeMs = System.currentTimeMillis();
+    }
 
     public static YouTubeMediaItemFormatInfo from(VideoInfo videoInfo) {
         if (videoInfo == null) {
@@ -85,7 +90,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mEventId = videoInfo.getEventId();
         formatInfo.mVisitorMonitoringData = videoInfo.getVisitorMonitoringData();
         formatInfo.mStoryboardSpec = videoInfo.getStoryboardSpec();
-        formatInfo.mIsUnplayable = videoInfo.isUnplayable();
+        formatInfo.mIsUnplayable = videoInfo.isUnplayable() || videoInfo.isAgeRestricted();
         formatInfo.mPlayabilityStatus = videoInfo.getPlayabilityStatus();
         formatInfo.mIsStreamSeekable = videoInfo.isHfr();
         formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
@@ -312,5 +317,9 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     public boolean isAgeRestricted() {
         return mIsAgeRestricted;
+    }
+
+    public boolean isStale() {
+        return System.currentTimeMillis() - mCreatedTimeMs > 30_000;
     }
 }
