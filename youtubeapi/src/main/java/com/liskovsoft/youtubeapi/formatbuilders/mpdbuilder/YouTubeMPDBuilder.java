@@ -386,7 +386,8 @@ public class YouTubeMPDBuilder implements MPDBuilder {
             return MIME_MP4_AUDIO;
         }
 
-        if (codecs.startsWith("avc")) {
+        if (codecs.startsWith("avc") ||
+                codecs.startsWith("av01")) {
             return MIME_MP4_VIDEO;
         }
 
