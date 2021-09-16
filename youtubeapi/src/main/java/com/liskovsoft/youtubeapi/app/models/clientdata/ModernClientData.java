@@ -8,16 +8,10 @@ import com.liskovsoft.youtubeapi.common.converters.regexp.RegExp;
  * We're using the first one.
  */
 public class ModernClientData implements ClientData {
-    @RegExp({
-            "var [$\\w]+=\"([-\\w]+\\.apps\\.googleusercontent\\.com)\",\\n?[$\\w]+=\"\\w+\"",
-            "\"([-\\w]+\\.apps\\.googleusercontent\\.com)\",[$\\w]+=\"\\w+\""
-    })
+    @RegExp("\"([-\\w]+\\.apps\\.googleusercontent\\.com)\",[$\\w]+=\"\\w+\"")
     private String mClientId;
 
-    @RegExp({
-            "var [$\\w]+=\"[-\\w]+\\.apps\\.googleusercontent\\.com\",\\n?[$\\w]+=\"(\\w+)\"",
-            "\"[-\\w]+\\.apps\\.googleusercontent\\.com\",[$\\w]+=\"(\\w+)\""
-    })
+    @RegExp("\"[-\\w]+\\.apps\\.googleusercontent\\.com\",[$\\w]+=\"(\\w+)\"")
     private String mClientSecret;
 
     @Override

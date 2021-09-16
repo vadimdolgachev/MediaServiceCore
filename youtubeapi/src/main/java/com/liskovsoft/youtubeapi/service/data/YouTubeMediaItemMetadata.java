@@ -5,12 +5,11 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
-import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
-import com.liskovsoft.youtubeapi.next.v1.models.ButtonStates;
-import com.liskovsoft.youtubeapi.next.v1.models.SuggestedSection;
-import com.liskovsoft.youtubeapi.next.v1.models.VideoMetadata;
-import com.liskovsoft.youtubeapi.next.v1.models.VideoOwner;
-import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResult;
+import com.liskovsoft.youtubeapi.next.models.ButtonStates;
+import com.liskovsoft.youtubeapi.next.models.SuggestedSection;
+import com.liskovsoft.youtubeapi.next.models.VideoMetadata;
+import com.liskovsoft.youtubeapi.next.models.VideoOwner;
+import com.liskovsoft.youtubeapi.next.result.WatchNextResult;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper;
 
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private String mPublishedDate;
     private boolean mIsSubscribed;
     private int mLikeStatus;
-    private String mVideoId;
+    private String mMediaId;
     private String mChannelId;
     private int mPercentWatched;
     private MediaItem mNextVideo;
@@ -46,28 +45,9 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
 
         VideoMetadata videoMetadata = watchNextResult.getVideoMetadata();
         VideoOwner videoOwner = watchNextResult.getVideoOwner();
-        VideoItem videoDetails = watchNextResult.getVideoDetails();
 
-        if (videoMetadata == null && videoOwner == null && videoDetails == null) {
+        if (videoMetadata == null || videoOwner == null) {
             Log.e(TAG, "Oops. Next format has been changed. Please upgrade parser.");
-        }
-
-        if (videoDetails != null) {
-            mediaItemMetadata.mAuthor = videoDetails.getUserName();
-            mediaItemMetadata.mChannelId = videoDetails.getChannelId();
-            mediaItemMetadata.mTitle = videoDetails.getTitle();
-            mediaItemMetadata.mVideoId = videoDetails.getVideoId();
-            mediaItemMetadata.mPublishedDate = videoDetails.getPublishedDate();
-
-            mediaItemMetadata.mDescription = YouTubeMediaServiceHelper.createDescription(
-                    mediaItemMetadata.mAuthor, videoDetails.getPublishedDate(),
-                    videoDetails.getViewCountText(),
-                    videoDetails.isLive() ? "LIVE" : "");
-            mediaItemMetadata.mDescriptionAlt = YouTubeMediaServiceHelper.createDescription(
-                    mediaItemMetadata.mAuthor,
-                    videoDetails.getPublishedDate(),
-                    videoDetails.getShortViewCountText(),
-                    videoDetails.isLive() ? "LIVE" : "");
         }
 
         if (videoOwner != null) {
@@ -90,7 +70,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
                     videoMetadata.getPublishedDate(),
                     videoMetadata.getShortViewCount(),
                     videoMetadata.isLive() ? "LIVE" : "");
-            mediaItemMetadata.mVideoId = videoMetadata.getVideoId();
+            mediaItemMetadata.mMediaId = videoMetadata.getVideoId();
             mediaItemMetadata.mFullDescription = videoMetadata.getDescription();
             mediaItemMetadata.mDislikesCount = videoMetadata.getDislikesCount();
             mediaItemMetadata.mLikesCount = videoMetadata.getLikesCount();
@@ -193,8 +173,8 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     }
 
     @Override
-    public String getVideoId() {
-        return mVideoId;
+    public String getMediaId() {
+        return mMediaId;
     }
 
     @Override

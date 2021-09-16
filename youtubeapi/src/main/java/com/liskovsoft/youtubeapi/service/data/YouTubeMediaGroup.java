@@ -13,11 +13,11 @@ import com.liskovsoft.youtubeapi.common.models.items.MusicItem;
 import com.liskovsoft.youtubeapi.common.models.items.PlaylistItem;
 import com.liskovsoft.youtubeapi.common.models.items.RadioItem;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
-import com.liskovsoft.youtubeapi.next.v1.models.SuggestedSection;
-import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResultContinuation;
+import com.liskovsoft.youtubeapi.next.models.SuggestedSection;
+import com.liskovsoft.youtubeapi.next.result.WatchNextResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
-import com.liskovsoft.youtubeapi.common.models.V2.TileItem;
+import com.liskovsoft.youtubeapi.search.models.V2.TitleItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +120,7 @@ public class YouTubeMediaGroup implements MediaGroup {
             return null;
         }
 
-        return create((YouTubeMediaGroup) baseGroup, nextSearchResult.getTitleItems(), nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
+        return create((YouTubeMediaGroup) baseGroup, null, nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
                 nextSearchResult.getChannelItems(), nextSearchResult.getRadioItems(), nextSearchResult.getPlaylistItems(), nextSearchResult.getNextPageKey());
     }
 
@@ -174,6 +174,11 @@ public class YouTubeMediaGroup implements MediaGroup {
     @Override
     public List<MediaItem> getMediaItems() {
         return mMediaItems;
+    }
+
+    @Override
+    public void setMediaItems(List<MediaItem> items) {
+        mMediaItems = items;
     }
 
     @Override
@@ -258,7 +263,7 @@ public class YouTubeMediaGroup implements MediaGroup {
 
     private static YouTubeMediaGroup create(
             YouTubeMediaGroup baseGroup,
-            List<TileItem> titleItems,
+            List<TitleItem> titleItems,
             List<VideoItem> videoItems,
             List<MusicItem> musicItems,
             List<ChannelItem> channelItems,
@@ -269,7 +274,7 @@ public class YouTubeMediaGroup implements MediaGroup {
         ArrayList<MediaItem> mediaItems = new ArrayList<>();
 
         if (titleItems != null) {
-            for (TileItem item : titleItems) {
+            for (TitleItem item : titleItems) {
                 mediaItems.add(YouTubeMediaItem.from(item));
             }
         }

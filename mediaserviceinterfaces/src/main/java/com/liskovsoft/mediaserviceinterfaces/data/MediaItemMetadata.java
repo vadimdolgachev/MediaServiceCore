@@ -14,7 +14,7 @@ public interface MediaItemMetadata {
     String getLikesCount();
     String getDislikesCount();
     String getPublishedDate();
-    String getVideoId();
+    String getMediaId();
     MediaItem getNextVideo();
     boolean isSubscribed();
     boolean isLive();

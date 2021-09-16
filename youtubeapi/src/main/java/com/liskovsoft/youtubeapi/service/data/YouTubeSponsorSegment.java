@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class YouTubeSponsorSegment implements SponsorSegment {
-    private long mStartMs;
-    private long mEndMs;
+    private long mStart;
+    private long mEnd;
     private String mCategory;
 
     public static List<SponsorSegment> from(SegmentList segmentList) {
@@ -21,8 +21,8 @@ public class YouTubeSponsorSegment implements SponsorSegment {
 
         for (Segment segment : segmentList.getSegments()) {
             YouTubeSponsorSegment sponsorSegment = new YouTubeSponsorSegment();
-            sponsorSegment.mStartMs = (long) (segment.getStart() * 1_000);
-            sponsorSegment.mEndMs = (long) (segment.getEnd() * 1_000);
+            sponsorSegment.mStart = (long) (segment.getStart() * 1_000);
+            sponsorSegment.mEnd = (long) (segment.getEnd() * 1_000);
             sponsorSegment.mCategory = segment.getCategory();
             result.add(sponsorSegment);
         }
@@ -32,12 +32,12 @@ public class YouTubeSponsorSegment implements SponsorSegment {
 
     @Override
     public long getStartMs() {
-        return mStartMs;
+        return mStart;
     }
 
     @Override
     public long getEndMs() {
-        return mEndMs;
+        return mEnd;
     }
 
     @Override

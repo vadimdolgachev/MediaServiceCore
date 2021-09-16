@@ -1,5 +1,4 @@
 apply from: '../../SharedModules/constants.gradle'
-apply plugin: 'kotlin-android'
 apply plugin: 'com.android.library'
 
 android {
@@ -59,9 +58,7 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
     implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
 
-    implementation('com.itkacher.okhttpprofiler:okhttpprofiler:' + okhttpProfilerVersion) {
-        exclude group: 'com.squareup.okhttp3', module: 'okhttp' // force global okhttp version
-    }
+    implementation 'com.itkacher.okhttpprofiler:okhttpprofiler:' + okhttpProfilerVersion
     implementation 'com.squareup.okhttp3:logging-interceptor:' + okhttpLoggerVersion
     //implementation 'com.squareup.okio:okio:' + okioVersion
 
@@ -72,8 +69,4 @@ dependencies {
     // implementation 'app.cash.quickjs:quickjs-android:' + quickjsVersion
     implementation 'com.squareup.duktape:duktape-android:' + duktapeVersion
     //implementation(name: 'duktape-android-1.3.0-my', ext: 'aar')
-
-    // Add kotlin support libs
-    implementation 'androidx.core:core-ktx:' + kotlinCoreVersion
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:' + kotlinVersion
 }

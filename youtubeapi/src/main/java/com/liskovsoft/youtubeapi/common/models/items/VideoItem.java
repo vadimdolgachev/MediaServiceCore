@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.items;
 
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
-import com.liskovsoft.youtubeapi.common.models.V2.TextItem;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
 import java.util.List;
 
@@ -24,10 +24,10 @@ public class VideoItem {
     private List<Thumbnail> mThumbnails;
     @JsonPath("$.channelThumbnail.thumbnails[0]")
     private String mChannelThumbnail;
-    @JsonPath("$.title")
-    private TextItem mTitle;
-    @JsonPath({"$.shortBylineText", "$.shortBylineText", "$.longBylineText"})
-    private TextItem mUserName;
+    @JsonPath({"$.title.simpleText", "$.title.runs[0].text"})
+    private String mTitle;
+    @JsonPath({"$.shortBylineText.simpleText", "$.shortBylineText.runs[0].text", "$.longBylineText.runs[0].text"})
+    private String mUserName;
     @JsonPath({"$.shortBylineText.runs[0].navigationEndpoint.browseEndpoint.browseId",
                "$.longBylineText.runs[0].navigationEndpoint.browseEndpoint.browseId"})
     private String mChannelId;
@@ -40,18 +40,22 @@ public class VideoItem {
     private String mCanonicalChannelUrl;
     @JsonPath({"$.publishedTimeText.simpleText", "$.publishedTimeText.runs[0].text"})
     private String mPublishedTime;
-    @JsonPath("$.viewCountText")
-    private TextItem mViewCountText;
-    @JsonPath("$.shortViewCountText")
-    private TextItem mShortViewCountText;
-    @JsonPath("$.lengthText")
-    private TextItem mLengthText;
+    @JsonPath({"$.viewCountText.simpleText", "$.viewCountText.runs[0].text"})
+    private String mViewCountText1;
+    @JsonPath("$.viewCountText.runs[1].text")
+    private String mViewCountText2;
+    @JsonPath({"$.shortViewCountText.simpleText", "$.shortViewCountText.runs[0].text"})
+    private String mShortViewCountText1;
+    @JsonPath("$.shortViewCountText.runs[1].text")
+    private String mShortViewCountText2;
+    @JsonPath({"$.lengthText.simpleText", "$.lengthText.runs[0].text"})
+    private String mLengthText;
     @JsonPath("$.lengthText.accessibility.accessibilityData.label")
     private String mLengthTextLong;
-    @JsonPath({"$.thumbnailOverlays[0].thumbnailOverlayTimeStatusRenderer.text",
-               "$.badges[0].liveBadge.label",
-               "$.badges[0].upcomingEventBadge.label"})
-    private TextItem mBadgeText;
+    @JsonPath({"$.thumbnailOverlays[0].thumbnailOverlayTimeStatusRenderer.text.simpleText",
+               "$.badges[0].liveBadge.label.runs[0].text",
+               "$.badges[0].upcomingEventBadge.label.simpleText"})
+    private String mBadgeText;
     @JsonPath("$.badges[0].metadataBadgeRenderer.label")
     private String mDescBadgeText;
     // Sometimes live video contains percent watched as first item
@@ -62,8 +66,10 @@ public class VideoItem {
     private String mTrackingParams;
     @JsonPath("$.thumbnailOverlays[0].thumbnailOverlayResumePlaybackRenderer.percentDurationWatched")
     private int mPercentWatched = -1;
-    @JsonPath("$.upcomingEventData.upcomingEventText")
-    private TextItem mUpcomingEventText;
+    @JsonPath("$.upcomingEventData.upcomingEventText.runs[0].text")
+    private String mUpcomingEventText1;
+    @JsonPath("$.upcomingEventData.upcomingEventText.runs[1].text")
+    private String mUpcomingEventText2;
     @JsonPath("$.upcomingEventData.startTime")
     private String mUpcomingEventStartTime;
     @JsonPath("$.richThumbnail.movingThumbnailRenderer.movingThumbnailDetails.thumbnails[0].url")
@@ -90,11 +96,11 @@ public class VideoItem {
     }
 
     public String getTitle() {
-        return mTitle != null ? mTitle.getText() : null;
+        return mTitle;
     }
 
     public String getUserName() {
-        return mUserName != null ? mUserName.getText() : null;
+        return mUserName;
     }
 
     public String getChannelId() {
@@ -105,20 +111,20 @@ public class VideoItem {
         return mCanonicalChannelUrl;
     }
 
-    public String getPublishedDate() {
+    public String getPublishedTime() {
         return mPublishedTime;
     }
 
     public String getViewCountText() {
-        return mViewCountText != null ? mViewCountText.getText() : null;
+        return ServiceHelper.combineText(mViewCountText1, mViewCountText2);
     }
 
     public String getShortViewCountText() {
-        return mShortViewCountText != null ? mShortViewCountText.getText() : null;
+        return ServiceHelper.combineText(mShortViewCountText1, mShortViewCountText2);
     }
 
     public String getLengthText() {
-        return mLengthText != null ? mLengthText.getText() : null;
+        return mLengthText;
     }
 
     public String getLengthTextLong() {
@@ -146,7 +152,7 @@ public class VideoItem {
     }
 
     public String getBadgeText() {
-        return mBadgeText != null ? mBadgeText.getText() : null;
+        return mBadgeText;
     }
 
     /**
@@ -160,7 +166,7 @@ public class VideoItem {
      * Example: Premieres 10/8/20, 1:00 AM
      */
     public String getUpcomingEventText() {
-        return mUpcomingEventText != null ? mUpcomingEventText.getText() : null;
+        return ServiceHelper.combineText(mUpcomingEventText1, mUpcomingEventText2);
     }
 
     /**
