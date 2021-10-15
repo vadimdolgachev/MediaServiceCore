@@ -191,6 +191,14 @@ public class YouTubeMediaGroup implements MediaGroup {
         return mType;
     }
 
+    /**
+     * TODO: create unique id by reload page key
+     */
+    @Override
+    public int getId() {
+        return mTitle != null ? mTitle.hashCode() : hashCode();
+    }
+
     @Override
     public String getChannelId() {
         return mChannelId;
@@ -228,9 +236,8 @@ public class YouTubeMediaGroup implements MediaGroup {
             }
         }
 
-        if (!mediaItems.isEmpty()) {
-            baseGroup.mMediaItems = mediaItems;
-        }
+        // Fix duplicated items after previous group reuse
+        baseGroup.mMediaItems = !mediaItems.isEmpty() ? mediaItems : null;
 
         return baseGroup;
     }
@@ -242,15 +249,15 @@ public class YouTubeMediaGroup implements MediaGroup {
             for (int i = 0; i < items.size(); i++) {
                 ItemWrapper item = items.get(i);
                 YouTubeMediaItem mediaItem = YouTubeMediaItem.from(item, i);
-                mediaItem.setPlaylistParams(baseGroup.mPlaylistParams);
-                mediaItems.add(mediaItem);
+                if (mediaItem != null) {
+                    mediaItem.setPlaylistParams(baseGroup.mPlaylistParams);
+                    mediaItems.add(mediaItem);
+                }
             }
         }
 
-        if (!mediaItems.isEmpty()) {
-            baseGroup.mMediaItems = mediaItems;
-        }
-
+        // Fix duplicated items after previous group reuse
+        baseGroup.mMediaItems = !mediaItems.isEmpty() ? mediaItems : null;
         baseGroup.mNextPageKey = nextPageKey;
 
         return baseGroup;
@@ -304,10 +311,8 @@ public class YouTubeMediaGroup implements MediaGroup {
             }
         }
 
-        if (!mediaItems.isEmpty()) {
-            baseGroup.mMediaItems = mediaItems;
-        }
-
+        // Fix duplicated items after previous group reuse
+        baseGroup.mMediaItems = !mediaItems.isEmpty() ? mediaItems : null;
         baseGroup.mNextPageKey = nextPageKey;
 
         return baseGroup;

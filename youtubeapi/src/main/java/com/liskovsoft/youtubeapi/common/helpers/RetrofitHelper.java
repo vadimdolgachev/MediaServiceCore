@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.liskovsoft.sharedutils.okhttp.OkHttpCommons;
 import com.liskovsoft.youtubeapi.BuildConfig;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.common.converters.gson.GsonConverterFactory;
@@ -16,28 +17,23 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
-
-import okhttp3.CipherSuite;
-import okhttp3.ConnectionPool;
-import okhttp3.ConnectionSpec;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
-import okhttp3.TlsVersion;
+import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Converter;
 import retrofit2.Retrofit;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class RetrofitHelper {
     // Ignored when specified url is absolute
     private static final String DEFAULT_BASE_URL = "https://www.youtube.com";
-    // Default timeout 10 sec
-    private static final long TIMEOUT_SEC = 30;
     public static boolean sForceEnableProfiler;
 
     public static <T> T withGson(Class<T> clazz) {
@@ -100,13 +96,15 @@ public class RetrofitHelper {
 
         return retrofitBuilder;
     }
-    
+
     public static OkHttpClient createOkHttpClient() {
         OkHttpClient.Builder okBuilder = new OkHttpClient.Builder();
 
         //disableCache(okBuilder);
 
-        setupConnectionParams(okBuilder);
+        OkHttpCommons.setupConnectionFix(okBuilder);
+
+        OkHttpCommons.setupConnectionParams(okBuilder);
 
         addCommonHeaders(okBuilder);
 
@@ -129,20 +127,6 @@ public class RetrofitHelper {
     private static void disableCache(OkHttpClient.Builder okBuilder) {
         // Disable cache (could help with dlfree error on Eltex)
         okBuilder.cache(null);
-    }
-
-    /**
-     * https://stackoverflow.com/questions/39219094/sockettimeoutexception-in-retrofit<br/>
-     * https://stackoverflow.com/questions/63047533/connection-pool-okhttp
-     */
-    private static void setupConnectionParams(OkHttpClient.Builder okBuilder) {
-        // Default timeout 10 sec
-        okBuilder.connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-        okBuilder.readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-        okBuilder.writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-        // Decrease timout to imitate connection 'keepAlive' = false
-        okBuilder.connectionPool(new ConnectionPool(10, TIMEOUT_SEC, TimeUnit.SECONDS));
-        //okBuilder.protocols(listOf(Protocol.HTTP_1_1));
     }
 
     private static void addCommonHeaders(OkHttpClient.Builder builder) {
@@ -194,5 +178,29 @@ public class RetrofitHelper {
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         okBuilder.addInterceptor(logging);
+    }
+
+    /**
+     * Usage: <code>OkHttpClient newClient = wrapDns(client)</code><br/>
+     * https://github.com/square/okhttp/blob/master/okhttp-dnsoverhttps/src/test/java/okhttp3/dnsoverhttps/DohProviders.java
+     */
+    private static OkHttpClient wrapDns(OkHttpClient client) {
+        return client.newBuilder().dns(buildGoogle(client)).build();
+    }
+
+    private static DnsOverHttps buildGoogle(OkHttpClient bootstrapClient) {
+        return new DnsOverHttps.Builder().client(bootstrapClient)
+                .url(HttpUrl.get("https://dns.google/dns-query"))
+                .bootstrapDnsHosts(getByIp("8.8.4.4"), getByIp("8.8.8.8"))
+                .build();
+    }
+
+    private static InetAddress getByIp(String host) {
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            // unlikely
+            throw new RuntimeException(e);
+        }
     }
 }
