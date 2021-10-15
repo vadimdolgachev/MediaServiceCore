@@ -17,10 +17,14 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
+
+import okhttp3.CipherSuite;
+import okhttp3.ConnectionSpec;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
+import okhttp3.TlsVersion;
 import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -30,6 +34,7 @@ import retrofit2.Retrofit;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 
 public class RetrofitHelper {
     // Ignored when specified url is absolute
