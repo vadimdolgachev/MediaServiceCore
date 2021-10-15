@@ -18,6 +18,7 @@ import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConver
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
 
 import okhttp3.CipherSuite;
+import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
