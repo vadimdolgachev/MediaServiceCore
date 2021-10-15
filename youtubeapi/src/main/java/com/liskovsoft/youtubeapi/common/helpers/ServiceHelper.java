@@ -55,33 +55,39 @@ public class ServiceHelper {
         return (int) (TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes) + TimeUnit.SECONDS.toMillis(seconds));
     }
 
-    public static String itemsToDescription(String... items) {
-        return combineItems(items, DESCRIPTION_DIVIDER);
-    }
-
-    public static String combineText(String... items) {
-        return combineItems(items, null);
-    }
-
     public static String createQuery(String template) {
         LocaleManager localeManager = LocaleManager.instance();
         return String.format(AppConstants.JSON_POST_DATA_TEMPLATE_TV,
                 localeManager.getCountry(), localeManager.getLanguage(), localeManager.getUtcOffsetMinutes(), template);
     }
 
-    private static String combineItems(String[] items, String divider) {
+    public static String itemsToDescription(Object... items) {
+        return combineItems(items, DESCRIPTION_DIVIDER);
+    }
+
+    public static String combineText(Object... items) {
+        return combineItems(items, null);
+    }
+
+    public static String combineItems(Object[] items, String divider) {
         StringBuilder result = new StringBuilder();
 
         if (items != null) {
-            for (String item : items) {
-                if (item == null || item.isEmpty()) {
+            for (Object item : items) {
+                if (item == null) {
+                    continue;
+                }
+
+                String strItem = item.toString();
+
+                if (strItem == null || strItem.isEmpty()) {
                     continue;
                 }
 
                 if (divider == null || result.length() == 0) {
-                    result.append(item);
+                    result.append(strItem);
                 } else {
-                    result.append(divider).append(item);
+                    result.append(divider).append(strItem);
                 }
             }
         }
