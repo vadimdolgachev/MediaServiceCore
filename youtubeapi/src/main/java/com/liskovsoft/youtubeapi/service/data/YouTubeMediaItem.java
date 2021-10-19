@@ -13,8 +13,8 @@ import com.liskovsoft.youtubeapi.common.models.items.MusicItem;
 import com.liskovsoft.youtubeapi.common.models.items.PlaylistItem;
 import com.liskovsoft.youtubeapi.common.models.items.RadioItem;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
-import com.liskovsoft.youtubeapi.next.models.NextVideo;
-import com.liskovsoft.youtubeapi.search.models.V2.TitleItem;
+import com.liskovsoft.youtubeapi.next.v1.models.NextVideo;
+import com.liskovsoft.youtubeapi.common.models.V2.TileItem;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper;
 
 public class YouTubeMediaItem implements MediaItem {
@@ -75,15 +75,17 @@ public class YouTubeMediaItem implements MediaItem {
             return from(item.getPlaylistItem());
         } else if (item.getRadioItem() != null) {
             return from(item.getRadioItem());
+        } else if (item.getTitleItem() != null) {
+            return from(item.getTitleItem());
         }
 
         return null;
     }
 
-    public static YouTubeMediaItem from(TitleItem item) {
+    public static YouTubeMediaItem from(TileItem item) {
         YouTubeMediaItem video = new YouTubeMediaItem();
 
-        video.mMediaItemType = MediaItem.TYPE_SEARCH_TITLE;
+        video.mMediaItemType = MediaItem.TYPE_TILE;
 
         video.mTitle = item.getTitle();
         video.mDescription = YouTubeMediaServiceHelper.createDescription(
@@ -126,13 +128,13 @@ public class YouTubeMediaItem implements MediaItem {
         video.mDescription = YouTubeMediaServiceHelper.createDescription(
                 item.getDescBadgeText(), // Mostly it's a 4K label
                 item.getUserName(),
-                item.getPublishedTime(),
+                item.getPublishedDate(),
                 item.getShortViewCountText() != null ? item.getShortViewCountText() : item.getViewCountText(),
                 item.getUpcomingEventText());
         String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mCardImageUrl = highResThumbnailUrl;
         video.mBackgroundImageUrl = highResThumbnailUrl;
-        video.mProductionDate = item.getPublishedTime();
+        video.mProductionDate = item.getPublishedDate();
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
         video.mPlaylistIndex = item.getPlaylistIndex();

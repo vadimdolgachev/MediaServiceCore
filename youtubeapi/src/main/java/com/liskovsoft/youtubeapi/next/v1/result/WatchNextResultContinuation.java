@@ -1,8 +1,7 @@
-package com.liskovsoft.youtubeapi.next.result;
+package com.liskovsoft.youtubeapi.next.v1.result;
 
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
-import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
 
 import java.util.List;
 
@@ -12,6 +11,13 @@ public class WatchNextResultContinuation {
     @JsonPath({"$.continuationContents.horizontalListContinuation.continuations[0].nextContinuationData.continuation",
                "$.continuationContents.horizontalListContinuation.continuations[1].nextContinuationData.continuation"})
     private String mNextPageKey;
+
+    /**
+     * Marker field to avoid json parser empty result warning.<br/>
+     * It appeared when we reached end of the list.<br/>
+     */
+    @JsonPath("$.contents.singleColumnWatchNextResults.results.results.trackingParams")
+    private String mTrackingParams;
 
     public String getNextPageKey() {
         return mNextPageKey;

@@ -6,8 +6,10 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.liskovsoft.sharedutils.okhttp.OkHttpCommons;
 import com.liskovsoft.youtubeapi.BuildConfig;
 import com.liskovsoft.youtubeapi.app.AppConstants;
+import com.liskovsoft.youtubeapi.common.converters.gson.GsonConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.converter.JsonPathConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.converter.JsonPathSkipConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathSkipTypeAdapter;
@@ -15,75 +17,51 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
+
+import okhttp3.CipherSuite;
+import okhttp3.ConnectionSpec;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
+import okhttp3.TlsVersion;
+import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
+import retrofit2.Converter;
 import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
 
 public class RetrofitHelper {
     // Ignored when specified url is absolute
     private static final String DEFAULT_BASE_URL = "https://www.youtube.com";
-    // Default timeout 10 sec
-    private static final long TIMEOUT_SEC = 30;
     public static boolean sForceEnableProfiler;
 
     public static <T> T withGson(Class<T> clazz) {
-        Retrofit.Builder builder = createBuilder();
-
-        Retrofit retrofit = builder
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        return retrofit.create(clazz);
+        return buildRetrofit(GsonConverterFactory.create()).create(clazz);
     }
 
     public static <T> T withJsonPath(Class<T> clazz) {
-        Retrofit.Builder builder = createBuilder();
-
-        Retrofit retrofit = builder
-                .addConverterFactory(JsonPathConverterFactory.create())
-                .build();
-
-        return retrofit.create(clazz);
+        return buildRetrofit(JsonPathConverterFactory.create()).create(clazz);
     }
 
     /**
      * Skips first line of the response
      */
     public static <T> T withJsonPathSkip(Class<T> clazz) {
-        Retrofit.Builder builder = createBuilder();
-
-        Retrofit retrofit = builder
-                .addConverterFactory(JsonPathSkipConverterFactory.create())
-                .build();
-
-        return retrofit.create(clazz);
+        return buildRetrofit(JsonPathSkipConverterFactory.create()).create(clazz);
     }
 
     public static <T> T withQueryString(Class<T> clazz) {
-        Retrofit.Builder builder = createBuilder();
-
-        Retrofit retrofit = builder
-                .addConverterFactory(QueryStringConverterFactory.create())
-                .build();
-
-        return retrofit.create(clazz);
+        return buildRetrofit(QueryStringConverterFactory.create()).create(clazz);
     }
 
     public static <T> T withRegExp(Class<T> clazz) {
-        Retrofit.Builder builder = createBuilder();
-
-        Retrofit retrofit = builder
-                .addConverterFactory(RegExpConverterFactory.create())
-                .build();
-
-        return retrofit.create(clazz);
+        return buildRetrofit(RegExpConverterFactory.create()).create(clazz);
     }
 
     public static <T> T get(Call<T> wrapper) {
@@ -108,6 +86,14 @@ public class RetrofitHelper {
         return new JsonPathSkipTypeAdapter<>(parser, clazz);
     }
 
+    private static Retrofit buildRetrofit(Converter.Factory factory) {
+        Retrofit.Builder builder = createBuilder();
+
+        return builder
+                .addConverterFactory(factory)
+                .build();
+    }
+
     private static Retrofit.Builder createBuilder() {
         Retrofit.Builder retrofitBuilder = new Retrofit.Builder().baseUrl(DEFAULT_BASE_URL);
 
@@ -115,13 +101,15 @@ public class RetrofitHelper {
 
         return retrofitBuilder;
     }
-    
+
     public static OkHttpClient createOkHttpClient() {
         OkHttpClient.Builder okBuilder = new OkHttpClient.Builder();
 
         //disableCache(okBuilder);
 
-        setupTimeout(okBuilder);
+        OkHttpCommons.setupConnectionFix(okBuilder);
+
+        OkHttpCommons.setupConnectionParams(okBuilder);
 
         addCommonHeaders(okBuilder);
 
@@ -129,6 +117,15 @@ public class RetrofitHelper {
 
         debugSetup(okBuilder);
 
+        ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
+                .tlsVersions(TlsVersion.TLS_1_2)
+                .cipherSuites(
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+                )
+                .build();
+        okBuilder.connectionSpecs(Collections.singletonList(cs));
         return okBuilder.build();
     }
 
@@ -137,20 +134,14 @@ public class RetrofitHelper {
         okBuilder.cache(null);
     }
 
-    private static void setupTimeout(OkHttpClient.Builder okBuilder) {
-        // Default timeout 10 sec
-        okBuilder.connectTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-        okBuilder.readTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-        okBuilder.writeTimeout(TIMEOUT_SEC, TimeUnit.SECONDS);
-    }
-
     private static void addCommonHeaders(OkHttpClient.Builder builder) {
         builder.addInterceptor(chain -> {
             Request.Builder requestBuilder = chain.request().newBuilder();
             requestBuilder.header("User-Agent", AppConstants.APP_USER_AGENT);
 
             // Enable compression in production
-            requestBuilder.header("Accept-Encoding", BuildConfig.DEBUG ? "identity" : AppConstants.ACCEPT_ENCODING);
+            requestBuilder.header("Accept-Encoding", BuildConfig.DEBUG ?
+                    AppConstants.ACCEPT_ENCODING_IDENTITY : AppConstants.ACCEPT_ENCODING_DEFAULT);
 
             // Emulate browser request
             //requestBuilder.header("Connection", "keep-alive");
@@ -192,5 +183,29 @@ public class RetrofitHelper {
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(HttpLoggingInterceptor.Level.HEADERS);
         okBuilder.addInterceptor(logging);
+    }
+
+    /**
+     * Usage: <code>OkHttpClient newClient = wrapDns(client)</code><br/>
+     * https://github.com/square/okhttp/blob/master/okhttp-dnsoverhttps/src/test/java/okhttp3/dnsoverhttps/DohProviders.java
+     */
+    private static OkHttpClient wrapDns(OkHttpClient client) {
+        return client.newBuilder().dns(buildGoogle(client)).build();
+    }
+
+    private static DnsOverHttps buildGoogle(OkHttpClient bootstrapClient) {
+        return new DnsOverHttps.Builder().client(bootstrapClient)
+                .url(HttpUrl.get("https://dns.google/dns-query"))
+                .bootstrapDnsHosts(getByIp("8.8.4.4"), getByIp("8.8.8.8"))
+                .build();
+    }
+
+    private static InetAddress getByIp(String host) {
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            // unlikely
+            throw new RuntimeException(e);
+        }
     }
 }

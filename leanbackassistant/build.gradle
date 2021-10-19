@@ -35,6 +35,7 @@ android {
         stbeta {}
         ststable {}
         storig {}
+        stbolshoetv {}
     }
 }
 

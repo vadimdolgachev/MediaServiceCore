@@ -1,13 +1,14 @@
-package com.liskovsoft.youtubeapi.next.result;
+package com.liskovsoft.youtubeapi.next.v1.result;
 
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
-import com.liskovsoft.youtubeapi.next.models.ButtonStates;
-import com.liskovsoft.youtubeapi.next.models.VideoMetadata;
-import com.liskovsoft.youtubeapi.next.models.NextVideo;
-import com.liskovsoft.youtubeapi.next.models.Playlist;
-import com.liskovsoft.youtubeapi.next.models.SuggestedSection;
-import com.liskovsoft.youtubeapi.next.models.VideoOwner;
+import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
+import com.liskovsoft.youtubeapi.next.v1.models.ButtonStates;
+import com.liskovsoft.youtubeapi.next.v1.models.VideoMetadata;
+import com.liskovsoft.youtubeapi.next.v1.models.NextVideo;
+import com.liskovsoft.youtubeapi.next.v1.models.Playlist;
+import com.liskovsoft.youtubeapi.next.v1.models.SuggestedSection;
+import com.liskovsoft.youtubeapi.next.v1.models.VideoOwner;
 
 import java.util.List;
 
@@ -25,6 +26,8 @@ public class WatchNextResult {
     @JsonPath({"$.contents.singleColumnWatchNextResults.autoplay.autoplay.sets[0].nextVideoRenderer.maybeHistoryEndpointRenderer",
                "$.contents.singleColumnWatchNextResults.autoplay.autoplay.sets[0].nextVideoRenderer.autoplayEndpointRenderer"}) // present only on playlist
     private NextVideo mNextVideo;
+    @JsonPath("$.contents.singleColumnWatchNextResults.autoplay.autoplay.sets.replayVideoRenderer.pivotVideoRenderer") // V2
+    private VideoItem mVideoDetails;
     @JsonPath("$.contents.singleColumnWatchNextResults.playlist.playlist")
     private Playlist mPlaylist;
     @JsonPath("$.contents.singleColumnWatchNextResults.autoplay.autoplay.replayVideoRenderer")
@@ -62,5 +65,9 @@ public class WatchNextResult {
 
     public ButtonStates getButtonStates() {
         return mButtonStates;
+    }
+
+    public VideoItem getVideoDetails() {
+        return mVideoDetails;
     }
 }
