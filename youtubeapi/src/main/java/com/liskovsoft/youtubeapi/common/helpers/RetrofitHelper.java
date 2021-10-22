@@ -17,14 +17,10 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
-
-import okhttp3.CipherSuite;
-import okhttp3.ConnectionSpec;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
-import okhttp3.TlsVersion;
 import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -34,7 +30,6 @@ import retrofit2.Retrofit;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
 
 public class RetrofitHelper {
     // Ignored when specified url is absolute
@@ -117,15 +112,6 @@ public class RetrofitHelper {
 
         debugSetup(okBuilder);
 
-        ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
-                .tlsVersions(TlsVersion.TLS_1_2)
-                .cipherSuites(
-                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
-                )
-                .build();
-        okBuilder.connectionSpecs(Collections.singletonList(cs));
         return okBuilder.build();
     }
 
@@ -171,8 +157,8 @@ public class RetrofitHelper {
 
 //            addProfiler(okBuilder);
 
+            addLogger(okBuilder);
         }
-        addLogger(okBuilder);
     }
 
     private static void addProfiler(OkHttpClient.Builder okBuilder) {

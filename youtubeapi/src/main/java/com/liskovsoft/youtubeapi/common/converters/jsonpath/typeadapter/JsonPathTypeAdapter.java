@@ -168,7 +168,7 @@ public class JsonPathTypeAdapter<T> {
                 jsonVal = parser.read(path);
                 break;
             } catch (PathNotFoundException e) {
-                Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
+//                Log.d(TAG, type.getSimpleName() + ": Path not found: " + path);
             }
         }
 
