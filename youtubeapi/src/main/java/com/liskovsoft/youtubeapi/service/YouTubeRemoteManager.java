@@ -13,11 +13,8 @@ import java.io.InterruptedIOException;
 public class YouTubeRemoteManager implements RemoteManager {
     private static final String TAG = YouTubeRemoteManager.class.getSimpleName();
     private static YouTubeRemoteManager sInstance;
-    private final LoungeService mLoungeService;
 
     private YouTubeRemoteManager() {
-        mLoungeService = LoungeService.instance();
-
         GlobalPreferences.setOnInit(() -> {
             //mAccountManager.init();
             //this.updateAuthorizationHeader();
@@ -34,7 +31,7 @@ public class YouTubeRemoteManager implements RemoteManager {
 
     @Override
     public String getPairingCode() {
-        return mLoungeService.getPairingCode();
+        return "";
     }
 
     @Override
@@ -45,31 +42,27 @@ public class YouTubeRemoteManager implements RemoteManager {
     @Override
     public Observable<Command> getCommandObserve() {
         return Observable.create(emitter -> {
-            mLoungeService.startListening(
-                    info -> emitter.onNext(YouTubeCommand.from(info))
-            );
-
             emitter.onComplete();
         });
     }
 
     @Override
     public Observable<Void> postStartPlayingObserve(String videoId, long positionMs, long durationMs, boolean isPlaying) {
-        return ObservableHelper.fromVoidable(() -> mLoungeService.postStartPlaying(videoId, positionMs, durationMs, isPlaying));
+        return ObservableHelper.fromVoidable(() -> {});
     }
 
     @Override
     public Observable<Void> postStateChangeObserve(long positionMs, long durationMs, boolean isPlaying) {
-        return ObservableHelper.fromVoidable(() -> mLoungeService.postStateChange(positionMs, durationMs, isPlaying));
+        return ObservableHelper.fromVoidable(() -> {});
     }
 
     @Override
     public Observable<Void> postVolumeChangeObserve(int volume) {
-        return ObservableHelper.fromVoidable(() -> mLoungeService.postVolumeChange(volume));
+        return ObservableHelper.fromVoidable(() -> {});
     }
 
     @Override
     public Observable<Void> resetDataObserve() {
-        return ObservableHelper.fromVoidable(mLoungeService::resetData);
+        return ObservableHelper.fromVoidable(()->{});
     }
 }
