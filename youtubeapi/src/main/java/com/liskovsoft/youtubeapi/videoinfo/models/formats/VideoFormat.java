@@ -18,6 +18,7 @@ public class VideoFormat {
     public static final String PARAM_TYPE = "type";
     public static final String PARAM_ITAG = "itag";
     public static final String PARAM_CPN = "cpn";
+    public static final String PARAM_CVER = "cver";
     public static final String PARAM_SIGNATURE = "signature";
     public static final String PARAM_SIGNATURE_SPECIAL = "sig";
     public static final String PARAM_SIGNATURE_SPECIAL_MARK = "lsig";
@@ -91,9 +92,12 @@ public class VideoFormat {
     @JsonPath("$.lastModified")
     private String mLastModified;
     private String mEventId;
+    private UrlQueryString mUrlQuery;
+    private String mLanguage;
 
     public String getUrl() {
-        return mUrl;
+        // Bypass query creation if url isn't transformed
+        return mUrlQuery != null ? mUrlQuery.toString() : mUrl;
     }
 
     public void setUrl(String url) {
@@ -106,20 +110,20 @@ public class VideoFormat {
 
     public void setSignature(String signature) {
         if (signature != null) {
-            UrlQueryString url = UrlQueryStringFactory.parse(mUrl);
-
             //if (url.contains(PARAM_SIGNATURE_SPECIAL_MARK)) {
             //    url.set(PARAM_SIGNATURE_SPECIAL, signature);
             //} else {
             //    url.set(PARAM_SIGNATURE, signature);
             //}
 
-            url.set(PARAM_SIGNATURE_SPECIAL, signature);
-
-            mUrl = url.toString();
+            setParam(PARAM_SIGNATURE_SPECIAL, signature);
 
             mRealSignature = signature;
         }
+    }
+
+    public void setClientVersion(String clientVersion) {
+        setParam(PARAM_CVER, clientVersion);
     }
 
     public String getSignature() {
@@ -127,23 +131,15 @@ public class VideoFormat {
     }
 
     public String getThrottleCipher() {
-        if (mUrl != null) {
-            UrlQueryString url = UrlQueryStringFactory.parse(mUrl);
-
-            return url.get(THROTTLE_PARAM);
-        }
-
-        return null;
+        return getParam(THROTTLE_PARAM);
     }
 
     public void setThrottleCipher(String throttleCipher) {
-        if (mUrl != null && throttleCipher != null) {
-            UrlQueryString url = UrlQueryStringFactory.parse(mUrl);
+        setParam(THROTTLE_PARAM, throttleCipher);
+    }
 
-            url.set(THROTTLE_PARAM, throttleCipher);
-
-            mUrl = url.toString();
-        }
+    public void setCpn(String cpn) {
+        setParam(PARAM_CPN, cpn);
     }
 
     public String getMimeType() {
@@ -301,6 +297,21 @@ public class VideoFormat {
         return mTemplateSegmentUrl;
     }
 
+    public String getLanguage() {
+        if (mLanguage == null && getUrlQuery() != null) {
+            String xtags = getUrlQuery().get("xtags");
+
+            if (xtags != null) {
+                String[] split = xtags.split("=");
+                if (split.length == 2) {
+                    mLanguage = split[1];
+                }
+            }
+        }
+
+        return mLanguage;
+    }
+
     private String parseCipher() {
         String result = null;
 
@@ -327,6 +338,36 @@ public class VideoFormat {
 
     public String getLastModified() {
         return mLastModified;
+    }
+
+    public String getParam(String paramName) {
+        UrlQueryString queryString = getUrlQuery();
+
+        if (queryString != null) {
+            return queryString.get(paramName);
+        }
+
+        return null;
+    }
+
+    public void setParam(String paramName, String paramValue) {
+        UrlQueryString queryString = getUrlQuery();
+
+        if (queryString != null && paramName != null && paramValue != null) {
+            queryString.set(paramName, paramValue);
+        }
+    }
+
+    private UrlQueryString getUrlQuery() {
+        if (mUrl == null) {
+            return null;
+        }
+
+        if (mUrlQuery == null) {
+            mUrlQuery = UrlQueryStringFactory.parse(mUrl);
+        }
+
+        return mUrlQuery;
     }
 
     @NonNull

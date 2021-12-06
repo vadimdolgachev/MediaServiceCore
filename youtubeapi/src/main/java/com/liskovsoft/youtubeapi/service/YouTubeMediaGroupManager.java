@@ -54,8 +54,21 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
     }
 
     @Override
+    public MediaGroup getSearch(String searchText, int options) {
+        checkSigned();
+
+        SearchResult search = mMediaGroupManagerReal.getSearch(searchText, options);
+        return YouTubeMediaGroup.from(search, MediaGroup.TYPE_SEARCH);
+    }
+
+    @Override
     public Observable<MediaGroup> getSearchObserve(String searchText) {
         return ObservableHelper.fromNullable(() -> getSearch(searchText));
+    }
+
+    @Override
+    public Observable<MediaGroup> getSearchObserve(String searchText, int options) {
+        return ObservableHelper.fromNullable(() -> getSearch(searchText, options));
     }
 
     @Override
@@ -281,11 +294,13 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
     private void emitGroups(ObservableEmitter<List<MediaGroup>> emitter, SectionTab tab, int type) {
         if (tab == null) {
-            String msg = "emitGroups: BrowseTab is null";
+            String msg = String.format("emitGroups: BrowseTab of type %s is null", type);
             Log.e(TAG, msg);
             ObservableHelper.onError(emitter, msg);
             return;
         }
+
+        Log.d(TAG, "emitGroups: begin emitting BrowseTab of type %s...", type);
 
         String nextPageKey = tab.getNextPageKey();
         List<MediaGroup> groups = YouTubeMediaGroup.from(tab.getSections(), type);
@@ -402,7 +417,7 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
                     if (tabContinuation != null) {
                         ArrayList<MediaGroup> list = new ArrayList<>();
                         YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_USER_PLAYLISTS);
-                        mediaGroup.setTitle(tab.getTitle());
+                        mediaGroup.setTitle(tab.getTitle()); // id calculated by title hashcode
                         list.add(YouTubeMediaGroup.from(tabContinuation, mediaGroup));
                         emitter.onNext(list);
                     }

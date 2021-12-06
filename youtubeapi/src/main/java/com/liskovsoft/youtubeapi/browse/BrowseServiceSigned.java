@@ -51,15 +51,12 @@ public class BrowseServiceSigned {
     public GridTab getSubscriptions(String authorization) {
         GridTab subs = getGridTab(0, BrowseManagerParams.getSubscriptionsQuery(), authorization);
 
-        // LIVE videos always on top
+        // LIVE & UPCOMING videos always on top
         if (subs != null && subs.getItemWrappers() != null) {
-            Collections.sort(subs.getItemWrappers(), (o1, o2) -> {
-                VideoItem item1 = o1.getVideoItem();
-                VideoItem item2 = o2.getVideoItem();
-                boolean isLive1 = item1 != null && item1.isLive();
-                boolean isLive2 = item2 != null && item2.isLive();
-                return isLive1 == isLive2 ? 0 : isLive1 ? -1 : 1;
-            });
+            Collections.sort(subs.getItemWrappers(), (o1, o2) ->
+                    o1.isLive() == o2.isLive() && o1.isUpcoming() == o2.isUpcoming() ? 0 :
+                    o1.isLive() || (o1.isUpcoming() && !o2.isLive()) ? -1 : 1
+            );
         }
 
         return subs;
@@ -114,7 +111,8 @@ public class BrowseServiceSigned {
     }
 
     public GridTab getHistory(String authorization) {
-        return getGridTab(0, BrowseManagerParams.getMyLibraryQuery(), authorization);
+        return getGridTab(0, BrowseManagerParams.getHistoryQuery(), authorization); // web client version (needs new parser but can remove item from history)
+        //return getGridTab(0, BrowseManagerParams.getMyLibraryQuery(), authorization);
     }
 
     public List<GridTab> getPlaylists(String authorization) {
@@ -294,6 +292,8 @@ public class BrowseServiceSigned {
             Log.e(TAG, "getRowsTabResult: authorization is null.");
             return null;
         }
+
+        Log.d(TAG, "Getting section tab list for query: %s", query);
 
         Call<SectionTabList> wrapper = mBrowseManagerSigned.getSectionTabList(query, authorization);
 
