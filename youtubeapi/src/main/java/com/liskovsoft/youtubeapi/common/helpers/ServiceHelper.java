@@ -60,6 +60,12 @@ public class ServiceHelper {
                 localeManager.getCountry(), localeManager.getLanguage(), localeManager.getUtcOffsetMinutes(), template);
     }
 
+    public static String createQueryWeb(String template) {
+        LocaleManager localeManager = LocaleManager.instance();
+        return String.format(AppConstants.JSON_POST_DATA_TEMPLATE_WEB,
+                localeManager.getCountry(), localeManager.getLanguage(), localeManager.getUtcOffsetMinutes(), template);
+    }
+
     public static String itemsToDescription(Object... items) {
         return combineItems(DESCRIPTION_DIVIDER, items);
     }
@@ -224,5 +230,15 @@ public class ServiceHelper {
         }
 
         return result;
+    }
+
+    public interface OnElementCallback<T> {
+        void onElement(T element, int i);
+    }
+
+    public static <T> void process(List<T> elements, OnElementCallback<T> callback) {
+        for (int i = 0; i < elements.size(); i++) {
+            callback.onElement(elements.get(i), i);
+        }
     }
 }
