@@ -14,6 +14,8 @@ import com.liskovsoft.youtubeapi.block.data.SegmentList;
 import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResult;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextServiceV2;
+import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl;
+import com.liskovsoft.youtubeapi.next.v2.impl.mediaitem.MediaItemImpl;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItem;
@@ -120,16 +122,16 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
-    public YouTubeMediaItemMetadata getMetadata(MediaItem item) {
-        return getMetadata(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex(), item.getPlaylistParams());
+    public MediaItemMetadata getMetadata(MediaItem item) {
+        return getMetadataV2(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex(), item.getPlaylistParams());
     }
 
     @Override
-    public YouTubeMediaItemMetadata getMetadata(String videoId, String playlistId, int playlistIndex) {
-        return getMetadata(videoId, playlistId, playlistIndex, null);
+    public MediaItemMetadata getMetadata(String videoId, String playlistId, int playlistIndex, String playlistParams) {
+        return getMetadataV2(videoId, playlistId, playlistIndex, playlistParams);
     }
 
-    private YouTubeMediaItemMetadata getMetadata(String videoId, String playlistId, int playlistIndex, String playlistParams) {
+    private MediaItemMetadata getMetadataV1(String videoId, String playlistId, int playlistIndex, String playlistParams) {
         checkSigned();
 
         WatchNextResult watchNextResult = mMediaItemManagerReal.getWatchNextResult(videoId, playlistId, playlistIndex, playlistParams);
@@ -142,11 +144,11 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
-    public YouTubeMediaItemMetadata getMetadata(String videoId) {
-        return getMetadataInt(videoId);
+    public MediaItemMetadata getMetadata(String videoId) {
+        return getMetadataIntV2(videoId);
     }
 
-    private YouTubeMediaItemMetadata getMetadataInt(String videoId) {
+    private YouTubeMediaItemMetadata getMetadataIntV1(String videoId) {
         checkSigned();
 
         WatchNextResult watchNextResult = mMediaItemManagerReal.getWatchNextResult(videoId);
@@ -164,19 +166,25 @@ public class YouTubeMediaItemManager implements MediaItemManager {
 
         String nextKey = YouTubeMediaServiceHelper.extractNextKey(mediaGroup);
 
-        return YouTubeMediaGroup.from(
-                mMediaItemManagerReal.continueWatchNext(nextKey),
-                mediaGroup
-        );
+        if (mediaGroup instanceof YouTubeMediaGroup) {
+            return YouTubeMediaGroup.from(
+                    mMediaItemManagerReal.continueWatchNext(nextKey),
+                    mediaGroup
+            );
+        } else if (mediaGroup instanceof MediaGroupImpl) {
+            return mWatchNextServiceV2.continueGroup(mediaGroup);
+        }
+
+        return null;
     }
 
     @Override
     public Observable<MediaItemMetadata> getMetadataObserve(MediaItem item) {
         return Observable.create(emitter -> {
-            YouTubeMediaItemMetadata metadata = getMetadata(item);
+            MediaItemMetadata metadata = getMetadata(item);
 
             if (metadata != null) {
-                ((YouTubeMediaItem) item).sync(metadata);
+                item.sync(metadata);
                 emitter.onNext(metadata);
                 emitter.onComplete();
             } else {
@@ -191,8 +199,8 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
-    public Observable<MediaItemMetadata> getMetadataObserve(String videoId, String playlistId, int playlistIndex) {
-        return ObservableHelper.fromNullable(() -> getMetadata(videoId, playlistId, playlistIndex));
+    public Observable<MediaItemMetadata> getMetadataObserve(String videoId, String playlistId, int playlistIndex, String playlistParams) {
+        return ObservableHelper.fromNullable(() -> getMetadata(videoId, playlistId, playlistIndex, playlistParams));
     }
 
     @Override

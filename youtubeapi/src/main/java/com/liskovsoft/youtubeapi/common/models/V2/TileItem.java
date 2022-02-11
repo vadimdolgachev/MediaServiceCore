@@ -29,6 +29,9 @@ public class TileItem {
     })
     private String mPlaylistId;
 
+    @JsonPath("$.onSelectCommand.browseEndpoint.params")
+    private String mPlaylistParams;
+
     @JsonPath("$.onSelectCommand.browseEndpoint.browseId")
     private String mChannelId;
 
@@ -87,7 +90,7 @@ public class TileItem {
     }
 
     public int getPercentWatched() {
-        return mHeader != null ? mHeader.getPercentWatched() : 0;
+        return mHeader != null ? mHeader.getPercentWatched() : -1;
     }
 
     public String getRichThumbnailUrl() {
@@ -104,6 +107,10 @@ public class TileItem {
 
     public String getPlaylistId() {
         return mPlaylistId;
+    }
+
+    public String getPlaylistParams() {
+        return mPlaylistParams;
     }
 
     public boolean isLive() {

@@ -136,9 +136,15 @@ public class YouTubeMediaGroupManagerUnsigned implements MediaGroupManagerInt {
     }
 
     @Override
-    public SectionList getChannel(String channelId) {
+    public SectionList getChannel(String channelId, String params) {
         Log.d(TAG, "Emitting channel sections...");
         return mBrowseServiceUnsigned.getChannel(channelId);
+    }
+
+    @Override
+    public GridTab getGridChannel(String channelId) {
+        // NotImplemented
+        return null;
     }
 
     @Override

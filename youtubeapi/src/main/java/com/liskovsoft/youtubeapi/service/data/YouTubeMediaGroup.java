@@ -30,6 +30,7 @@ public class YouTubeMediaGroup implements MediaGroup {
     private String mChannelUrl;
     private String mChannelId;
     private String mPlaylistParams;
+    private String mReloadPageKey;
 
     public YouTubeMediaGroup(int type) {
         mType = type;
@@ -43,8 +44,14 @@ public class YouTubeMediaGroup implements MediaGroup {
         return create(new YouTubeMediaGroup(type), browseResult.getItemWrappers(), browseResult.getNextPageKey());
     }
 
-    public static MediaGroup from(GridTabContinuation continuation) {
-        return from(continuation, new YouTubeMediaGroup(MediaGroup.TYPE_UNDEFINED));
+    public static MediaGroup from(GridTabContinuation continuation, String reloadPageKey, String groupTitle) {
+        YouTubeMediaGroup baseGroup = new YouTubeMediaGroup(MediaGroup.TYPE_UNDEFINED);
+        baseGroup.mReloadPageKey = reloadPageKey;
+        MediaGroup mediaGroup = from(continuation, baseGroup);
+        if (mediaGroup != null) {
+            mediaGroup.setTitle(groupTitle);
+        }
+        return mediaGroup;
     }
 
     public static MediaGroup from(GridTabContinuation continuation, MediaGroup baseGroup) {
@@ -119,7 +126,7 @@ public class YouTubeMediaGroup implements MediaGroup {
             return null;
         }
 
-        return create((YouTubeMediaGroup) baseGroup, nextSearchResult.getTitleItems(), nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
+        return create((YouTubeMediaGroup) baseGroup, nextSearchResult.getTileItems(), nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
                 nextSearchResult.getChannelItems(), nextSearchResult.getRadioItems(), nextSearchResult.getPlaylistItems(), nextSearchResult.getNextPageKey());
     }
 
@@ -211,6 +218,11 @@ public class YouTubeMediaGroup implements MediaGroup {
     @Override
     public String getPlaylistParams() {
         return mPlaylistParams;
+    }
+
+    @Override
+    public String getReloadPageKey() {
+        return mReloadPageKey;
     }
 
     @Override

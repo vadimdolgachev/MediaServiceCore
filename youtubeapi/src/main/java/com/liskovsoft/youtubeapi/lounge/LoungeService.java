@@ -5,9 +5,8 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathTypeAdapter;
-import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
-import com.liskovsoft.youtubeapi.lounge.models.bind.PairingCode;
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.lounge.models.bind.ScreenId;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandItem;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandList;
@@ -34,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 public class LoungeService {
     private static final String TAG = LoungeService.class.getSimpleName();
-    private static final long TOKEN_ACTIVE_TIME_MS = 60 * 60 * 1_000;
+    private static final long TOKEN_ACTIVE_TIME_MS = 30 * 60 * 1_000;
     private static LoungeService sInstance;
     private final BindManager mBindManager;
     private final InfoManager mInfoManager;
@@ -42,6 +41,7 @@ public class LoungeService {
     private final JsonPathTypeAdapter<CommandList> mLineSkipAdapter;
     private String mScreenName;
     private String mLoungeToken;
+    private String mDeviceId;
     private long mTokenInitTimeMs;
     private String mScreenId;
     private String mSessionId;
@@ -82,7 +82,7 @@ public class LoungeService {
                 mScreenName,
                 BindParams.ACCESS_TYPE,
                 BindParams.APP,
-                BindParams.DEVICE_ID,
+                mDeviceId,
                 BindParams.QR);
         PairingCodeV2 pairingCode = RetrofitHelper.get(pairingCodeWrapper);
 
@@ -132,6 +132,10 @@ public class LoungeService {
                 mTokenInitTimeMs = System.currentTimeMillis();
             }
         }
+
+        if (mDeviceId == null) {
+            mDeviceId = MediaServiceData.instance().getDeviceId();
+        }
     }
 
     private void startListeningInt(OnCommand callback) throws IOException {
@@ -152,6 +156,7 @@ public class LoungeService {
 
         String url = BindParams.createBindRpcUrl(
                 mScreenName,
+                mDeviceId,
                 mLoungeToken,
                 mSessionId,
                 mGSessionId);
@@ -219,7 +224,7 @@ public class LoungeService {
         }
 
         if (durationMs > 0 && positionMs <= durationMs) {
-            Log.d(TAG, "Post onStateChange pos: %s, dur: %s...", positionMs, durationMs);
+            Log.d(TAG, "Post onStateChange pos: %s, dur: %s, playing: %s...", positionMs, durationMs, isPlaying);
 
             Map<String, String> stateChange = CommandParams.getOnStateChange(
                     positionMs,
@@ -286,7 +291,7 @@ public class LoungeService {
     }
 
     private CommandList getSessionBind() {
-        Call<CommandList> bindDataWrapper = mCommandManager.getSessionData(mScreenName, mLoungeToken, 0);
+        Call<CommandList> bindDataWrapper = mCommandManager.getSessionData(mScreenName, mDeviceId, mLoungeToken, 0);
 
         return RetrofitHelper.get(bindDataWrapper);
     }
@@ -302,7 +307,7 @@ public class LoungeService {
         }
 
         Call<Void> wrapper = mCommandManager.postCommand(
-                mScreenName, mLoungeToken, mSessionId, mGSessionId,
+                mScreenName, mDeviceId, mLoungeToken, mSessionId, mGSessionId,
                 command);
         RetrofitHelper.get(wrapper);
     }

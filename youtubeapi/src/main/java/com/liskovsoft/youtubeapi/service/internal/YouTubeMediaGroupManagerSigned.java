@@ -93,7 +93,8 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     @Override
     public SectionTab getHomeTab() {
         Log.d(TAG, "Emitting home group...");
-        return mBrowseServiceSigned.getHome(mSignInManager.getAuthorizationHeader());
+        SectionTab home = mBrowseServiceSigned.getHome(mSignInManager.getAuthorizationHeader());
+        return home;
     }
 
     @Override
@@ -115,9 +116,14 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     }
 
     @Override
-    public SectionList getChannel(String channelId) {
+    public SectionList getChannel(String channelId, String params) {
         Log.d(TAG, "Emitting channel sections...");
-        return mBrowseServiceSigned.getChannel(channelId, mSignInManager.getAuthorizationHeader());
+        return mBrowseServiceSigned.getChannel(channelId, params, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public GridTab getGridChannel(String channelId) {
+        return mBrowseServiceSigned.getGridChannel(channelId, mSignInManager.getAuthorizationHeader());
     }
 
     @Override
@@ -144,6 +150,7 @@ public class YouTubeMediaGroupManagerSigned implements MediaGroupManagerInt {
     @Override
     public SectionTabContinuation continueSectionTab(String nextPageKey) {
         Log.d(TAG, "Continue tab...");
-        return mBrowseServiceSigned.continueSectionTab(nextPageKey, mSignInManager.getAuthorizationHeader());
+        SectionTabContinuation continuation = mBrowseServiceSigned.continueSectionTab(nextPageKey, mSignInManager.getAuthorizationHeader());
+        return continuation;
     }
 }

@@ -7,6 +7,7 @@ import com.liskovsoft.youtubeapi.common.models.items.MusicItem;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
+import com.liskovsoft.youtubeapi.search.models.SearchSection;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -14,18 +15,38 @@ import static org.junit.Assert.assertTrue;
 public class SearchManagerTestBase {
     protected void checkSearchResultContinuation(SearchResultContinuation searchResult) {
         assertNotNull("Search result not null", searchResult);
-        assertNotNull("Search result contains items", searchResult.getVideoItems());
-        assertTrue("Search result contains more than one item", searchResult.getVideoItems().size() > 2);
+        assertNotNull("Search result contains items",
+                searchResult.getVideoItems() != null ? searchResult.getVideoItems() : searchResult.getTileItems());
+        assertTrue("Search result contains more than one item",
+                searchResult.getVideoItems() != null ? searchResult.getVideoItems().size() > 2 : searchResult.getTileItems().size() > 2);
         assertNotNull("Search result contains next key", searchResult.getNextPageKey());
-        VideoItem videoItem = searchResult.getVideoItems().get(0);
-        checkSearchResultVideoItem(videoItem);
+
+        if (searchResult.getVideoItems() != null) {
+            VideoItem videoItem = searchResult.getVideoItems().get(0);
+            checkSearchResultVideoItem(videoItem);
+        }
+
+        if (searchResult.getTileItems() != null) {
+            TileItem videoItem = searchResult.getTileItems().get(0);
+            checkSearchResultTileItem(videoItem);
+        }
     }
 
     protected void checkSearchResult(SearchResult searchResult) {
         assertNotNull("Search result not null", searchResult);
         assertNotNull("Search result contains items", searchResult.getItemWrappers());
         assertTrue("Search result contains more than one item", searchResult.getItemWrappers().size() > 2);
-        assertNotNull("Search result contains next key", searchResult.getNextPageKey());
+
+        String nexKey = null;
+
+        for (SearchSection section : searchResult.getSections()) {
+            if (section.getNextPageKey() != null) {
+                nexKey = section.getNextPageKey();
+                break;
+            }
+        }
+
+        assertNotNull("At least one search result row contains next key", nexKey);
 
         for (ItemWrapper wrapper : searchResult.getItemWrappers()) {
             if (wrapper.getVideoItem() != null) {
@@ -48,7 +69,7 @@ public class SearchManagerTestBase {
         assertNotNull("Search result item contains title", videoItem.getTitle());
         //assertNotNull("Search result item contains channel id", videoItem.getChannelId()); // not exists in search result
         assertNotNull("Search result item contains view count", videoItem.getViewCountText());
-        assertNotNull("Search result item contains date", videoItem.getPublishedTime());
+        //assertNotNull("Search result item contains date", videoItem.getPublishedTime()); // not exists anymore
     }
 
     protected void checkSearchResultMusicItem(MusicItem videoItem) {

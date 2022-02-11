@@ -1,4 +1,4 @@
-package com.liskovsoft.youtubeapi.next.v2.result.gen
+package com.liskovsoft.youtubeapi.next.v2.gen.kt
 
 data class WatchNextResult(
     val contents: Contents?,
@@ -13,9 +13,10 @@ data class WatchNextResult(
             val autoplay: Autoplay?
         ) {
             data class Pivot(
-                val pivot: Pivot?
+                val pivot: NestedPivot?,
+                val sectionListRenderer: NestedPivot?
             ) {
-                data class Pivot(
+                data class NestedPivot(
                     val contents: List<Content?>?
                 ) {
                     data class Content(

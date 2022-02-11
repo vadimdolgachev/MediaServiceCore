@@ -13,7 +13,6 @@ import com.liskovsoft.leanbackassistant.media.ClipService;
 import com.liskovsoft.leanbackassistant.media.Playlist;
 import com.liskovsoft.leanbackassistant.recommendations.RecommendationsProvider;
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 
@@ -28,26 +27,35 @@ import java.util.concurrent.TimeUnit;
  * appear in the TV provider database, and that these and all other programs are synchronized with
  * TV provider database.
  */
-
 @TargetApi(21)
 public class SynchronizeDatabaseJobService extends JobService {
-    private SynchronizeDatabaseTask mSynchronizeDatabaseTask;
     private static final String TAG = SynchronizeDatabaseJobService.class.getSimpleName();
+    private static final int SYNC_JOB_ID = 1;
     private static boolean sInProgress;
+    private SynchronizeDatabaseTask mSynchronizeDatabaseTask;
 
-    static void schedule(Context context) {
-        if (VERSION.SDK_INT >= 23) {
+    public static void schedule(Context context) {
+        if (VERSION.SDK_INT >= 23 && GlobalPreferences.instance(context).isChannelsServiceEnabled()) {
             Log.d(TAG, "Registering Channels update job...");
             JobScheduler scheduler = context.getSystemService(JobScheduler.class);
 
             // setup scheduled job
             scheduler.schedule(
-                    new JobInfo.Builder(1, new ComponentName(context, SynchronizeDatabaseJobService.class))
+                    new JobInfo.Builder(SYNC_JOB_ID, new ComponentName(context, SynchronizeDatabaseJobService.class))
                             .setPeriodic(TimeUnit.MINUTES.toMillis(30))
                             .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                             .setRequiresDeviceIdle(false)
                             .setRequiresCharging(false)
                             .build());
+        }
+    }
+
+    public static void cancel(Context context) {
+        if (VERSION.SDK_INT >= 23 && GlobalPreferences.instance(context).isChannelsServiceEnabled()) {
+            Log.d(TAG, "Registering Channels update job...");
+            JobScheduler scheduler = context.getSystemService(JobScheduler.class);
+
+            scheduler.cancel(SYNC_JOB_ID);
         }
     }
 
@@ -61,9 +69,6 @@ public class SynchronizeDatabaseJobService extends JobService {
         Log.d(TAG, "Starting Channels update job...");
 
         sInProgress = true;
-
-        // Apply pre-saved locale
-        //LocaleUpdater.applySavedLocale(this);
 
         mSynchronizeDatabaseTask = new SynchronizeDatabaseTask(this, jobParameters);
         // NOTE: fetching channels in background

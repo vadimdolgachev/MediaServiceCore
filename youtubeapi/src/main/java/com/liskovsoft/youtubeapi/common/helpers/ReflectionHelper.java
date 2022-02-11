@@ -1,10 +1,9 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
 import android.content.Context;
+import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.FileHelpers;
-import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
-import com.liskovsoft.youtubeapi.R;
 import com.liskovsoft.youtubeapi.common.converters.FieldNullable;
 
 import java.io.File;
@@ -83,11 +82,19 @@ public class ReflectionHelper {
             return;
         }
 
-        File destination = new File(FileHelpers.getCacheDir(context), type.getSimpleName());
+        String fileName = String.format("%s_%s", type.getSimpleName(), AppInfoHelpers.getAppVersionName(context));
 
-//        MessageHelpers.showLongMessage(context, String.format("Debug info has been dumped to %s", destination));
-
+        FileHelpers.deleteByPrefix(FileHelpers.getExternalFilesDir(context), type.getSimpleName());
+        File destination = new File(FileHelpers.getExternalFilesDir(context), fileName);
         FileHelpers.streamToFile(content, destination);
+
+        //MessageHelpers.showLongMessage(context, context.getString(R.string.dump_debug_info, destination));
+
+        // NOTE: Send file from crashlytics is useless. All strings are truncated!
+        //FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
+        //crashlytics.log(fileName + ": " + Helpers.toString(content));
+        //crashlytics.recordException(new Exception(fileName));
+        //crashlytics.sendUnsentReports();
     }
 
     public static boolean isNullable(Field field) {

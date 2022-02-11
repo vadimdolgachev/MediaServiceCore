@@ -1,12 +1,15 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
+import androidx.annotation.NonNull;
 import com.itkacher.okhttpprofiler.OkHttpProfilerInterceptor;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.okhttp.OkHttpCommons;
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.BuildConfig;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.common.converters.gson.GsonConverterFactory;
@@ -17,6 +20,7 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
+import okhttp3.Dns;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
@@ -28,8 +32,11 @@ import retrofit2.Converter;
 import retrofit2.Retrofit;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RetrofitHelper {
     // Ignored when specified url is absolute
@@ -83,7 +90,7 @@ public class RetrofitHelper {
         return new JsonPathSkipTypeAdapter<>(parser, clazz);
     }
 
-    private static Retrofit buildRetrofit(Converter.Factory factory) {
+    public static Retrofit buildRetrofit(Converter.Factory factory) {
         Retrofit.Builder builder = createBuilder();
 
         return builder
@@ -107,10 +114,18 @@ public class RetrofitHelper {
         return sOkHttpClient;
     }
 
-    private static OkHttpClient createOkHttpClient() {
+    public static OkHttpClient createOkHttpClient() {
         OkHttpClient.Builder okBuilder = new OkHttpClient.Builder();
 
-        disableCache(okBuilder);
+        //disableCache(okBuilder);
+
+        // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
+        //forceIPv4Dns(okBuilder);
+
+        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isIPv4DnsPreferred()) {
+            // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
+            preferIPv4Dns(okBuilder);
+        }
 
         OkHttpCommons.setupConnectionFix(okBuilder);
 
@@ -122,11 +137,18 @@ public class RetrofitHelper {
 
         debugSetup(okBuilder);
 
-        return okBuilder.build();
+        OkHttpClient client = okBuilder.build();
+
+        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isDnsOverHttpsEnabled()) {
+            client = wrapDnsOverHttps(client);
+        }
+
+        return client;
     }
 
     private static void disableCache(OkHttpClient.Builder okBuilder) {
         // Disable cache (could help with dlfree error on Eltex)
+        // Spoiler: no this won't help with dlfree error on Eltex
         okBuilder.cache(null);
     }
 
@@ -181,18 +203,47 @@ public class RetrofitHelper {
         okBuilder.addInterceptor(logging);
     }
 
+    private static void preferIPv4Dns(OkHttpClient.Builder okBuilder) {
+        okBuilder.dns(new PreferIpv4Dns());
+    }
+
+    private static void forceIPv4Dns(OkHttpClient.Builder okBuilder) {
+        okBuilder.dns(hostname -> {
+            List<InetAddress> lookup = Dns.SYSTEM.lookup(hostname);
+            List<InetAddress> filter = Helpers.filter(lookup, value -> value instanceof Inet4Address);
+            return filter != null ? filter : lookup;
+        });
+    }
+
     /**
      * Usage: <code>OkHttpClient newClient = wrapDns(client)</code><br/>
      * https://github.com/square/okhttp/blob/master/okhttp-dnsoverhttps/src/test/java/okhttp3/dnsoverhttps/DohProviders.java
      */
-    private static OkHttpClient wrapDns(OkHttpClient client) {
-        return client.newBuilder().dns(buildGoogle(client)).build();
+    public static OkHttpClient wrapDnsOverHttps(OkHttpClient client) {
+        return client.newBuilder().dns(buildCloudflareDnsOverHttps(client)).build();
     }
 
-    private static DnsOverHttps buildGoogle(OkHttpClient bootstrapClient) {
-        return new DnsOverHttps.Builder().client(bootstrapClient)
+    private static DnsOverHttps buildGoogleDnsOverHttps(OkHttpClient bootstrapClient) {
+        return new DnsOverHttps.Builder()
+                .client(bootstrapClient)
                 .url(HttpUrl.get("https://dns.google/dns-query"))
                 .bootstrapDnsHosts(getByIp("8.8.4.4"), getByIp("8.8.8.8"))
+                .build();
+    }
+
+    private static DnsOverHttps buildCleanBrowsingDnsOverHttps(OkHttpClient bootstrapClient) {
+        return new DnsOverHttps.Builder()
+                .client(bootstrapClient)
+                .url(HttpUrl.get("https://doh.cleanbrowsing.org/doh/family-filter/"))
+                .includeIPv6(false)
+                .build();
+    }
+
+    private static DnsOverHttps buildCloudflareDnsOverHttps(OkHttpClient bootstrapClient) {
+        return new DnsOverHttps.Builder()
+                .client(bootstrapClient)
+                .url(HttpUrl.get("https://1.1.1.1/dns-query"))
+                .includeIPv6(false)
                 .build();
     }
 
@@ -202,6 +253,32 @@ public class RetrofitHelper {
         } catch (UnknownHostException e) {
             // unlikely
             throw new RuntimeException(e);
+        }
+    }
+
+    private static class PreferIpv4Dns implements Dns {
+        @NonNull
+        @Override
+        public List<InetAddress> lookup(@NonNull String hostname) throws UnknownHostException {
+            InetAddress[] addresses = InetAddress.getAllByName(hostname);
+            if (addresses == null || addresses.length == 0) {
+                throw new UnknownHostException("Bad host: " + hostname);
+            }
+
+            // prefer IPv4; list IPv4 first
+            ArrayList<InetAddress> result = new ArrayList<>();
+            for (InetAddress address : addresses) {
+                if (address instanceof Inet4Address) {
+                    result.add(address);
+                }
+            }
+            for (InetAddress address : addresses) {
+                if (!(address instanceof Inet4Address)) {
+                    result.add(address);
+                }
+            }
+
+            return result;
         }
     }
 }

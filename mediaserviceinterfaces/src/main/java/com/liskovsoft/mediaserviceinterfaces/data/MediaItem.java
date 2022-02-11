@@ -8,12 +8,7 @@ public interface MediaItem {
     int TYPE_MUSIC = 1;
     int TYPE_CHANNEL = 2;
     int TYPE_PLAYLIST = 3;
-    int TYPE_TILE = 4;
 
-    // Special type of items derived from groups.
-    // Such items should have same ids.
-    int TYPE_PLAYLISTS_SECTION = 8;
-    int TYPE_CHANNELS_SECTION = 12;
     int getType();
 
     // Music/Video props
@@ -25,9 +20,10 @@ public interface MediaItem {
 
     // Playlist props
     String getPlaylistId();
-
-    // Replacement for playlist id in channel section
-    String getPlaylistParams();
+    int getPlaylistIndex();
+    
+    String getPlaylistParams(); // Replacement for playlist id in channel section (use with caution: such list can't be updated)
+    String getReloadPageKey(); // Replacement for playlist id in channel section
 
     // Channel props
     boolean hasNewContent();
@@ -59,7 +55,6 @@ public interface MediaItem {
     String getChannelId();
     String getChannelUrl();
     String getVideoPreviewUrl();
-    int getPlaylistIndex();
     /**
      * Num of audio channels.<br/>
      * Example: <b>"2.0"</b>
@@ -83,4 +78,5 @@ public interface MediaItem {
     double getRatingScore();
     boolean hasUploads();
     String getClickTrackingParams();
+    void sync(MediaItemMetadata metadata);
 }

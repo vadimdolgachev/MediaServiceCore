@@ -85,7 +85,20 @@ public class YouTubeMediaItem implements MediaItem {
     public static YouTubeMediaItem from(TileItem item) {
         YouTubeMediaItem video = new YouTubeMediaItem();
 
-        video.mMediaItemType = MediaItem.TYPE_TILE;
+        switch (item.getContentType() != null ? item.getContentType() : "") {
+            case TileItem.CONTENT_TYPE_PLAYLIST:
+                video.mMediaItemType = MediaItem.TYPE_PLAYLIST;
+                break;
+            case TileItem.CONTENT_TYPE_CHANNEL:
+                video.mMediaItemType = MediaItem.TYPE_CHANNEL;
+                break;
+            case TileItem.CONTENT_TYPE_VIDEO:
+                video.mMediaItemType = MediaItem.TYPE_VIDEO;
+                break;
+            default:
+                video.mMediaItemType = MediaItem.TYPE_UNDEFINED;
+                break;
+        }
 
         video.mTitle = item.getTitle();
         video.mDescription = YouTubeMediaServiceHelper.createDescription(
@@ -100,6 +113,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mProductionDate = item.getPublishedTime();
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
+        video.mPlaylistParams = item.getPlaylistParams();
         video.mPlaylistIndex = item.getPlaylistIndex();
         video.mChannelId = item.getChannelId();
         video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
@@ -271,6 +285,9 @@ public class YouTubeMediaItem implements MediaItem {
         return video;
     }
 
+    /**
+     * Special item derived from tab (e.g. user Library sections)
+     */
     public static YouTubeMediaItem from(GridTab tab, int type) {
         YouTubeMediaItem item = new YouTubeMediaItem();
         
@@ -421,7 +438,9 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     public void setPlaylistParams(String params) {
-        mPlaylistParams = params;
+        if (params != null) {
+            mPlaylistParams = params;
+        }
     }
 
     @Override
@@ -469,6 +488,7 @@ public class YouTubeMediaItem implements MediaItem {
         return mClickTrackingParams;
     }
 
+    @Override
     public void sync(MediaItemMetadata metadata) {
         if (metadata == null) {
             return;
@@ -479,6 +499,7 @@ public class YouTubeMediaItem implements MediaItem {
         mChannelId = metadata.getChannelId();
     }
 
+    @Override
     public String getReloadPageKey() {
         return mReloadPageKey;
     }

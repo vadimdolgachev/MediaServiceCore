@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.MediaGroupManager;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.browse.BrowseManagerParams;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabContinuation;
 import com.liskovsoft.youtubeapi.browse.models.sections.SectionList;
@@ -181,18 +182,32 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
         return ObservableHelper.fromNullable(this::getHistory);
     }
 
-    @Override
-    public MediaGroup getGroup(MediaItem mediaItem) {
+    private MediaGroup getGroup(String reloadPageKey, String title) {
         checkSigned();
 
-        GridTabContinuation continuation = mMediaGroupManagerReal.continueGridTab(((YouTubeMediaItem) mediaItem).getReloadPageKey());
+        GridTabContinuation continuation = mMediaGroupManagerReal.continueGridTab(reloadPageKey);
 
-        return YouTubeMediaGroup.from(continuation);
+        return YouTubeMediaGroup.from(continuation, reloadPageKey, title);
+    }
+
+    @Override
+    public MediaGroup getGroup(String reloadPageKey) {
+        return getGroup(reloadPageKey, null);
+    }
+
+    @Override
+    public MediaGroup getGroup(MediaItem mediaItem) {
+        return getGroup(mediaItem.getReloadPageKey(), mediaItem.getTitle());
     }
 
     @Override
     public Observable<MediaGroup> getGroupObserve(MediaItem mediaItem) {
         return ObservableHelper.fromNullable(() -> getGroup(mediaItem));
+    }
+
+    @Override
+    public Observable<MediaGroup> getGroupObserve(String reloadPageKey) {
+        return ObservableHelper.fromNullable(() -> getGroup(reloadPageKey, null));
     }
 
     @Override
@@ -278,18 +293,29 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
 
     @Override
     public Observable<List<MediaGroup>> getChannelObserve(String channelId) {
+        return getChannelObserve(channelId, null);
+    }
+
+    private Observable<List<MediaGroup>> getChannelObserve(String channelId, String params) {
         return Observable.create(emitter -> {
             checkSigned();
 
-            SectionList sectionList = mMediaGroupManagerReal.getChannel(channelId);
+            // Special type of channel that could be found inside Music section (see Liked row More button)
+            if (BrowseManagerParams.isGridChannel(channelId)) {
+                GridTab gridChannel = mMediaGroupManagerReal.getGridChannel(channelId);
 
-            emitGroups(emitter, sectionList, MediaGroup.TYPE_CHANNEL);
+                emitGroups(emitter, gridChannel, MediaGroup.TYPE_CHANNEL_UPLOADS);
+            } else {
+                SectionList channel = mMediaGroupManagerReal.getChannel(channelId, params);
+
+                emitGroups(emitter, channel, MediaGroup.TYPE_CHANNEL);
+            }
         });
     }
 
     @Override
     public Observable<List<MediaGroup>> getChannelObserve(MediaItem item) {
-        return getChannelObserve(item.getChannelId());
+        return getChannelObserve(item.getChannelId(), item.getPlaylistParams());
     }
 
     private void emitGroups(ObservableEmitter<List<MediaGroup>> emitter, SectionTab tab, int type) {
@@ -351,6 +377,26 @@ public class YouTubeMediaGroupManager implements MediaGroupManager {
             ObservableHelper.onError(emitter, msg);
         } else {
             emitter.onNext(groups);
+            emitter.onComplete();
+        }
+    }
+
+    private void emitGroups(ObservableEmitter<List<MediaGroup>> emitter, GridTab grid, int type) {
+        if (grid == null) {
+            String msg = "emitGroups: Grid is null";
+            Log.e(TAG, msg);
+            ObservableHelper.onError(emitter, msg);
+            return;
+        }
+
+        MediaGroup group = YouTubeMediaGroup.from(grid, type);
+
+        if (group == null) {
+            String msg = "emitGroups: Grid content is null";
+            Log.e(TAG, msg);
+            ObservableHelper.onError(emitter, msg);
+        } else {
+            emitter.onNext(Collections.singletonList(group));
             emitter.onComplete();
         }
     }
