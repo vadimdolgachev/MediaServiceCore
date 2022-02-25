@@ -1,7 +1,5 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 import com.itkacher.okhttpprofiler.OkHttpProfilerInterceptor;
 import com.jayway.jsonpath.Configuration;
@@ -38,7 +36,6 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class RetrofitHelper {
@@ -125,10 +122,10 @@ public class RetrofitHelper {
         // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
         //forceIPv4Dns(okBuilder);
 
-//        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isIPv4DnsPreferred()) {
-//            // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
-//            preferIPv4Dns(okBuilder);
-//        }
+        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isIPv4DnsPreferred()) {
+            // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
+            preferIPv4Dns(okBuilder);
+        }
 
         OkHttpCommons.setupConnectionFix(okBuilder);
 
@@ -141,10 +138,10 @@ public class RetrofitHelper {
         debugSetup(okBuilder);
 
         OkHttpClient client = okBuilder.build();
-        Log.d("RetrofitHelper", "createOkHttpClient: " + client.protocols());
-//        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isDnsOverHttpsEnabled()) {
-//            client = wrapDnsOverHttps(client);
-//        }
+
+        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isDnsOverHttpsEnabled()) {
+            client = wrapDnsOverHttps(client);
+        }
 
         return client;
     }
