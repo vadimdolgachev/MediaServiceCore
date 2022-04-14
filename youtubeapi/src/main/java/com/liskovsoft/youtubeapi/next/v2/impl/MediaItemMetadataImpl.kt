@@ -63,17 +63,15 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
             }
         }
     }
-    private val videoFullDescription by lazy { videoMetadata?.description?.getText() }
-    private val videoDescription by lazy {
-        YouTubeMediaServiceHelper.createDescription(
-                videoAuthor, viewCountText, publishedTime,
-                if (isLiveStream) "LIVE" else ""
+    private val videoDescription by lazy { videoMetadata?.description?.getText() }
+    private val videoSecondTitle by lazy {
+        YouTubeMediaServiceHelper.createInfo(
+                videoAuthor, viewCountText, publishedTime
         )
     }
-    private val videoDescriptionAlt by lazy {
-        YouTubeMediaServiceHelper.createDescription(
-                videoAuthor, viewCountText, publishedDate,
-                if (isLiveStream) "LIVE" else ""
+    private val videoSecondTitleAlt by lazy {
+        YouTubeMediaServiceHelper.createInfo(
+                videoAuthor, viewCountText, publishedDate
         )
     }
     private val videoAuthor by lazy { videoDetails?.getUserName() }
@@ -113,16 +111,16 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return videoTitle
     }
 
+    override fun getSecondTitle(): String? {
+        return videoSecondTitle
+    }
+
+    override fun getSecondTitleAlt(): String? {
+        return videoSecondTitleAlt
+    }
+
     override fun getDescription(): String? {
-        return videoDescription
-    }
-
-    override fun getDescriptionAlt(): String? {
-        return videoDescriptionAlt
-    }
-
-    override fun getFullDescription(): String? {
-        return videoFullDescription;
+        return videoDescription;
     }
 
     override fun getAuthor(): String? {

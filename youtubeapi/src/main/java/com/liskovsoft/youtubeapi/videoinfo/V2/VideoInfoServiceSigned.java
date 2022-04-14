@@ -29,9 +29,17 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         if (result != null && result.getVideoDetails() != null && result.getVideoDetails().isLive()) {
             Log.e(TAG, "Enable seeking support on the live streams...");
             result = getVideoInfoLive(videoId, clickTrackingParams, authorization);
+        } else if (result != null && result.isRent()) {
+            Log.e(TAG, "Found rent content. Show trailer instead...");
+            result = getVideoInfoPrivate(result.getTrailerVideoId(), clickTrackingParams, authorization);
         } else if (result != null && result.isUnplayable()) {
-            Log.e(TAG, "Found restricted video. Retrying with different query method...");
+            Log.e(TAG, "Found restricted video. Retrying with embed query method...");
             result = getVideoInfoEmbed(videoId, clickTrackingParams, authorization);
+
+            if (result != null && result.isUnplayable()) {
+                Log.e(TAG, "Found restricted video. Retrying with restricted query method...");
+                result = getVideoInfoRestricted(videoId, clickTrackingParams);
+            }
         }
 
         if (result != null) {
@@ -42,35 +50,6 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         }
 
         return result;
-    }
-
-    public VideoInfo getVideoInfoOld(String videoId, String clickTrackingParams, String authorization) {
-        // Support live streams seeking!
-        VideoInfo result = getVideoInfoLive(videoId, clickTrackingParams, authorization);
-
-        if (result != null && result.getVideoDetails() != null && result.getVideoDetails().isOwnerViewing()) {
-            Log.e(TAG, "Seems that this is user video. Retrying with different query method...");
-            result = getVideoInfoPrivate(videoId, clickTrackingParams, authorization);
-        } else if (result != null && result.isUnplayable()) {
-            Log.e(TAG, "Found restricted video. Retrying with different query method...");
-            result = getVideoInfoEmbed(videoId, clickTrackingParams, authorization);
-        }
-
-        if (result != null) {
-            decipherFormats(result.getAdaptiveFormats());
-            decipherFormats(result.getRegularFormats());
-        } else {
-            Log.e(TAG, "Can't get video info. videoId: %s, authorization: %s", videoId, authorization);
-        }
-
-        return result;
-    }
-
-    private VideoInfo getVideoInfoLive(String videoId, String clickTrackingParams, String authorization) {
-        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryLive(videoId, clickTrackingParams);
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfo(videoInfoQuery, authorization, mAppService.getVisitorData());
-
-        return RetrofitHelper.get(wrapper);
     }
 
     private VideoInfo getVideoInfoPrivate(String videoId, String clickTrackingParams, String authorization) {
@@ -80,23 +59,26 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         return RetrofitHelper.get(wrapper);
     }
 
-    private VideoInfo getVideoInfoRestricted(String videoId, String clickTrackingParams, String eventId, String visitorMonitoringData) {
-        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryRegular(videoId, clickTrackingParams);
-        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRestricted(videoInfoQuery, mAppService.getVisitorData());
+    private VideoInfo getVideoInfoLive(String videoId, String clickTrackingParams, String authorization) {
+        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryLive(videoId, clickTrackingParams);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfo(videoInfoQuery, authorization, mAppService.getVisitorData());
 
-        VideoInfo videoInfo = RetrofitHelper.get(wrapper);
-
-        if (videoInfo != null) {
-            videoInfo.setEventId(eventId);
-            videoInfo.setVisitorMonitoringData(visitorMonitoringData);
-        }
-
-        return videoInfo;
+        return RetrofitHelper.get(wrapper);
     }
 
     private VideoInfo getVideoInfoEmbed(String videoId, String clickTrackingParams, String authorization) {
-        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryEmbed(videoId, clickTrackingParams);
+        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryEmbed2(videoId, clickTrackingParams);
         Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfo(videoInfoQuery, authorization, mAppService.getVisitorData());
+
+        return RetrofitHelper.get(wrapper);
+    }
+
+    /**
+     * NOTE: user history won't work with this method
+     */
+    private VideoInfo getVideoInfoRestricted(String videoId, String clickTrackingParams) {
+        String videoInfoQuery = VideoInfoManagerParams.getVideoInfoQueryRegular(videoId, clickTrackingParams);
+        Call<VideoInfo> wrapper = mVideoInfoManagerSigned.getVideoInfoRestricted(videoInfoQuery, mAppService.getVisitorData());
 
         return RetrofitHelper.get(wrapper);
     }
