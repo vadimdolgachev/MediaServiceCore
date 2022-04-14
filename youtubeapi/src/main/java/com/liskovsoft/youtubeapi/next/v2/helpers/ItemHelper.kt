@@ -69,7 +69,7 @@ fun TileItem.getBadgeText() = header?.tileHeaderRenderer?.thumbnailOverlays?.fir
 fun TileItem.getUserName() = null
 fun TileItem.getPublishedTime() = null
 fun TileItem.getViewCountText() =
-    YouTubeMediaServiceHelper.createDescription(*metadata?.tileMetadataRenderer?.lines?.map {
+    YouTubeMediaServiceHelper.createInfo(*metadata?.tileMetadataRenderer?.lines?.map {
         ServiceHelper.combineItems(" ", *it?.lineRenderer?.items?.map { it?.lineItemRenderer?.text }?.toTypedArray() ?: null)
     }?.toTypedArray() ?: null) ?: null
 fun TileItem.getUpcomingEventText() = null
@@ -185,7 +185,7 @@ fun MenuItem.getBrowseId() = menuRenderer?.items?.firstNotNullOfOrNull { it?.men
 
 ///////
 
-fun ShelfItem.getTitle() = title?.getText()
+fun ShelfItem.getTitle() = title?.getText() ?: headerRenderer?.shelfHeaderRenderer?.title?.getText()
 fun ShelfItem.getItemWrappers() = content?.horizontalListRenderer?.items
 fun ShelfItem.getNextPageKey() = content?.horizontalListRenderer?.continuations?.firstNotNullOfOrNull { it?.nextContinuationData?.continuation }
 fun ShelfItem.getChipItems() = headerRenderer?.chipCloudRenderer?.chips

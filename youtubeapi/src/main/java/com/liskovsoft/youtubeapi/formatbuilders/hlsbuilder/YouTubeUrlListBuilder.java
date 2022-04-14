@@ -50,13 +50,11 @@ public class YouTubeUrlListBuilder implements UrlListBuilder {
 
         List<String> list = new ArrayList<>();
 
-        // put hq items on top
+        // Put hq items on top.
+        // Note, hq items sometimes cannot be played.
         for (MediaFormat item : mVideos) {
             list.add(0, item.getUrl());
         }
-
-        // remain only first item as ExoPlayer doesn't support adaptive streaming for url list
-        //return list.subList(0, 1);
 
         return list;
     }
