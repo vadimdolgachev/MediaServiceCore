@@ -1,6 +1,7 @@
 package com.liskovsoft.youtubeapi.browse;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.models.grid.GridTabContinuation;
@@ -29,11 +30,13 @@ import java.util.Map;
 public class BrowseServiceSigned {
     private static final String TAG = BrowseServiceSigned.class.getSimpleName();
     private final BrowseManagerSigned mBrowseManagerSigned;
+    private final AppService mAppService;
     private static BrowseServiceSigned sInstance;
     private Map<String, Guide> mGuideMap = new HashMap<>();
 
     private BrowseServiceSigned() {
         mBrowseManagerSigned = RetrofitHelper.withJsonPath(BrowseManagerSigned.class);
+        mAppService = AppService.instance();
     }
 
     public static BrowseServiceSigned instance() {
@@ -49,17 +52,7 @@ public class BrowseServiceSigned {
     }
 
     public GridTab getSubscriptions(String authorization) {
-        GridTab subs = getGridTab(BrowseManagerParams.getSubscriptionsQuery(), authorization);
-
-        // LIVE & UPCOMING videos always on top
-        if (subs != null && subs.getItemWrappers() != null) {
-            Collections.sort(subs.getItemWrappers(), (o1, o2) ->
-                    o1.isLive() == o2.isLive() && o1.isUpcoming() == o2.isUpcoming() ? 0 :
-                    o1.isLive() || (o1.isUpcoming() && !o2.isLive()) ? -1 : 1
-            );
-        }
-
-        return subs;
+        return getGridTab(BrowseManagerParams.getSubscriptionsQuery(), authorization);
     }
 
     public List<GridTab> getSubscribedChannelsAZ(String authorization) {
@@ -119,11 +112,14 @@ public class BrowseServiceSigned {
         List<GridTab> playlists = getGridTabs(BrowseManagerParams.getMyLibraryQuery(), authorization);
 
         if (playlists != null) {
+            GridTab myVideos = playlists.get(1); // save "My videos" for later use
+            //GridTab watchLater = playlists.get(2); // save "Watch later" for later use
+            playlists.remove(3); // remove "Purchases"
+            //playlists.remove(2); // remove "Watch later"
+            playlists.remove(1); // remove "My videos"
             playlists.remove(0); // remove "History"
-            GridTab myVideos = playlists.get(0); // save "My videos" for later use
-            playlists.remove(0); // remove "My videos"
-            playlists.remove(1); // remove "Purchases"
             playlists.add(myVideos); // add "My videos" to the end
+            //playlists.add(watchLater); // add "Watch later" to the end
         }
 
         return playlists;
@@ -238,7 +234,7 @@ public class BrowseServiceSigned {
         }
 
         String query = BrowseManagerParams.getContinuationQuery(nextKey);
-        Call<SectionContinuation> wrapper = mBrowseManagerSigned.continueSection(query, authorization);
+        Call<SectionContinuation> wrapper = mBrowseManagerSigned.continueSection(query, authorization, mAppService.getVisitorId());
 
         return RetrofitHelper.get(wrapper);
     }
@@ -273,7 +269,7 @@ public class BrowseServiceSigned {
 
         String query = BrowseManagerParams.getContinuationQuery(nextKey);
 
-        Call<SectionTabContinuation> wrapper = mBrowseManagerSigned.continueSectionTab(query, authorization);
+        Call<SectionTabContinuation> wrapper = mBrowseManagerSigned.continueSectionTab(query, authorization, mAppService.getVisitorId());
 
         return RetrofitHelper.get(wrapper);
     }
@@ -317,7 +313,7 @@ public class BrowseServiceSigned {
 
         Log.d(TAG, "Getting section tab list for query: %s", query);
 
-        Call<SectionTabList> wrapper = mBrowseManagerSigned.getSectionTabList(query, authorization);
+        Call<SectionTabList> wrapper = mBrowseManagerSigned.getSectionTabList(query, authorization, mAppService.getVisitorId());
 
         return RetrofitHelper.get(wrapper);
     }
@@ -344,7 +340,7 @@ public class BrowseServiceSigned {
             return null;
         }
 
-        Call<SectionList> wrapper = mBrowseManagerSigned.getSectionList(query, authorization);
+        Call<SectionList> wrapper = mBrowseManagerSigned.getSectionList(query, authorization, mAppService.getVisitorId());
 
         return RetrofitHelper.get(wrapper);
     }

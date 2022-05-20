@@ -1,8 +1,10 @@
 package com.liskovsoft.youtubeapi.search;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.browse.BrowseServiceSigned;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import com.liskovsoft.youtubeapi.search.models.SearchTags;
@@ -18,10 +20,12 @@ public class SearchServiceSigned {
     private static SearchServiceSigned sInstance;
     private final SearchManagerSigned mSearchManagerSigned;
     private final BrowseServiceSigned mBrowseService;
+    private final AppService mAppService;
 
     private SearchServiceSigned() {
         mSearchManagerSigned = RetrofitHelper.withJsonPath(SearchManagerSigned.class);
         mBrowseService = BrowseServiceSigned.instance();
+        mAppService = AppService.instance();
     }
 
     public static SearchServiceSigned instance() {
@@ -41,7 +45,7 @@ public class SearchServiceSigned {
     }
 
     public SearchResult getSearch(String searchText, int options, String authorization) {
-        Call<SearchResult> wrapper = mSearchManagerSigned.getSearchResult(SearchManagerParams.getSearchQuery(searchText, options), authorization);
+        Call<SearchResult> wrapper = mSearchManagerSigned.getSearchResult(SearchManagerParams.getSearchQuery(searchText, options), authorization, mAppService.getVisitorId());
         SearchResult searchResult = RetrofitHelper.get(wrapper);
 
 
@@ -76,7 +80,17 @@ public class SearchServiceSigned {
             searchText = "";
         }
 
-        Call<SearchTags> wrapper = mSearchManagerSigned.getSearchTags(searchText, mBrowseService.getSuggestToken(authorization), authorization);
+        LocaleManager localeManager = LocaleManager.instance();
+
+        Call<SearchTags> wrapper =
+                mSearchManagerSigned.getSearchTags(
+                        searchText,
+                        mBrowseService.getSuggestToken(authorization),
+                        localeManager.getCountry(),
+                        localeManager.getLanguage(),
+                        authorization,
+                        mAppService.getVisitorId()
+                );
         SearchTags searchTags = RetrofitHelper.get(wrapper);
 
         if (searchTags != null && searchTags.getSearchTags() != null) {

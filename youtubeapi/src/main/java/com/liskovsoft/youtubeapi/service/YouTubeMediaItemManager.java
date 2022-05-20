@@ -15,10 +15,8 @@ import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResult;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextServiceV2;
 import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl;
-import com.liskovsoft.youtubeapi.next.v2.impl.mediaitem.MediaItemImpl;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
-import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItem;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemMetadata;
 import com.liskovsoft.youtubeapi.service.data.YouTubeSponsorSegment;
@@ -346,10 +344,10 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
-    public List<VideoPlaylistInfo> getVideoPlaylistsInfos(String videoId) {
+    public List<VideoPlaylistInfo> getVideoPlaylistsInfo(String videoId) {
         checkSigned();
 
-        PlaylistsResult playlistsInfo = mMediaItemManagerReal.getVideoPlaylistsInfos(videoId);
+        PlaylistsResult playlistsInfo = mMediaItemManagerReal.getVideoPlaylistsInfo(videoId);
 
         return YouTubeVideoPlaylistInfo.from(playlistsInfo);
     }
@@ -369,6 +367,41 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
+    public void renamePlaylist(String playlistId, String newName) {
+        checkSigned();
+
+        mMediaItemManagerReal.renamePlaylist(playlistId, newName);
+    }
+
+    @Override
+    public void setPlaylistOrder(String playlistId, int playlistOrder) {
+        checkSigned();
+
+        mMediaItemManagerReal.setPlaylistOrder(playlistId, playlistOrder);
+    }
+
+    @Override
+    public void savePlaylist(String playlistId) {
+        checkSigned();
+
+        mMediaItemManagerReal.savePlaylist(playlistId);
+    }
+
+    @Override
+    public void removePlaylist(String playlistId) {
+        checkSigned();
+
+        mMediaItemManagerReal.removePlaylist(playlistId);
+    }
+
+    @Override
+    public void createPlaylist(String playlistName, String videoId) {
+        checkSigned();
+
+        mMediaItemManagerReal.createPlaylist(playlistName, videoId);
+    }
+
+    @Override
     public List<SponsorSegment> getSponsorSegments(String videoId) {
         SegmentList segmentList = mSponsorBlockService.getSegmentList(videoId);
 
@@ -383,8 +416,8 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     }
 
     @Override
-    public Observable<List<VideoPlaylistInfo>> getVideoPlaylistsInfosObserve(String videoId) {
-        return Observable.fromCallable(() -> getVideoPlaylistsInfos(videoId));
+    public Observable<List<VideoPlaylistInfo>> getVideoPlaylistsInfoObserve(String videoId) {
+        return Observable.fromCallable(() -> getVideoPlaylistsInfo(videoId));
     }
 
     @Override
@@ -395,6 +428,31 @@ public class YouTubeMediaItemManager implements MediaItemManager {
     @Override
     public Observable<Void> removeFromPlaylistObserve(String playlistId, String videoId) {
         return ObservableHelper.fromVoidable(() -> removeFromPlaylist(playlistId, videoId));
+    }
+
+    @Override
+    public Observable<Void> renamePlaylistObserve(String playlistId, String newName) {
+        return ObservableHelper.fromVoidable(() -> renamePlaylist(playlistId, newName));
+    }
+
+    @Override
+    public Observable<Void> setPlaylistOrderObserve(String playlistId, int playlistOrder) {
+        return ObservableHelper.fromVoidable(() -> setPlaylistOrder(playlistId, playlistOrder));
+    }
+
+    @Override
+    public Observable<Void> savePlaylistObserve(String playlistId) {
+        return ObservableHelper.fromVoidable(() -> savePlaylist(playlistId));
+    }
+
+    @Override
+    public Observable<Void> removePlaylistObserve(String playlistId) {
+        return ObservableHelper.fromVoidable(() -> removePlaylist(playlistId));
+    }
+
+    @Override
+    public Observable<Void> createPlaylistObserve(String playlistName, String videoId) {
+        return ObservableHelper.fromVoidable(() -> createPlaylist(playlistName, videoId));
     }
 
     @Override
