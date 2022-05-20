@@ -137,7 +137,7 @@ public class YouTubeMediaItemManagerSigned implements MediaItemManagerInt {
     }
 
     @Override
-    public PlaylistsResult getVideoPlaylistsInfos(String videoId) {
+    public PlaylistsResult getVideoPlaylistsInfo(String videoId) {
         return mPlaylistService.getPlaylistsInfo(videoId, mSignInManager.getAuthorizationHeader());
     }
 
@@ -149,5 +149,30 @@ public class YouTubeMediaItemManagerSigned implements MediaItemManagerInt {
     @Override
     public void removeFromPlaylist(String playlistId, String videoId) {
         mPlaylistService.removeFromPlaylist(playlistId, videoId, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public void renamePlaylist(String playlistId, String newName) {
+        mPlaylistService.renamePlaylist(playlistId, newName, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public void setPlaylistOrder(String playlistId, int playlistOrder) {
+        mPlaylistService.setPlaylistOrder(playlistId, playlistOrder, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public void savePlaylist(String playlistId) {
+        mPlaylistService.savePlaylist(playlistId, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public void removePlaylist(String playlistId) {
+        mPlaylistService.removePlaylist(playlistId, mSignInManager.getAuthorizationHeader());
+    }
+
+    @Override
+    public void createPlaylist(String playlistName, String videoId) {
+        mPlaylistService.createPlaylist(playlistName, videoId, mSignInManager.getAuthorizationHeader());
     }
 }

@@ -32,7 +32,7 @@ public class YouTubeMediaItem implements MediaItem {
     private String mContentType;
     private boolean mIsLive;
     private boolean mIsUpcoming;
-    private int mDurationMs;
+    private String mLengthText;
     private String mBadgeText;
     private String mProductionDate;
     private int mWidth;
@@ -107,9 +107,8 @@ public class YouTubeMediaItem implements MediaItem {
                 item.getPublishedTime(),
                 item.getViewCountText(),
                 item.getUpcomingEventText());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mProductionDate = item.getPublishedTime();
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
@@ -119,8 +118,8 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
         video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale's specific delimiters
-        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
-        video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
+        video.mLengthText = item.getBadgeText();
+        video.mBadgeText = item.getBadgeText();
         video.mPercentWatched = item.getPercentWatched();
         video.mAuthor = item.getUserName();
         video.mVideoPreviewUrl = item.getRichThumbnailUrl();
@@ -145,9 +144,8 @@ public class YouTubeMediaItem implements MediaItem {
                 item.getPublishedDate(),
                 item.getShortViewCountText() != null ? item.getShortViewCountText() : item.getViewCountText(),
                 item.getUpcomingEventText());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mProductionDate = item.getPublishedDate();
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
@@ -156,7 +154,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
         video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
-        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
+        video.mLengthText = item.getLengthText() != null ? item.getLengthText() : item.getBadgeText();
         video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
         video.mPercentWatched = item.getPercentWatched();
         video.mAuthor = item.getUserName();
@@ -179,9 +177,8 @@ public class YouTubeMediaItem implements MediaItem {
         video.mSecondTitle = YouTubeMediaServiceHelper.createInfo(
                 item.getUserName(),
                 item.getViewsAndPublished());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mProductionDate = item.getViewsAndPublished();
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
@@ -190,7 +187,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaUrl = ServiceHelper.videoIdToFullUrl(item.getVideoId());
         video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
         // TODO: time conversion doesn't take into account locale specific delimiters
-        video.mDurationMs = ServiceHelper.timeTextToMillis(item.getLengthText());
+        video.mLengthText = item.getLengthText();
         video.mBadgeText = item.getLengthText();
         video.mPercentWatched = item.getPercentWatched();
         video.mAuthor = item.getUserName();
@@ -207,9 +204,8 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaItemType = MediaItem.TYPE_CHANNEL;
         video.mTitle = item.getTitle();
         video.mSecondTitle = YouTubeMediaServiceHelper.createInfo(item.getSubscriberCountText());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mChannelId = item.getChannelId();
         video.mChannelUrl = ServiceHelper.channelIdToFullUrl(item.getChannelId());
 
@@ -224,9 +220,8 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaItemType = MediaItem.TYPE_PLAYLIST;
         video.mTitle = item.getTitle();
         video.mSecondTitle = YouTubeMediaServiceHelper.createInfo(item.getVideoCountText());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mPlaylistId = item.getPlaylistId();
         video.mVideoId = item.getVideoId();
 
@@ -241,9 +236,8 @@ public class YouTubeMediaItem implements MediaItem {
         video.mMediaItemType = MediaItem.TYPE_PLAYLIST;
         video.mTitle = item.getTitle();
         video.mSecondTitle = YouTubeMediaServiceHelper.createInfo(item.getVideoCountText());
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mPlaylistId = item.getPlaylistId();
         video.mVideoId = item.getVideoId();
 
@@ -273,9 +267,8 @@ public class YouTubeMediaItem implements MediaItem {
 
         video.mMediaItemType = MediaItem.TYPE_VIDEO;
         video.mTitle = item.getTitle();
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
-        video.mCardImageUrl = highResThumbnailUrl;
-        video.mBackgroundImageUrl = highResThumbnailUrl;
+        video.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(item.getThumbnails());
+        video.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(item.getThumbnails());
         video.mVideoId = item.getVideoId();
         video.mPlaylistId = item.getPlaylistId();
         video.mPlaylistIndex = item.getPlaylistItemIndex();
@@ -293,9 +286,8 @@ public class YouTubeMediaItem implements MediaItem {
         
         item.mMediaItemType = type;
         item.mTitle = tab.getTitle();
-        String highResThumbnailUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(tab.getThumbnails());
-        item.mCardImageUrl = highResThumbnailUrl;
-        item.mBackgroundImageUrl = highResThumbnailUrl;
+        item.mCardImageUrl = YouTubeMediaServiceHelper.findLowResThumbnailUrl(tab.getThumbnails());
+        item.mBackgroundImageUrl = YouTubeMediaServiceHelper.findHighResThumbnailUrl(tab.getThumbnails());
         item.mReloadPageKey = tab.getReloadPageKey();
         item.mHasNewContent = tab.hasNewContent();
         addCommonProps(item);
@@ -414,7 +406,7 @@ public class YouTubeMediaItem implements MediaItem {
 
     @Override
     public int getDurationMs() {
-        return mDurationMs;
+        return ServiceHelper.timeTextToMillis(mLengthText);
     }
 
     @Override

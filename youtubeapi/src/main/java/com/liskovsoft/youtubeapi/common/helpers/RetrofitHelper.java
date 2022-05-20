@@ -29,6 +29,7 @@ import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Converter;
+import retrofit2.Response;
 import retrofit2.Retrofit;
 
 import java.io.IOException;
@@ -70,6 +71,17 @@ public class RetrofitHelper {
     public static <T> T get(Call<T> wrapper) {
         try {
             return wrapper.execute().body();
+        } catch (IOException e) {
+            //wrapper.cancel(); // fix background running when RxJava object is disposed
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public static <T> Response<T> getResponse(Call<T> wrapper) {
+        try {
+            return wrapper.execute();
         } catch (IOException e) {
             //wrapper.cancel(); // fix background running when RxJava object is disposed
             e.printStackTrace();
@@ -160,9 +172,7 @@ public class RetrofitHelper {
             requestBuilder.header("User-Agent", AppConstants.APP_USER_AGENT);
 
             // Enable compression in production
-//            requestBuilder.header("Accept-Encoding", BuildConfig.DEBUG ?
-//                    AppConstants.ACCEPT_ENCODING_IDENTITY : AppConstants.ACCEPT_ENCODING_DEFAULT);
-            requestBuilder.header("Accept-Encoding", AppConstants.ACCEPT_ENCODING_IDENTITY);
+            requestBuilder.header("Accept-Encoding", AppConstants.ACCEPT_ENCODING_DEFAULT);
 
             // Emulate browser request
             //requestBuilder.header("Connection", "keep-alive");
@@ -257,6 +267,25 @@ public class RetrofitHelper {
             // unlikely
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Get cookie pair: cookieName=cookieValue
+     */
+    public static <T> String getCookie(Response<T> response, String cookieName) {
+        if (response == null) {
+            return null;
+        }
+
+        List<String> cookies = response.headers().values("Set-Cookie");
+
+        for (String cookie : cookies) {
+            if (cookie.startsWith(cookieName)) {
+                return cookie.split(";")[0];
+            }
+        }
+
+        return null;
     }
 
     private static class PreferIpv4Dns implements Dns {

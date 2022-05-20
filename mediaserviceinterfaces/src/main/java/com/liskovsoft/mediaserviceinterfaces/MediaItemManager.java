@@ -13,7 +13,13 @@ import java.util.List;
 import java.util.Set;
 
 public interface MediaItemManager {
-    // Base interfaces
+    int PLAYLIST_ORDER_ADDED_DATE_NEWER_FIRST = 1;
+    int PLAYLIST_ORDER_ADDED_DATE_OLDER_FIRST = 2;
+    int PLAYLIST_ORDER_POPULARITY = 3;
+    int PLAYLIST_ORDER_PUBLISHED_DATE_NEWER_FIRST = 4;
+    int PLAYLIST_ORDER_PUBLISHED_DATE_OLDER_FIRST = 5;
+
+    // Blocking interfaces
     MediaItemFormatInfo getFormatInfo(MediaItem item);
     MediaItemFormatInfo getFormatInfo(String videoId);
     MediaItemFormatInfo getFormatInfo(String videoId, String clickTrackingParams);
@@ -34,9 +40,14 @@ public interface MediaItemManager {
     void unsubscribe(MediaItem item);
     void unsubscribe(String channelId);
     void markAsNotInterested(MediaItem item);
-    List<VideoPlaylistInfo> getVideoPlaylistsInfos(String videoId);
+    List<VideoPlaylistInfo> getVideoPlaylistsInfo(String videoId);
     void addToPlaylist(String playlistId, String videoId);
     void removeFromPlaylist(String playlistId, String videoId);
+    void renamePlaylist(String playlistId, String newName);
+    void setPlaylistOrder(String playlistId, int playlistOrder);
+    void savePlaylist(String playlistId);
+    void removePlaylist(String playlistId);
+    void createPlaylist(String playlistName, String videoId);
     List<SponsorSegment> getSponsorSegments(String videoId);
     List<SponsorSegment> getSponsorSegments(String videoId, Set<String> categories);
 
@@ -61,9 +72,14 @@ public interface MediaItemManager {
     Observable<Void> removeLikeObserve(MediaItem item);
     Observable<Void> setDislikeObserve(MediaItem item);
     Observable<Void> removeDislikeObserve(MediaItem item);
-    Observable<List<VideoPlaylistInfo>> getVideoPlaylistsInfosObserve(String videoId);
+    Observable<List<VideoPlaylistInfo>> getVideoPlaylistsInfoObserve(String videoId);
     Observable<Void> addToPlaylistObserve(String playlistId, String videoId);
     Observable<Void> removeFromPlaylistObserve(String playlistId, String videoId);
+    Observable<Void> renamePlaylistObserve(String playlistId, String newName);
+    Observable<Void> setPlaylistOrderObserve(String playlistId, int playlistOrder);
+    Observable<Void> savePlaylistObserve(String playlistId);
+    Observable<Void> removePlaylistObserve(String playlistId);
+    Observable<Void> createPlaylistObserve(String playlistName, String videoId);
     Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId);
     Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId, Set<String> categories);
 }

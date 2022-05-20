@@ -92,7 +92,7 @@ public class YouTubeMediaItemManagerUnsigned implements MediaItemManagerInt {
     }
 
     @Override
-    public PlaylistsResult getVideoPlaylistsInfos(String videoId) {
+    public PlaylistsResult getVideoPlaylistsInfo(String videoId) {
         // Do nothing, user is unsigned
         return null;
     }
@@ -104,6 +104,31 @@ public class YouTubeMediaItemManagerUnsigned implements MediaItemManagerInt {
 
     @Override
     public void removeFromPlaylist(String playlistId, String videoId) {
+        // Do nothing, user is unsigned
+    }
+
+    @Override
+    public void renamePlaylist(String playlistId, String newName) {
+        // Do nothing, user is unsigned
+    }
+
+    @Override
+    public void setPlaylistOrder(String playlistId, int playlistOrder) {
+        // Do nothing, user is unsigned
+    }
+
+    @Override
+    public void savePlaylist(String playlistId) {
+        // Do nothing, user is unsigned
+    }
+
+    @Override
+    public void removePlaylist(String playlistId) {
+        // Do nothing, user is unsigned
+    }
+
+    @Override
+    public void createPlaylist(String playlistName, String videoId) {
         // Do nothing, user is unsigned
     }
 }
