@@ -43,7 +43,7 @@ public class RetrofitHelper {
     // Ignored when specified url is absolute
     private static final String DEFAULT_BASE_URL = "https://www.youtube.com";
     public static boolean sForceEnableProfiler;
-    private static OkHttpClient sOkHttpClient;
+    private static OkHttpClient sSharedOkHttpClient;
 
     public static <T> T withGson(Class<T> clazz) {
         return buildRetrofit(GsonConverterFactory.create()).create(clazz);
@@ -118,26 +118,24 @@ public class RetrofitHelper {
         return retrofitBuilder;
     }
 
-    private static OkHttpClient getOkHttpClient() {
-        if (sOkHttpClient == null) {
-            sOkHttpClient = createOkHttpClient();
+    /**
+     * Fix OOM: https://square.github.io/okhttp/3.x/okhttp/okhttp3/OkHttpClient.html
+     */
+    public static OkHttpClient createOkHttpClient() {
+        if (sSharedOkHttpClient == null) {
+            sSharedOkHttpClient = createOkHttpClientInt();
         }
 
-        return sOkHttpClient;
+        return sSharedOkHttpClient;
     }
 
-    public static OkHttpClient createOkHttpClient() {
+    private static OkHttpClient createOkHttpClientInt() {
         OkHttpClient.Builder okBuilder = new OkHttpClient.Builder();
 
-        //disableCache(okBuilder);
-
-        // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
-        //forceIPv4Dns(okBuilder);
-
-        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isIPv4DnsPreferred()) {
-            // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
-            preferIPv4Dns(okBuilder);
-        }
+        //if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isIPv4DnsPreferred()) {
+        //    // Cause hangs and crashes (especially on Android 8 devices or Dune HD)
+        //    preferIPv4Dns(okBuilder);
+        //}
 
         OkHttpCommons.setupConnectionFix(okBuilder);
 
@@ -145,17 +143,21 @@ public class RetrofitHelper {
 
         OkHttpCommons.configureToIgnoreCertificate(okBuilder);
 
+        OkHttpCommons.fixStreamResetError(okBuilder);
+
         addCommonHeaders(okBuilder);
 
         enableDecompression(okBuilder);
+
+        disableCache(okBuilder);
 
         debugSetup(okBuilder);
 
         OkHttpClient client = okBuilder.build();
 
-        if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isDnsOverHttpsEnabled()) {
-            client = wrapDnsOverHttps(client);
-        }
+        //if (GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isDnsOverHttpsEnabled()) {
+        //    client = wrapDnsOverHttps(client);
+        //}
 
         return client;
     }

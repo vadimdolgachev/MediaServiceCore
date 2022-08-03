@@ -11,6 +11,7 @@ public interface MediaItemMetadata {
     String getSecondTitleAlt();
     String getDescription();
     String getAuthor();
+    String getAuthorImageUrl();
     String getViewCount();
     String getLikesCount();
     String getDislikesCount();
@@ -19,6 +20,7 @@ public interface MediaItemMetadata {
     MediaItem getNextVideo();
     boolean isSubscribed();
     boolean isLive();
+    String getLiveChatKey();
     boolean isUpcoming();
     String getChannelId();
     int getPercentWatched();

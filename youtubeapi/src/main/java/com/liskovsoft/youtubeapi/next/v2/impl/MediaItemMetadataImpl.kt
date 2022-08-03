@@ -3,8 +3,9 @@ package com.liskovsoft.youtubeapi.next.v2.impl
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
+import com.liskovsoft.youtubeapi.common.models.kt.*
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResult
-import com.liskovsoft.youtubeapi.next.v2.helpers.*
+import com.liskovsoft.youtubeapi.next.v2.gen.kt.*
 import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl
 import com.liskovsoft.youtubeapi.next.v2.impl.mediaitem.NextMediaItemImpl
 import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper
@@ -25,8 +26,11 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
     private val nextVideoItem by lazy {
         watchNextResult.getNextVideoItem()
     }
+    private val liveChatKeyItem by lazy {
+        watchNextResult.getLiveChatKey()
+    }
     private val videoOwner by lazy {
-        videoMetadata?.getVideoOwner()
+        videoMetadata?.getVideoOwner() ?: watchNextResult.transportControls?.transportControlsRenderer?.getVideoOwner()
     }
     private val videoDetails by lazy {
         watchNextResult.getVideoDetails()
@@ -63,7 +67,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
             }
         }
     }
-    private val videoDescription by lazy { videoMetadata?.description?.getText() }
+    private val videoDescription by lazy { videoMetadata?.description?.getText() ?:
+        // Scroll to the end till we find description tile
+        suggestionList?.lastOrNull()?.shelf?.getItemWrappers()?.firstOrNull()?.getDescriptionText()
+    }
     private val videoSecondTitle by lazy {
         YouTubeMediaServiceHelper.createInfo(
                 videoAuthor, viewCountText, publishedTime
@@ -75,6 +82,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         )
     }
     private val videoAuthor by lazy { videoDetails?.getUserName() }
+    private val videoAuthorImageUrl by lazy { videoOwner?.getThumbnails()?.findLowResThumbnailUrl() }
     private val suggestionList by lazy {
         val list = suggestedSections?.mapNotNull { if (it?.getItemWrappers() != null) MediaGroupImpl(it) else null }
         if (list?.size ?: 0 > 0)
@@ -127,6 +135,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return videoAuthor
     }
 
+    override fun getAuthorImageUrl(): String? {
+        return videoAuthorImageUrl
+    }
+
     override fun getViewCount(): String? {
         return viewCountText
     }
@@ -149,6 +161,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
 
     override fun isLive(): Boolean {
         return isLiveStream
+    }
+
+    override fun getLiveChatKey(): String? {
+        return liveChatKeyItem
     }
 
     override fun isUpcoming(): Boolean {

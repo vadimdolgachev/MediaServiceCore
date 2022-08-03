@@ -220,6 +220,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
+    public boolean containsMedia() {
+        return containsDashUrl() || containsHlsUrl() || containsDashVideoInfo() || containsUrlListInfo();
+    }
+
+    @Override
     public boolean containsDashInfo() {
         return mAdaptiveFormats != null;
     }
@@ -306,6 +311,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         return mIsStreamSeekable;
     }
 
+    @Override
+    public boolean isAgeRestricted() {
+        return false;
+    }
+
     public String getEventId() {
         return mEventId;
     }
@@ -322,11 +332,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         mVisitorMonitoringData = visitorMonitoringData;
     }
 
-    public boolean isAgeRestricted() {
-        return mIsAgeRestricted;
-    }
-
-    public boolean isStale() {
-        return System.currentTimeMillis() - mCreatedTimeMs > 30_000;
+    public long getCreatedTimeMs() {
+        return mCreatedTimeMs;
     }
 }

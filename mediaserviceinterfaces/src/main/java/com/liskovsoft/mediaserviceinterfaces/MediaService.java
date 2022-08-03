@@ -1,10 +1,11 @@
 package com.liskovsoft.mediaserviceinterfaces;
 
 public interface MediaService {
-    SignInManager getSignInManager();
-    RemoteManager getRemoteManager();
-    MediaGroupManager getMediaGroupManager();
-    MediaItemManager getMediaItemManager();
+    SignInService getSignInService();
+    RemoteService getRemoteService();
+    MediaGroupService getMediaGroupService();
+    MediaItemService getMediaItemService();
+    LiveChatService getLiveChatService();
     void invalidateCache();
     void refreshCacheIfNeeded();
 }

@@ -87,6 +87,8 @@ public class LoungeService {
                 BindParams.QR);
         PairingCodeV2 pairingCode = RetrofitHelper.get(pairingCodeWrapper);
 
+        mLoungeToken = null; // apply changes (restart the service)
+
         // Pairing code XXX-XXX-XXX-XXX
         return pairingCode != null ? pairingCode.getPairingCode() : null;
     }
@@ -104,6 +106,9 @@ public class LoungeService {
             } catch (SocketTimeoutException e) {
                 Log.e(TAG, "Connection hanged. Reconnecting...");
             } catch (InterruptedIOException e) {
+                Log.e(TAG, "Oops. Stopping. Listening thread interrupted.");
+                break;
+            } catch (InterruptedException e) {
                 Log.e(TAG, "Oops. Stopping. Listening thread interrupted.");
                 break;
             } catch (NullPointerException e) {

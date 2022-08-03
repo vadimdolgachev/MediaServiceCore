@@ -6,6 +6,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.common.models.items.Thumbnail;
+import com.liskovsoft.youtubeapi.common.models.kt.ThumbnailItem;
 import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
 
@@ -14,13 +15,14 @@ import java.util.List;
 
 public final class YouTubeMediaServiceHelper {
     /**
-     * Optimal thumbnail for tv screen
+     * NOTE: Optimal thumbnail index is 3. Lower values cause black borders around images on Chromecast and Sony.
      */
-    public static final int LOW_RES_THUMBNAIL_INDEX = 2;
+    public static final int LOW_RES_THUMBNAIL_INDEX = 3;
     private static final int SHORTS_LEN_MS = 60 * 1_000;
 
     /**
-     * Find optimal thumbnail for tv screen
+     * Find optimal thumbnail for tv screen<br/>
+     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.kt.ItemHelperKt#findLowResThumbnailUrl(ThumbnailItem)}
      */
     public static String findLowResThumbnailUrl(List<Thumbnail> thumbnails) {
         if (thumbnails == null) {
@@ -36,6 +38,9 @@ public final class YouTubeMediaServiceHelper {
         return thumbnails.get(size > LOW_RES_THUMBNAIL_INDEX ? LOW_RES_THUMBNAIL_INDEX : size - 1).getUrl();
     }
 
+    /**
+     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.kt.ItemHelperKt#findHighResThumbnailUrl(ThumbnailItem)}
+     */
     public static String findHighResThumbnailUrl(List<Thumbnail> thumbnails) {
         if (thumbnails == null) {
             return null;
@@ -89,6 +94,7 @@ public final class YouTubeMediaServiceHelper {
             boolean isHideUpcomingEnabled = GlobalPreferences.sInstance.isHideUpcomingEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS;
 
             if (isHideShortsEnabled || isHideUpcomingEnabled) {
+                // NOTE: The group could be empty after filtering! Fix for that.
 
                 // Remove Shorts and/or Upcoming
                 // NOTE: Predicate replacement function for devices with Android 6.0 and below.
@@ -113,5 +119,16 @@ public final class YouTubeMediaServiceHelper {
         int lengthMs = mediaItem.getDurationMs();
         boolean isShortLength = lengthMs > 0 && lengthMs < SHORTS_LEN_MS;
         return isShortLength || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
+    }
+
+    /**
+     * Avatar blocking fix
+     */
+    public static String avatarBlockFix(String url) {
+        if (url != null) {
+            url = url.replaceFirst("^https://yt3.ggpht.com", "https://yt4.ggpht.com");
+        }
+
+        return url;
     }
 }

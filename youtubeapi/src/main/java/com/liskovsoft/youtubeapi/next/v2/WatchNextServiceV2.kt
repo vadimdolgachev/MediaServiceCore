@@ -11,11 +11,11 @@ import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResult
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResultContinuation
 import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper
-import com.liskovsoft.youtubeapi.service.YouTubeSignInManager
+import com.liskovsoft.youtubeapi.service.YouTubeSignInService
 
 class WatchNextServiceV2 private constructor() {
-    private var mWatchNextManager = RetrofitHelper.withGson(WatchNextManager::class.java)
-    private val mSignInManager = YouTubeSignInManager.instance()
+    private var mWatchNextManager = RetrofitHelper.withGson(WatchNextApi::class.java)
+    private val mSignInManager = YouTubeSignInService.instance()
     private val mAppService = AppService.instance();
 
     fun getMetadata(videoId: String): MediaItemMetadata? {
@@ -49,15 +49,15 @@ class WatchNextServiceV2 private constructor() {
     }
 
     private fun getWatchNextResult(videoId: String?): WatchNextResult? {
-        return getWatchNext(WatchNextManagerParams.getWatchNextQuery(videoId!!))
+        return getWatchNext(WatchNextApiParams.getWatchNextQuery(videoId!!))
     }
 
     private fun getWatchNextResult(videoId: String?, playlistId: String?, playlistIndex: Int): WatchNextResult? {
-        return getWatchNext(WatchNextManagerParams.getWatchNextQuery(videoId, playlistId, playlistIndex))
+        return getWatchNext(WatchNextApiParams.getWatchNextQuery(videoId, playlistId, playlistIndex))
     }
 
     private fun getWatchNextResult(videoId: String?, playlistId: String?, playlistIndex: Int, playlistParams: String?): WatchNextResult? {
-        return getWatchNext(WatchNextManagerParams.getWatchNextQuery(videoId, playlistId, playlistIndex, playlistParams))
+        return getWatchNext(WatchNextApiParams.getWatchNextQuery(videoId, playlistId, playlistIndex, playlistParams))
     }
 
     private fun getWatchNext(query: String): WatchNextResult? {
@@ -80,12 +80,13 @@ class WatchNextServiceV2 private constructor() {
     /**
      * For testing (mocking) purposes only
      */
-    fun setWatchNextManager(watchNextManager: WatchNextManager) {
-        mWatchNextManager = watchNextManager
+    fun setWatchNextManager(watchNextApi: WatchNextApi) {
+        mWatchNextManager = watchNextApi
     }
 
     companion object {
         private var sInstance: WatchNextServiceV2? = null
+        @JvmStatic
         fun instance(): WatchNextServiceV2? {
             if (sInstance == null) {
                 sInstance = WatchNextServiceV2()
@@ -93,6 +94,7 @@ class WatchNextServiceV2 private constructor() {
             return sInstance
         }
 
+        @JvmStatic
         fun unhold() {
             sInstance = null
         }

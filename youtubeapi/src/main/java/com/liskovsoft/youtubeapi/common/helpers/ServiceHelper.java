@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.common.helpers;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.app.AppConstants;
+import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 
 import java.util.ArrayList;
@@ -54,16 +55,37 @@ public class ServiceHelper {
         return (int) (TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes) + TimeUnit.SECONDS.toMillis(seconds));
     }
 
-    public static String createQuery(String template) {
-        LocaleManager localeManager = LocaleManager.instance();
-        return String.format(AppConstants.JSON_POST_DATA_TEMPLATE_TV,
-                localeManager.getCountry(), localeManager.getLanguage(), localeManager.getUtcOffsetMinutes(), template);
+    public static String createQueryUA(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_TV, data, "uk", "UA");
     }
 
-    public static String createQueryWeb(String template) {
+    public static String createQuery(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_TV, data);
+    }
+
+    public static String createQueryWeb(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_WEB, data);
+    }
+
+    public static String createQueryAndroid(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_ANDROID, data);
+    }
+
+    private static String createQuery(String postTemplate, String data) {
+        return createQuery(postTemplate, data, null, null);
+    }
+
+    private static String createQuery(String postTemplate, String data, String language, String country) {
         LocaleManager localeManager = LocaleManager.instance();
-        return String.format(AppConstants.JSON_POST_DATA_TEMPLATE_WEB,
-                localeManager.getCountry(), localeManager.getLanguage(), localeManager.getUtcOffsetMinutes(), template);
+        AppService appService = AppService.instance();
+        if (language == null) {
+            language = localeManager.getLanguage();
+        }
+        if (country == null) {
+            country = localeManager.getCountry();
+        }
+        return String.format(postTemplate, language, country,
+                localeManager.getUtcOffsetMinutes(), appService.getVisitorId(), data);
     }
 
     /**

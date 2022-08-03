@@ -43,8 +43,8 @@ public interface AppConstants {
     String CLIENT_SCREEN_EMBED = "EMBED"; // no 18+ restriction but not all video embeddable, and no descriptions
 
     String JSON_POST_DATA_TEMPLATE = "{\"context\":{\"client\":{\"tvAppInfo\":{\"zylonLeftNav\":true},\"clientName\":\"%s\",\"clientVersion\":\"%s\"," +
-            "\"clientScreen\":\"%s\",\"webpSupport\":false,\"animatedWebpSupport\":true,\"acceptRegion\":\"%%s\",\"acceptLanguage\":\"%%s\"," +
-            "\"utcOffsetMinutes\":\"%%s\"},\"user\":{\"enableSafetyMode\":false,\"lockedSafetyMode\":false}},\"racyCheckOk\":true,\"contentCheckOk\":true,%%s}";
+            "\"clientScreen\":\"%s\",\"webpSupport\":false,\"animatedWebpSupport\":true,\"acceptLanguage\":\"%%s\",\"acceptRegion\":\"%%s\"," +
+            "\"utcOffsetMinutes\":\"%%s\",\"visitorData\":\"%%s\"},\"user\":{\"enableSafetyMode\":false,\"lockedSafetyMode\":false}},\"racyCheckOk\":true,\"contentCheckOk\":true,%%s}";
 
     /**
      * Used in browse, next, search<br/>
@@ -55,6 +55,8 @@ public interface AppConstants {
     String JSON_POST_DATA_TEMPLATE_TV = String.format(JSON_POST_DATA_TEMPLATE, CLIENT_NAME_TV, CLIENT_VERSION_TV, CLIENT_SCREEN_WATCH);
 
     String JSON_POST_DATA_TEMPLATE_WEB = String.format(JSON_POST_DATA_TEMPLATE, CLIENT_NAME_WEB, CLIENT_VERSION_WEB, CLIENT_SCREEN_WATCH);
+
+    String JSON_POST_DATA_TEMPLATE_ANDROID = String.format(JSON_POST_DATA_TEMPLATE, CLIENT_NAME_ANDROID, CLIENT_VERSION_ANDROID, CLIENT_SCREEN_WATCH);
 
     /**
      * Used when parsing video_info data

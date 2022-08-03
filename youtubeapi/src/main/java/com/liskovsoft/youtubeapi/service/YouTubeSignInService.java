@@ -1,0 +1,170 @@
+package com.liskovsoft.youtubeapi.service;
+
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
+import com.liskovsoft.youtubeapi.auth.V2.AuthService;
+import com.liskovsoft.youtubeapi.auth.models.auth.AccessToken;
+import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
+import com.liskovsoft.youtubeapi.service.internal.YouTubeAccountManager;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+
+import java.util.List;
+
+public class YouTubeSignInService implements SignInService {
+    private static final String TAG = YouTubeSignInService.class.getSimpleName();
+    private static final long TOKEN_REFRESH_PERIOD_MS = 60 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
+    private static YouTubeSignInService sInstance;
+    private final AuthService mAuthService;
+    private final YouTubeAccountManager mAccountManager;
+    private String mCachedAuthorizationHeader;
+    private long mLastUpdateTime;
+
+    private YouTubeSignInService() {
+        mAuthService = AuthService.instance();
+        mAccountManager = YouTubeAccountManager.instance(this);
+
+        GlobalPreferences.setOnInit(() -> {
+            Observable.create(emitter -> {
+                mAccountManager.init();
+                updateAuthorizationHeader();
+                emitter.onComplete();
+            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe();
+        });
+    }
+
+    public static YouTubeSignInService instance() {
+        if (sInstance == null) {
+            sInstance = new YouTubeSignInService();
+        }
+
+        return sInstance;
+    }
+
+    @Override
+    public Observable<String> signInObserve() {
+        return mAccountManager.signInObserve();
+    }
+
+    @Override
+    public void signOut() {
+        // TODO: not implemented
+    }
+
+    @Override
+    public Observable<Void> signOutObserve() {
+        return Observable.create(emitter -> {
+            signOut();
+            emitter.onComplete();
+        });
+    }
+
+    public boolean checkAuthHeader() {
+        // get or create authorization on fly
+        updateAuthorizationHeader();
+
+        return mCachedAuthorizationHeader != null;
+    }
+
+    @Override
+    public boolean isSigned() {
+        // Condition created for the case when a device in offline mode.
+        return mAccountManager.getSelectedAccount() != null;
+    }
+
+    @Override
+    public Observable<Boolean> isSignedObserve() {
+        return Observable.fromCallable(this::isSigned);
+    }
+
+    @Override
+    public List<Account> getAccounts() {
+        return mAccountManager.getAccounts();
+    }
+
+    @Override
+    public Observable<List<Account>> getAccountsObserve() {
+        return Observable.fromCallable(this::getAccounts);
+    }
+
+    public String getAuthorizationHeader() {
+        // get or create authorization on fly
+        updateAuthorizationHeader();
+
+        return mCachedAuthorizationHeader;
+    }
+
+    /**
+     * For testing purposes
+     */
+    public void setAuthorizationHeader(String authorizationHeader) {
+        mCachedAuthorizationHeader = authorizationHeader;
+        mLastUpdateTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public void selectAccount(Account account) {
+        mAccountManager.selectAccount(account);
+    }
+
+    @Override
+    public void removeAccount(Account account) {
+        mAccountManager.removeAccount(account);
+    }
+
+    public void invalidateCache() {
+        mCachedAuthorizationHeader = null;
+    }
+
+    /**
+     * Authorization should be updated periodically (see expire_in field in response)
+     */
+    private synchronized void updateAuthorizationHeader() {
+        if (mCachedAuthorizationHeader != null && System.currentTimeMillis() - mLastUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
+            return;
+        }
+
+        Log.d(TAG, "Updating authorization header...");
+
+        mCachedAuthorizationHeader = null;
+
+        AccessToken token = obtainAccessToken();
+
+        if (token != null) {
+            mCachedAuthorizationHeader = String.format("%s %s", token.getTokenType(), token.getAccessToken());
+            mLastUpdateTime = System.currentTimeMillis();
+        } else {
+            Log.e(TAG, "Access token is null!");
+        }
+    }
+
+    private AccessToken obtainAccessToken() {
+        // We don't have context, so can't create instance here.
+        // Let's hope someone already created one for us.
+        if (GlobalPreferences.sInstance == null) {
+            Log.e(TAG, "GlobalPreferences is null!");
+            return null;
+        }
+
+        AccessToken token = null;
+
+        Account account = mAccountManager.getSelectedAccount();
+
+        if (account != null) {
+            token = mAuthService.getAccessToken(((YouTubeAccount) account).getRefreshToken());
+        } else {
+            String rawAuthData = GlobalPreferences.sInstance.getRawAuthData();
+
+            if (rawAuthData != null) {
+                token = mAuthService.getAccessTokenRaw(rawAuthData);
+            } else {
+                Log.e(TAG, "Refresh token data doesn't stored in the app registry!");
+            }
+        }
+
+        return token;
+    }
+}
