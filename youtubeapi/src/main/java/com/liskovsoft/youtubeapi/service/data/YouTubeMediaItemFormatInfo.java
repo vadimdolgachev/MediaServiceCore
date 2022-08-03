@@ -311,6 +311,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         return mIsStreamSeekable;
     }
 
+    @Override
+    public boolean isAgeRestricted() {
+        return false;
+    }
+
     public String getEventId() {
         return mEventId;
     }
