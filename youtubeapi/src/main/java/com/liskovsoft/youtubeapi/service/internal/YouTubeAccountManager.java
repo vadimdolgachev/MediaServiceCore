@@ -9,19 +9,23 @@ import com.liskovsoft.youtubeapi.auth.models.auth.RefreshToken;
 import com.liskovsoft.youtubeapi.auth.models.auth.UserCode;
 import com.liskovsoft.youtubeapi.auth.models.info.AccountInt;
 import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
-import com.liskovsoft.youtubeapi.service.YouTubeSignInManager;
+import com.liskovsoft.youtubeapi.service.YouTubeSignInService;
 import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
 import io.reactivex.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class YouTubeAccountManager {
     private static final String TAG = YouTubeAccountManager.class.getSimpleName();
     private static YouTubeAccountManager sInstance;
     private final AuthService mAuthService;
-    private final YouTubeSignInManager mSignInManager;
-    private final List<Account> mAccounts = new ArrayList<Account>() {
+    private final YouTubeSignInService mSignInManager;
+    /**
+     * Fix ConcurrentModificationException when using {@link #getSelectedAccount()}
+     */
+    private final List<Account> mAccounts = new CopyOnWriteArrayList<Account>() {
         @Override
         public boolean add(Account account) {
             if (account == null) {
@@ -36,12 +40,12 @@ public class YouTubeAccountManager {
         }
     };
 
-    private YouTubeAccountManager(YouTubeSignInManager signInManager) {
+    private YouTubeAccountManager(YouTubeSignInService signInManager) {
         mAuthService = AuthService.instance();
         mSignInManager = signInManager;
     }
 
-    public static YouTubeAccountManager instance(YouTubeSignInManager signInManager) {
+    public static YouTubeAccountManager instance(YouTubeSignInService signInManager) {
         if (sInstance == null) {
             sInstance = new YouTubeAccountManager(signInManager);
         }
@@ -128,7 +132,7 @@ public class YouTubeAccountManager {
         }
     }
 
-    synchronized public Account getSelectedAccount() {
+    public Account getSelectedAccount() {
         for (Account account : mAccounts) {
             if (account != null && account.isSelected()) {
                 return account;

@@ -34,7 +34,7 @@ public class YouTubeMediaServiceTest {
      */
     @Test
     public void testThatSearchNotEmpty() throws InterruptedException {
-        Observable<MediaGroup> result = mService.getMediaGroupManager().getSearchObserve("hello world");
+        Observable<MediaGroup> result = mService.getMediaGroupService().getSearchObserve("hello world");
 
         CountDownLatch finish = new CountDownLatch(1);
 
@@ -54,7 +54,7 @@ public class YouTubeMediaServiceTest {
 
     @Test
     public void testThatRecommendedNotEmpty() throws InterruptedException {
-        Observable<MediaGroup> result = mService.getMediaGroupManager().getRecommendedObserve();
+        Observable<MediaGroup> result = mService.getMediaGroupService().getRecommendedObserve();
 
         CountDownLatch finish = new CountDownLatch(1);
 
@@ -70,5 +70,12 @@ public class YouTubeMediaServiceTest {
         boolean await = finish.await(5_000, TimeUnit.MILLISECONDS);
         assertTrue("Counter not zero", await);
         assertTrue("Has media items", list.size() > 0);
+    }
+
+    @Test
+    public void testThatRecommendedNotEmpty2() {
+        MediaGroup result = mService.getMediaGroupService().getRecommended();
+
+        assertTrue("Has media items", !result.isEmpty());
     }
 }

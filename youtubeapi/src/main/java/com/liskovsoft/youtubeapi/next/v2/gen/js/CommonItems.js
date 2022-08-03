@@ -18,7 +18,9 @@ let navigationEndpointItem = {
     browseEndpoint: {
         browseId: ""
     },
-    watchEndpoint: watchEndpointItem
+    watchEndpoint: watchEndpointItem,
+    watchPlaylistEndpoint: watchEndpointItem,
+    openPopupAction: popupActionItem
 };
 
 let watchEndpointItem = {
@@ -26,6 +28,30 @@ let watchEndpointItem = {
     playlistId: "",
     index: 0,
     params: ""
+};
+
+let popupActionItem = {
+    popup: {
+        overlaySectionRenderer: {
+            overlay: {
+                overlayTwoPanelRenderer: {
+                    actionPanel: {
+                        overlayPanelRenderer: {
+                            content: {
+                                overlayPanelItemListRenderer: {
+                                    items: [{
+                                        toggleButtonRenderer: {
+                                            isToggled: false
+                                        }
+                                    }]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 };
 
 let menuItem = {
@@ -187,6 +213,7 @@ let videoMetadataItem = {
     videoId: "",
     description: textItem,
     publishedTimeText: textItem,
+    publishedTime: textItem,
     dateText: textItem,
     viewCountText: textItem,
     shortViewCountText: textItem,

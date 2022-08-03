@@ -2,11 +2,7 @@ package com.liskovsoft.youtubeapi.next.v2.impl.mediagroup
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
-import com.liskovsoft.youtubeapi.next.v2.gen.kt.ShelfItem
-import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResultContinuation
-import com.liskovsoft.youtubeapi.next.v2.helpers.getItemWrappers
-import com.liskovsoft.youtubeapi.next.v2.helpers.getNextPageKey
-import com.liskovsoft.youtubeapi.next.v2.helpers.getTitle
+import com.liskovsoft.youtubeapi.next.v2.gen.kt.*
 import com.liskovsoft.youtubeapi.next.v2.impl.mediaitem.MediaItemImpl
 import java.util.*
 
@@ -22,14 +18,6 @@ data class MediaGroupImpl(val shelf: ShelfItem): MediaGroup {
     private val titleItem by lazy { shelf.getTitle() }
     private val mediaItemList by lazy { shelf.getItemWrappers()?.mapIndexed { index, it -> it?.let { MediaItemImpl(it).apply { playlistIndex = index } } } }
     private val nextPageKeyVal by lazy { shelf.getNextPageKey() }
-
-    fun getNextPageKey(): String? {
-        return _nextPageKeyVal
-    }
-
-    fun setNextPageKey(key: String?) {
-        _nextPageKeyVal = key
-    }
 
     override fun getId(): Int = title?.hashCode() ?: hashCode()
 
@@ -63,6 +51,14 @@ data class MediaGroupImpl(val shelf: ShelfItem): MediaGroup {
 
     override fun getReloadPageKey(): String? {
         return null
+    }
+
+    override fun getNextPageKey(): String? {
+        return _nextPageKeyVal
+    }
+
+    fun setNextPageKey(key: String?) {
+        _nextPageKeyVal = key
     }
 
     override fun getChannelUrl(): String? {

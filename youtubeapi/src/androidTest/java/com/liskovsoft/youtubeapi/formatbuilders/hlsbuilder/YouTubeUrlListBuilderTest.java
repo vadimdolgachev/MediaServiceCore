@@ -31,7 +31,7 @@ public class YouTubeUrlListBuilderTest {
     }
 
     private void testUrlList(String videoId) {
-        MediaItemFormatInfo mediaItemDetails = mService.getMediaItemManager().getFormatInfo(videoId);
+        MediaItemFormatInfo mediaItemDetails = mService.getMediaItemService().getFormatInfo(videoId);
 
         List<String> urlList = mediaItemDetails.createUrlList();
 

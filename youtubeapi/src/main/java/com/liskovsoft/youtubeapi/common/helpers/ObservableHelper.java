@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
+import com.liskovsoft.sharedutils.mylogger.Log;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.disposables.Disposable;
@@ -23,11 +24,14 @@ public class ObservableHelper {
 
             if (result != null) {
                 emitter.onNext(result);
-                emitter.onComplete();
             } else {
                 // Be aware of OnErrorNotImplementedException exception if error handler not implemented!
+                // Essential part to notify about problems. Don't remove!
                 onError(emitter, "fromNullable result is null");
+                Log.e(TAG, "fromNullable result is null");
             }
+
+            emitter.onComplete();
         });
     }
 

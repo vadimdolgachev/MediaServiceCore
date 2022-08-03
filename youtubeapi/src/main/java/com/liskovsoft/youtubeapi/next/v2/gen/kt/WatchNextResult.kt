@@ -1,5 +1,7 @@
 package com.liskovsoft.youtubeapi.next.v2.gen.kt
 
+import com.liskovsoft.youtubeapi.common.models.kt.ItemWrapper
+
 data class WatchNextResult(
     val contents: Contents?,
     val transportControls: TransportControls?
@@ -10,7 +12,8 @@ data class WatchNextResult(
         data class SingleColumnWatchNextResults(
             val pivot: Pivot?,
             val results: Results?,
-            val autoplay: Autoplay?
+            val autoplay: Autoplay?,
+            val conversationBar: ConversationBar?
         ) {
             data class Pivot(
                 val pivot: NestedPivot?,
@@ -58,10 +61,27 @@ data class WatchNextResult(
                     ) {
                         data class NextVideoRenderer(
                                 val maybeHistoryEndpointRenderer: NextVideoItem?,
-                                val autoplayEndpointRenderer: NextVideoItem?
-                        )
+                                val autoplayEndpointRenderer: NextVideoItem?,
+                                val autoplayVideoWrapperRenderer: AutoplayVideoWrapperRenderer?
+                        ) {
+                            data class AutoplayVideoWrapperRenderer(
+                                val primaryEndpointRenderer: PrimaryEndpointRenderer?
+                            ) {
+                                data class PrimaryEndpointRenderer(
+                                    val autoplayEndpointRenderer: NextVideoItem?
+                                )
+                            }
+                        }
                     }
                 }
+            }
+
+            data class ConversationBar(
+                val liveChatRenderer: LiveChatRenderer?
+            ) {
+                data class LiveChatRenderer(
+                    val continuations: List<ContinuationItem?>?
+                )
             }
         }
     }
