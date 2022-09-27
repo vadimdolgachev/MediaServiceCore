@@ -326,7 +326,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public boolean isAgeRestricted() {
-        return false;
+        return mIsAgeRestricted;
     }
 
     public String getEventId() {
