@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.service.data;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
@@ -32,6 +33,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private int mLikeStatus;
     private String mVideoId;
     private String mChannelId;
+    private String mParams;
     private int mPercentWatched;
     private MediaItem mNextVideo;
     private List<MediaGroup> mSuggestions;
@@ -242,6 +244,11 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     }
 
     @Override
+    public String getParams() {
+        return mParams;
+    }
+
+    @Override
     public int getPercentWatched() {
         return mPercentWatched;
     }
@@ -254,5 +261,10 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     @Override
     public List<MediaGroup> getSuggestions() {
         return mSuggestions;
+    }
+
+    @Override
+    public VideoPlaylistInfo getPlaylistInfo() {
+        return null;
     }
 }

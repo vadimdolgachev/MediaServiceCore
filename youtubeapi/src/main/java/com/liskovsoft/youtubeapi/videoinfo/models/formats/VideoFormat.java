@@ -94,6 +94,10 @@ public class VideoFormat {
     private String mEventId;
     private UrlQueryString mUrlQuery;
     private String mLanguage;
+    @JsonPath("$.targetDurationSec")
+    private int mTargetDurationSec;
+    @JsonPath("$.maxDvrDurationSec")
+    private int mMaxDvrDurationSec;
 
     public String getUrl() {
         // Bypass query creation if url isn't transformed
@@ -338,6 +342,14 @@ public class VideoFormat {
 
     public String getLastModified() {
         return mLastModified;
+    }
+
+    public int getTargetDurationSec() {
+        return mTargetDurationSec;
+    }
+
+    public int getMaxDvrDurationSec() {
+        return mMaxDvrDurationSec;
     }
 
     public String getParam(String paramName) {

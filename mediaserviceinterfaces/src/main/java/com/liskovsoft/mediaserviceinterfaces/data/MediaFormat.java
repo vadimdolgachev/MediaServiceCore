@@ -41,6 +41,10 @@ public interface MediaFormat extends Comparable<MediaFormat> {
     String getOtfInitUrl();
     String getOtfTemplateUrl();
     String getLanguage();
+    // DASH LIVE
+    String getTargetDurationSec();
+    String getLastModified();
+    String getMaxDvrDurationSec();
 
     // Other/Regular
     String getQuality();

@@ -2,6 +2,9 @@ package com.liskovsoft.youtubeapi.videoinfo;
 
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.app.AppService;
+import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.videoinfo.V2.DashInfoApi;
+import com.liskovsoft.youtubeapi.videoinfo.models.DashInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.VideoFormat;
 
 import java.util.ArrayList;
@@ -9,10 +12,12 @@ import java.util.List;
 
 public abstract class VideoInfoServiceBase {
     private static final String TAG = VideoInfoServiceBase.class.getSimpleName();
+    private final DashInfoApi mDashInfoApi;
     protected final AppService mAppService;
 
     protected VideoInfoServiceBase() {
         mAppService = AppService.instance();
+        mDashInfoApi = RetrofitHelper.withRegExp(DashInfoApi.class);
     }
 
     protected void decipherFormats(List<? extends VideoFormat> formats) {
@@ -41,16 +46,6 @@ public abstract class VideoInfoServiceBase {
         return result;
     }
 
-    private static List<String> extractThrottledStrings(List<? extends VideoFormat> formats) {
-        List<String> result = new ArrayList<>();
-
-        for (VideoFormat format : formats) {
-            result.add(format.getThrottleCipher());
-        }
-
-        return result;
-    }
-
     private static void applyDecipheredStrings(List<String> deciphered, List<? extends VideoFormat> formats) {
         if (deciphered.size() != formats.size()) {
             throw new IllegalStateException("Sizes of formats and deciphered strings should match!");
@@ -61,13 +56,28 @@ public abstract class VideoInfoServiceBase {
         }
     }
 
-    private static void applyThrottleFixedStrings(List<String> throttleFixed, List<? extends VideoFormat> formats) {
-        if (throttleFixed.size() != formats.size()) {
-            throw new IllegalStateException("Sizes of formats and throttled strings should match!");
+    private static List<String> extractThrottledStrings(List<? extends VideoFormat> formats) {
+        List<String> result = new ArrayList<>();
+
+        for (VideoFormat format : formats) {
+            result.add(format.getThrottleCipher());
+            // All throttled strings has same values
+            break;
         }
 
+        return result;
+    }
+
+    private static void applyThrottleFixedStrings(List<String> throttleFixed, List<? extends VideoFormat> formats) {
+        if (throttleFixed.isEmpty()) {
+            return;
+        }
+
+        // All throttled strings has same values
+        boolean sameSize = throttleFixed.size() == formats.size();
+
         for (int i = 0; i < formats.size(); i++) {
-            formats.get(i).setThrottleCipher(throttleFixed.get(i));
+            formats.get(i).setThrottleCipher(throttleFixed.get(sameSize ? i : 0));
         }
     }
 
@@ -79,5 +89,13 @@ public abstract class VideoInfoServiceBase {
             format.setClientVersion(AppConstants.CLIENT_VERSION_WEB);
             //format.setParam("alr", "yes");
         }
+    }
+
+    protected DashInfo getDashInfo(String url) {
+        if (url == null) {
+            return null;
+        }
+
+        return RetrofitHelper.get(mDashInfoApi.getDashInfo(url));
     }
 }

@@ -11,12 +11,12 @@ public interface MediaItemServiceInt {
     WatchNextResultContinuation continueWatchNext(String nextKey);
     VideoInfo getVideoInfo(String videoId, String clickTrackingParams);
     void updateHistoryPosition(String videoId, String lengthSec,
-                               String eventId, String vmData, float positionSec);
+                               String eventId, String vmData, String ofParam, float positionSec);
     void setLike(String videoId);
     void removeLike(String videoId);
     void setDislike(String videoId);
     void removeDislike(String videoId);
-    void subscribe(String channelId);
+    void subscribe(String channelId, String params);
     void unsubscribe(String channelId);
     PlaylistsResult getVideoPlaylistsInfo(String videoId);
     void addToPlaylist(String playlistId, String videoId);

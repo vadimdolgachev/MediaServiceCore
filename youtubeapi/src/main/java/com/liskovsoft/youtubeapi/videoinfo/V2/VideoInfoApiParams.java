@@ -4,7 +4,7 @@ import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 
-public class VideoInfoManagerParams {
+public class VideoInfoApiParams {
     /**
      * Used in player only<br/>
      * Previous client version: 7.20190214<br/>
@@ -35,6 +35,7 @@ public class VideoInfoManagerParams {
 
     /**
      * Support live streams seeking!<br/>
+     * NOTE: Don't support startTimestamp<br/>
      * NOTE: CLIENT_NAME_ANDROID doesn't play 18+ videos
      */
     public static String getVideoInfoQueryLive(String videoId, String clickTrackingParams) {
@@ -62,6 +63,9 @@ public class VideoInfoManagerParams {
         return createCheckedQuery(AppConstants.CLIENT_NAME_EMBED, AppConstants.CLIENT_VERSION_EMBED, AppConstants.CLIENT_SCREEN_WATCH, videoId, clickTrackingParams);
     }
 
+    /**
+     * Support live streams seeking!<br/>
+     */
     public static String getVideoInfoQueryRegular(String videoId, String clickTrackingParams) {
         return createCheckedQuery(AppConstants.CLIENT_NAME_WEB, AppConstants.CLIENT_VERSION_WEB, AppConstants.CLIENT_SCREEN_WATCH, videoId, clickTrackingParams);
     }

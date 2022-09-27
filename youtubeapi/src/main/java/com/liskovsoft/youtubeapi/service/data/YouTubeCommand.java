@@ -7,6 +7,7 @@ import com.liskovsoft.youtubeapi.lounge.models.commands.CommandItem;
 import com.liskovsoft.youtubeapi.lounge.models.commands.RemoteParams;
 import com.liskovsoft.youtubeapi.lounge.models.commands.SeekToParams;
 import com.liskovsoft.youtubeapi.lounge.models.commands.PlaylistParams;
+import com.liskovsoft.youtubeapi.lounge.models.commands.VoiceParams;
 import com.liskovsoft.youtubeapi.lounge.models.commands.VolumeParams;
 
 import org.apache.commons.io.mod.Objects;
@@ -21,6 +22,7 @@ public class YouTubeCommand implements Command {
     private int mPlaylistIndex;
     private int mVolume;
     private int mKey = Command.KEY_UNDEFINED;
+    private boolean mIsVoiceStarted;
 
     public static Command from(CommandItem info) {
         if (info == null) {
@@ -111,6 +113,11 @@ public class YouTubeCommand implements Command {
                         break;
                 }
                 break;
+            case CommandItem.TYPE_VOICE:
+                command.mType = Command.TYPE_VOICE;
+                VoiceParams voiceParams = info.getVoiceParams();
+                command.mIsVoiceStarted = VoiceParams.STATUS_START.equals(voiceParams.getStatus());
+                break;
         }
 
         return command;
@@ -159,5 +166,10 @@ public class YouTubeCommand implements Command {
     @Override
     public int getKey() {
         return mKey;
+    }
+
+    @Override
+    public boolean isVoiceStarted() {
+        return mIsVoiceStarted;
     }
 }
