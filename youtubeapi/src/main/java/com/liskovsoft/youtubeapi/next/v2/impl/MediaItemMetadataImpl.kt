@@ -3,6 +3,7 @@ package com.liskovsoft.youtubeapi.next.v2.impl
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
+import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo
 import com.liskovsoft.youtubeapi.common.models.kt.*
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResult
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.*
@@ -12,7 +13,7 @@ import com.liskovsoft.youtubeapi.service.YouTubeMediaServiceHelper
 
 data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaItemMetadata {
     private val channelIdItem by lazy {
-        videoDetails?.getChannelId() ?: videoOwner?.getChannelId()
+        videoDetails?.getChannelId() ?: videoOwner?.getChannelId() ?: channelOwner?.getChannelId()
     }
     private val percentWatchedItem by lazy {
         videoMetadata?.getPercentWatched() ?: 0
@@ -30,7 +31,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         watchNextResult.getLiveChatKey()
     }
     private val videoOwner by lazy {
-        videoMetadata?.getVideoOwner() ?: watchNextResult.transportControls?.transportControlsRenderer?.getVideoOwner()
+        videoMetadata?.getVideoOwner()
+    }
+    private val channelOwner by lazy {
+        watchNextResult.transportControls?.transportControlsRenderer?.getChannelOwner()
     }
     private val videoDetails by lazy {
         watchNextResult.getVideoDetails()
@@ -39,7 +43,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         nextVideoItem?.let { NextMediaItemImpl(it) }
     }
     private val isSubscribedItem by lazy {
-        videoOwner?.isSubscribed() ?: false
+        videoOwner?.isSubscribed() ?: channelOwner?.isSubscribed() ?: false
+    }
+    private val paramsItem by lazy {
+        videoOwner?.getParams() ?: channelOwner?.getParams()
     }
     private val replayItemWrapper by lazy {
         watchNextResult.getReplayItemWrapper()
@@ -82,7 +89,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         )
     }
     private val videoAuthor by lazy { videoDetails?.getUserName() }
-    private val videoAuthorImageUrl by lazy { videoOwner?.getThumbnails()?.findLowResThumbnailUrl() }
+    private val videoAuthorImageUrl by lazy { (videoOwner?.getThumbnails() ?: channelOwner?.getThumbnails())?.findLowResThumbnailUrl() }
     private val suggestionList by lazy {
         val list = suggestedSections?.mapNotNull { if (it?.getItemWrappers() != null) MediaGroupImpl(it) else null }
         if (list?.size ?: 0 > 0)
@@ -108,11 +115,23 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
     }
 
     private val videoIdItem by lazy {
-        videoMetadata?.videoId
+        videoMetadata?.videoId ?: videoDetails?.videoId
     }
 
     private val isLiveStream by lazy {
         videoMetadata?.isLive() ?: false
+    }
+
+    private val playlistInfoItem by lazy {
+        watchNextResult.getPlaylistInfo()?.let {
+            object: VideoPlaylistInfo {
+                override fun getTitle() = it.title
+                override fun getPlaylistId() = it.playlistId
+                override fun isSelected() = false
+                override fun getSize() = it.totalVideos ?: -1
+                override fun getCurrentIndex() = it.currentIndex ?: -1
+            }
+        }
     }
 
     override fun getTitle(): String? {
@@ -159,6 +178,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return isSubscribedItem
     }
 
+    override fun getParams(): String? {
+        return paramsItem
+    }
+
     override fun isLive(): Boolean {
         return isLiveStream
     }
@@ -185,6 +208,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
 
     override fun getSuggestions(): List<MediaGroup?>? {
         return suggestionList
+    }
+
+    override fun getPlaylistInfo(): VideoPlaylistInfo? {
+        return playlistInfoItem
     }
 
     override fun getLikesCount(): String? {

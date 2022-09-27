@@ -13,6 +13,7 @@ import java.util.List;
 public class VideoInfo {
     private static final String PARAM_EVENT_ID = "ei";
     private static final String PARAM_VM = "vm";
+    private static final String PARAM_OF = "of";
     private static final String STATUS_UNPLAYABLE = "UNPLAYABLE";
     private static final String STATUS_ERROR = "ERROR";
     private static final String STATUS_OFFLINE = "LIVE_STREAM_OFFLINE";
@@ -65,9 +66,17 @@ public class VideoInfo {
     @JsonPath("$.playabilityStatus.errorScreen.playerLegacyDesktopYpcTrailerRenderer.trailerVideoId")
     private String mTrailerVideoId;
 
+    @JsonPath("$.microformat.playerMicroformatRenderer.liveBroadcastDetails.startTimestamp")
+    private String mStartTimestamp;
+
     // Values used in tracking actions
     private String mEventId;
     private String mVisitorMonitoringData;
+    private String mOfParam;
+
+    private long mStartTimeMs;
+    private int mStartSegmentNum;
+    private boolean mIsStreamSeekable;
 
     public List<AdaptiveVideoFormat> getAdaptiveFormats() {
         return mAdaptiveFormats;
@@ -91,6 +100,10 @@ public class VideoInfo {
 
     public String getDashManifestUrl() {
         return mDashManifestUrl;
+    }
+
+    public void setDashManifestUrl(String dashManifestUrl) {
+        mDashManifestUrl = dashManifestUrl;
     }
 
     public String getPlayerStoryboardSpec() {
@@ -125,6 +138,19 @@ public class VideoInfo {
      */
     public void setVisitorMonitoringData(String visitorMonitoringData) {
         mVisitorMonitoringData = visitorMonitoringData;
+    }
+
+    public String getOfParam() {
+        parseTrackingParams();
+
+        return mOfParam;
+    }
+
+    /**
+     * Intended to merge signed and unsigned infos (no-playback fix)
+     */
+    public void setOfParam(String ofParam) {
+        mOfParam = ofParam;
     }
 
     public String getPlaybackUrl() {
@@ -169,6 +195,22 @@ public class VideoInfo {
         return mTrailerVideoId;
     }
 
+    public String getStartTimestamp() {
+        return mStartTimestamp;
+    }
+
+    public long getStartTimeMs() {
+        return mStartTimeMs;
+    }
+
+    public int getStartSegmentNum() {
+        return mStartSegmentNum;
+    }
+
+    public boolean isStreamSeekable() {
+        return mIsStreamSeekable;
+    }
+
     public boolean isHfr() {
         return mDashManifestUrl != null && mDashManifestUrl.contains("/hfr/all");
     }
@@ -190,6 +232,17 @@ public class VideoInfo {
 
             mEventId = queryString.get(PARAM_EVENT_ID);
             mVisitorMonitoringData = queryString.get(PARAM_VM);
+            mOfParam = queryString.get(PARAM_OF);
         }
+    }
+
+    public void sync(DashInfo dashInfo) {
+        if (dashInfo == null) {
+            return;
+        }
+
+        mStartTimeMs = dashInfo.getStartTimeMs();
+        mStartSegmentNum = dashInfo.getStartSegmentNum();
+        mIsStreamSeekable = dashInfo.isSeekable();
     }
 }

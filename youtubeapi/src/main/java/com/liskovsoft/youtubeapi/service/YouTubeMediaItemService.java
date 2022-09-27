@@ -9,12 +9,11 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
 import com.liskovsoft.mediaserviceinterfaces.data.SponsorSegment;
 import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
-import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.block.SponsorBlockService;
 import com.liskovsoft.youtubeapi.block.data.SegmentList;
 import com.liskovsoft.youtubeapi.common.helpers.ObservableHelper;
 import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResult;
-import com.liskovsoft.youtubeapi.next.v2.WatchNextServiceV2;
+import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
 import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
@@ -36,14 +35,14 @@ public class YouTubeMediaItemService implements MediaItemService {
     private static YouTubeMediaItemService sInstance;
     private final YouTubeSignInService mSignInManager;
     private final SponsorBlockService mSponsorBlockService;
-    private final WatchNextServiceV2 mWatchNextServiceV2;
+    private final WatchNextService mWatchNextService;
     private MediaItemServiceInt mMediaItemManagerReal;
     private YouTubeMediaItemFormatInfo mCachedFormatInfo;
 
     private YouTubeMediaItemService() {
         mSignInManager = YouTubeSignInService.instance();
         mSponsorBlockService = SponsorBlockService.instance();
-        mWatchNextServiceV2 = WatchNextServiceV2.instance();
+        mWatchNextService = WatchNextService.instance();
     }
 
     public static YouTubeMediaItemService instance() {
@@ -122,7 +121,7 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public MediaItemMetadata getMetadata(MediaItem item) {
-        return getMetadataV2(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex(), item.getPlaylistParams());
+        return getMetadataV2(item.getVideoId(), item.getPlaylistId(), item.getPlaylistIndex(), item.getParams());
     }
 
     @Override
@@ -139,7 +138,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataV2(String videoId, String playlistId, int playlistIndex, String playlistParams) {
-        return mWatchNextServiceV2.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
+        return mWatchNextService.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
     }
 
     @Override
@@ -156,7 +155,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataIntV2(String videoId) {
-        return mWatchNextServiceV2.getMetadata(videoId);
+        return mWatchNextService.getMetadata(videoId);
     }
 
     @Override
@@ -171,7 +170,7 @@ public class YouTubeMediaItemService implements MediaItemService {
                     mediaGroup
             );
         } else if (mediaGroup instanceof MediaGroupImpl) {
-            return mWatchNextServiceV2.continueGroup(mediaGroup);
+            return mWatchNextService.continueGroup(mediaGroup);
         }
 
         return null;
@@ -226,7 +225,7 @@ public class YouTubeMediaItemService implements MediaItemService {
         }
 
         mMediaItemManagerReal.updateHistoryPosition(formatInfo.getVideoId(), formatInfo.getLengthSeconds(),
-                formatInfo.getEventId(), formatInfo.getVisitorMonitoringData(), positionSec);
+                formatInfo.getEventId(), formatInfo.getVisitorMonitoringData(), formatInfo.getOfParam(), positionSec);
     }
 
     @Override
@@ -309,14 +308,18 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public void subscribe(MediaItem item) {
-        subscribe(item.getChannelId());
+        subscribe(item.getChannelId(), item.getParams());
     }
 
     @Override
     public void subscribe(String channelId) {
+        subscribe(channelId, null);
+    }
+
+    private void subscribe(String channelId, String params) {
         checkSigned();
 
-        mMediaItemManagerReal.subscribe(channelId);
+        mMediaItemManagerReal.subscribe(channelId, params);
     }
 
     @Override
@@ -473,14 +476,10 @@ public class YouTubeMediaItemService implements MediaItemService {
         return  mCachedFormatInfo != null &&
                 mCachedFormatInfo.getVideoId() != null &&
                 mCachedFormatInfo.getVideoId().equals(videoId) &&
-                (AppService.instance().isCacheActual() || mCachedFormatInfo.isLive()); // Cipher may be outdated. Also fix finished live streams.
+                mCachedFormatInfo.isCacheActual();
     }
 
     private void saveInCache(YouTubeMediaItemFormatInfo formatInfo) {
-        if (formatInfo == null || !formatInfo.containsMedia()) {
-            return;
-        }
-
         mCachedFormatInfo = formatInfo;
     }
 

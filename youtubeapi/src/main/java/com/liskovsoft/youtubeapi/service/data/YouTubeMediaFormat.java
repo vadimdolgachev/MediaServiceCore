@@ -35,6 +35,9 @@ public class YouTubeMediaFormat implements MediaFormat {
     private String mAudioQuality;
     private int mFormatType;
     private String mLanguage;
+    private String mTargetDurationSec;
+    private String mLastModified;
+    private String mMaxDvrDurationSec;
 
     public static MediaFormat from(AdaptiveVideoFormat format) {
         YouTubeMediaFormat mediaFormat = createBaseFormat(format);
@@ -84,6 +87,9 @@ public class YouTubeMediaFormat implements MediaFormat {
         mediaFormat.mSegmentUrlList = format.getSegmentUrlList();
         mediaFormat.mGlobalSegmentList = format.getGlobalSegmentList();
         mediaFormat.mLanguage = format.getLanguage();
+        mediaFormat.mTargetDurationSec = format.getTargetDurationSec() == 0 ? "" : String.valueOf(format.getTargetDurationSec());
+        mediaFormat.mLastModified = format.getLastModified();
+        mediaFormat.mMaxDvrDurationSec = format.getMaxDvrDurationSec() == 0 ? "" : String.valueOf(format.getMaxDvrDurationSec());
 
         return mediaFormat;
     }
@@ -316,6 +322,21 @@ public class YouTubeMediaFormat implements MediaFormat {
     @Override
     public String getLanguage() {
         return mLanguage;
+    }
+
+    @Override
+    public String getTargetDurationSec() {
+        return mTargetDurationSec;
+    }
+
+    @Override
+    public String getLastModified() {
+        return mLastModified;
+    }
+
+    @Override
+    public String getMaxDvrDurationSec() {
+        return mMaxDvrDurationSec;
     }
 
     public String getIndexRange() {

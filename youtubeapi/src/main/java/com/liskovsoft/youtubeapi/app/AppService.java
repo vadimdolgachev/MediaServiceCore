@@ -5,8 +5,7 @@ import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
-import com.liskovsoft.youtubeapi.common.helpers.JavaScript;
-import com.squareup.duktape.Duktape;
+import com.liskovsoft.youtubeapi.common.js.V8Runtime;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,13 +15,13 @@ public class AppService {
     private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
     private static AppService sInstance;
     private final AppManagerWrapper mAppManager;
-    private Duktape mDuktape;
+    //private Duktape mDuktape;
     private AppInfo mCachedAppInfo;
     private PlayerData mCachedPlayerData;
     private ClientData mCachedBaseData;
-    private long mAppInfoUpdateTimeMS;
-    private long mPlayerDataUpdateTimeMS;
-    private long mBaseDataUpdateTimeMS;
+    private long mAppInfoUpdateTimeMs;
+    private long mPlayerDataUpdateTimeMs;
+    private long mBaseDataUpdateTimeMs;
 
     private AppService() {
         mAppManager = new AppManagerWrapper();
@@ -41,13 +40,13 @@ public class AppService {
      * Note, lazy init for easy testing.<br/>
      * Could be tested only inside instrumented tests!
      */
-    private Duktape getDuktape() {
-        if (mDuktape == null) {
-            mDuktape = Duktape.create(); // js evaluator, contains native *.so libs
-        }
-
-        return mDuktape;
-    }
+    //private Duktape getDuktape() {
+    //    if (mDuktape == null) {
+    //        mDuktape = Duktape.create(); // js evaluator, contains native *.so libs
+    //    }
+    //
+    //    return mDuktape;
+    //}
 
     /**
      * Decipher strings using js code
@@ -86,19 +85,6 @@ public class AppService {
     /**
      * A nonce is a unique value chosen by an entity in a protocol, and it is used to protect that entity against attacks which fall under the very large umbrella of "replay".
      */
-    public String getClientPlaybackNonceNew() {
-        String code = createClientPlaybackNonceCode();
-
-        if (code == null) {
-            return null;
-        }
-
-        return JavaScript.evaluate(code);
-    }
-
-    /**
-     * A nonce is a unique value chosen by an entity in a protocol, and it is used to protect that entity against attacks which fall under the very large umbrella of "replay".
-     */
     public String getClientPlaybackNonce() {
         String code = createClientPlaybackNonceCode();
 
@@ -106,8 +92,21 @@ public class AppService {
             return null;
         }
 
-        return getDuktape().evaluate(code).toString();
+        return V8Runtime.instance().evaluate(code);
     }
+
+    /**
+     * A nonce is a unique value chosen by an entity in a protocol, and it is used to protect that entity against attacks which fall under the very large umbrella of "replay".
+     */
+    //public String getClientPlaybackNonceDuktape() {
+    //    String code = createClientPlaybackNonceCode();
+    //
+    //    if (code == null) {
+    //        return null;
+    //    }
+    //
+    //    return getDuktape().evaluate(code).toString();
+    //}
 
     /**
      * Constant used in {@link AuthManager}
@@ -201,20 +200,20 @@ public class AppService {
     }
 
     private List<String> runCode(String code) {
-        String result = JavaScript.evaluate(code);
+        String result = V8Runtime.instance().evaluate(code);
 
         String[] values = result.split(",");
 
         return Arrays.asList(values);
     }
 
-    private List<String> runCodeOld(String code) {
-        String result = getDuktape().evaluate(code).toString();
-
-        String[] values = result.split(",");
-
-        return Arrays.asList(values);
-    }
+    //private List<String> runCodeDuktape(String code) {
+    //    String result = getDuktape().evaluate(code).toString();
+    //
+    //    String[] values = result.split(",");
+    //
+    //    return Arrays.asList(values);
+    //}
 
     private String createClientPlaybackNonceCode() {
         String playbackNonceFunction = getClientPlaybackNonceFunction();
@@ -261,7 +260,7 @@ public class AppService {
     }
 
     private synchronized void updateAppInfoData() {
-        if (mCachedAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
+        if (mCachedAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
@@ -270,12 +269,12 @@ public class AppService {
         mCachedAppInfo = mAppManager.getAppInfo(AppConstants.APP_USER_AGENT);
 
         if (mCachedAppInfo != null) {
-            mAppInfoUpdateTimeMS = System.currentTimeMillis();
+            mAppInfoUpdateTimeMs = System.currentTimeMillis();
         }
     }
 
     private synchronized void updatePlayerData() {
-        if (mCachedPlayerData != null && System.currentTimeMillis() - mPlayerDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
+        if (mCachedPlayerData != null && System.currentTimeMillis() - mPlayerDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
@@ -284,12 +283,12 @@ public class AppService {
         mCachedPlayerData = mAppManager.getPlayerData(getPlayerUrl());
 
         if (mCachedPlayerData != null) {
-            mPlayerDataUpdateTimeMS = System.currentTimeMillis();
+            mPlayerDataUpdateTimeMs = System.currentTimeMillis();
         }
     }
 
     private synchronized void updateBaseData() {
-        if (mCachedBaseData != null && System.currentTimeMillis() - mBaseDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS) {
+        if (mCachedBaseData != null && System.currentTimeMillis() - mBaseDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
@@ -298,7 +297,7 @@ public class AppService {
         mCachedBaseData = mAppManager.getBaseData(getBaseUrl());
 
         if (mCachedBaseData != null) {
-            mBaseDataUpdateTimeMS = System.currentTimeMillis();
+            mBaseDataUpdateTimeMs = System.currentTimeMillis();
         }
     }
 
@@ -315,6 +314,6 @@ public class AppService {
     }
 
     public boolean isCacheActual() {
-        return System.currentTimeMillis() - mPlayerDataUpdateTimeMS < CACHE_REFRESH_PERIOD_MS;
+        return System.currentTimeMillis() - mPlayerDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS;
     }
 }

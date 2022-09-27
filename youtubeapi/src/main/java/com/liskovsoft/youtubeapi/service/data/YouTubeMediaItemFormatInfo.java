@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
+import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.formatbuilders.hlsbuilder.YouTubeUrlListBuilder;
 import com.liskovsoft.youtubeapi.formatbuilders.mpdbuilder.YouTubeMPDBuilder;
 import com.liskovsoft.youtubeapi.formatbuilders.storyboard.YouTubeStoryParser;
@@ -24,7 +25,6 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private String mTitle;
     private String mAuthor;
     private String mViewCount;
-    private String mTimestamp;
     private String mDescription;
     private String mVideoId;
     private String mChannelId;
@@ -39,11 +39,15 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private String mHlsManifestUrl;
     private String mEventId; // used in tracking
     private String mVisitorMonitoringData; // used in tracking
+    private String mOfParam; // used in tracking
     private String mStoryboardSpec;
     private boolean mIsUnplayable;
     private String mPlayabilityStatus;
     private boolean mIsAgeRestricted;
     private final long mCreatedTimeMs;
+    private String mStartTimestamp;
+    private long mStartTimeMs;
+    private int mStartSegmentNum;
 
     public YouTubeMediaItemFormatInfo() {
         mCreatedTimeMs = System.currentTimeMillis();
@@ -91,10 +95,14 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mHlsManifestUrl = videoInfo.getHlsManifestUrl();
         formatInfo.mEventId = videoInfo.getEventId();
         formatInfo.mVisitorMonitoringData = videoInfo.getVisitorMonitoringData();
+        formatInfo.mOfParam = videoInfo.getOfParam();
         formatInfo.mStoryboardSpec = videoInfo.getStoryboardSpec();
         formatInfo.mIsUnplayable = videoInfo.isUnplayable();
         formatInfo.mPlayabilityStatus = videoInfo.getPlayabilityStatus();
-        formatInfo.mIsStreamSeekable = videoInfo.isHfr();
+        formatInfo.mIsStreamSeekable = videoInfo.isHfr() || videoInfo.isStreamSeekable();
+        formatInfo.mStartTimestamp = videoInfo.getStartTimestamp();
+        formatInfo.mStartTimeMs = videoInfo.getStartTimeMs();
+        formatInfo.mStartSegmentNum = videoInfo.getStartSegmentNum();
         formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
 
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
@@ -163,16 +171,6 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     @Override
     public void setViewCount(String viewCount) {
         mViewCount = viewCount;
-    }
-
-    @Override
-    public String getTimestamp() {
-        return mTimestamp;
-    }
-
-    @Override
-    public void setTimestamp(String timestamp) {
-        mTimestamp = timestamp;
     }
 
     @Override
@@ -312,27 +310,52 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
+    public String getStartTimestamp() {
+        return mStartTimestamp;
+    }
+
+    @Override
+    public long getStartTimeMs() {
+        return mStartTimeMs;
+    }
+
+    @Override
+    public int getStartSegmentNum() {
+        return mStartSegmentNum;
+    }
+
+    @Override
     public boolean isAgeRestricted() {
-        return false;
+        return mIsAgeRestricted;
     }
 
     public String getEventId() {
         return mEventId;
     }
 
-    public void setEventId(String eventId) {
-        mEventId = eventId;
-    }
-
     public String getVisitorMonitoringData() {
         return mVisitorMonitoringData;
     }
 
-    public void setVisitorMonitoringData(String visitorMonitoringData) {
-        mVisitorMonitoringData = visitorMonitoringData;
+    public String getOfParam() {
+        return mOfParam;
     }
 
-    public long getCreatedTimeMs() {
-        return mCreatedTimeMs;
+    /**
+     * Format is used between multiple functions. Do a little cache.
+     */
+    public boolean isCacheActual() {
+        if (isLive()) { // live isn't ciphered
+            return true;
+        }
+
+        // Check app cipher first. It's not robust check (cipher may be updated not by us).
+        // So, also check internal cache state.
+        // Future translations (no media) should be polled constantly.
+        return containsMedia() && isCreatedRecently() && AppService.instance().isCacheActual();
+    }
+
+    private boolean isCreatedRecently() {
+        return System.currentTimeMillis() - mCreatedTimeMs < 60 * 1_000;
     }
 }
