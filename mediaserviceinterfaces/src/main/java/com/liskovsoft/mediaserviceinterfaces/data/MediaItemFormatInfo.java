@@ -54,5 +54,10 @@ public interface MediaItemFormatInfo {
      * Number of the stream first segment
      */
     int getStartSegmentNum();
+    /**
+     * Precise segment duration.<br/>
+     * Used inside live streams
+     */
+    int getSegmentDurationUs();
     boolean isAgeRestricted();
 }

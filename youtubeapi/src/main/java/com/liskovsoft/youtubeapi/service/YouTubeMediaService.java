@@ -24,6 +24,7 @@ public class YouTubeMediaService implements MediaService {
     private final MediaItemService mMediaItemManager;
     private final YouTubeLiveChatService mLiveChatService;
     private Disposable mRefreshCacheAction;
+    private boolean mOldStreamsEnabled;
 
     private YouTubeMediaService() {
         Log.d(TAG, "Starting...");
@@ -82,6 +83,16 @@ public class YouTubeMediaService implements MediaService {
         }
 
         mRefreshCacheAction = RxUtils.execute(refreshCacheIfNeededObserve());
+    }
+
+    @Override
+    public boolean isOldStreamsEnabled() {
+        return mOldStreamsEnabled;
+    }
+
+    @Override
+    public void enableOldStreams(boolean enable) {
+        mOldStreamsEnabled = enable;
     }
 
     private Observable<Void> refreshCacheIfNeededObserve() {

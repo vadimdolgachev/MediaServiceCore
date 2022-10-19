@@ -48,6 +48,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private String mStartTimestamp;
     private long mStartTimeMs;
     private int mStartSegmentNum;
+    private int mSegmentDurationUs;
 
     public YouTubeMediaItemFormatInfo() {
         mCreatedTimeMs = System.currentTimeMillis();
@@ -103,6 +104,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mStartTimestamp = videoInfo.getStartTimestamp();
         formatInfo.mStartTimeMs = videoInfo.getStartTimeMs();
         formatInfo.mStartSegmentNum = videoInfo.getStartSegmentNum();
+        formatInfo.mSegmentDurationUs = videoInfo.getSegmentDurationUs();
         formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
 
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
@@ -325,6 +327,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
+    public int getSegmentDurationUs() {
+        return mSegmentDurationUs;
+    }
+
+    @Override
     public boolean isAgeRestricted() {
         return mIsAgeRestricted;
     }
@@ -345,9 +352,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
      * Format is used between multiple functions. Do a little cache.
      */
     public boolean isCacheActual() {
-        if (isLive()) { // live isn't ciphered
-            return true;
-        }
+        // NOTE: Musical live streams are ciphered too!
 
         // Check app cipher first. It's not robust check (cipher may be updated not by us).
         // So, also check internal cache state.

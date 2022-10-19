@@ -1,10 +1,15 @@
 package com.liskovsoft.youtubeapi.videoinfo;
 
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.formatbuilders.utils.MediaFormatUtils;
 import com.liskovsoft.youtubeapi.videoinfo.V2.DashInfoApi;
 import com.liskovsoft.youtubeapi.videoinfo.models.DashInfo;
+import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoFormat2;
+import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
+import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.VideoFormat;
 
 import java.util.ArrayList;
@@ -96,6 +101,29 @@ public abstract class VideoInfoServiceBase {
             return null;
         }
 
-        return RetrofitHelper.get(mDashInfoApi.getDashInfo(url));
+        return RetrofitHelper.get(mDashInfoApi.getDashInfoUrl(url));
+    }
+
+    protected DashInfo getDashInfo2(VideoInfo videoInfo) {
+        if (videoInfo == null || videoInfo.getAdaptiveFormats() == null || videoInfo.getAdaptiveFormats().isEmpty()) {
+            return null;
+        }
+
+        AdaptiveVideoFormat format = Helpers.findFirst(videoInfo.getAdaptiveFormats(),
+                item -> MediaFormatUtils.isAudio(item.getMimeType())); // smallest format
+
+        format.setSignature(mAppService.decipher(format.getSignatureCipher()));
+        format.setThrottleCipher(mAppService.throttleFix(format.getThrottleCipher()));
+
+        DashInfo dashInfo;
+
+        try {
+            dashInfo = new DashInfoFormat2(mDashInfoApi.getDashInfoFormat2(format.getUrl()));
+        } catch (ArithmeticException | NumberFormatException ex) {
+            // Empty results received. Url isn't available or something like that
+            dashInfo = RetrofitHelper.get(mDashInfoApi.getDashInfoFormat(format.getUrl()));
+        }
+
+        return dashInfo;
     }
 }

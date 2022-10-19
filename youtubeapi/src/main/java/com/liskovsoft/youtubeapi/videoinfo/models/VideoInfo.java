@@ -76,6 +76,7 @@ public class VideoInfo {
 
     private long mStartTimeMs;
     private int mStartSegmentNum;
+    private int mSegmentDurationUs;
     private boolean mIsStreamSeekable;
 
     public List<AdaptiveVideoFormat> getAdaptiveFormats() {
@@ -104,6 +105,10 @@ public class VideoInfo {
 
     public void setDashManifestUrl(String dashManifestUrl) {
         mDashManifestUrl = dashManifestUrl;
+    }
+
+    public void setHlsManifestUrl(String hlsManifestUrl) {
+        mHlsManifestUrl = hlsManifestUrl;
     }
 
     public String getPlayerStoryboardSpec() {
@@ -207,6 +212,10 @@ public class VideoInfo {
         return mStartSegmentNum;
     }
 
+    public int getSegmentDurationUs() {
+        return mSegmentDurationUs;
+    }
+
     public boolean isStreamSeekable() {
         return mIsStreamSeekable;
     }
@@ -241,6 +250,7 @@ public class VideoInfo {
             return;
         }
 
+        mSegmentDurationUs = dashInfo.getSegmentDurationUs();
         mStartTimeMs = dashInfo.getStartTimeMs();
         mStartSegmentNum = dashInfo.getStartSegmentNum();
         mIsStreamSeekable = dashInfo.isSeekable();

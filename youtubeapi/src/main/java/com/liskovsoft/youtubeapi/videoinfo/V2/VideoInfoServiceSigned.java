@@ -2,6 +2,7 @@ package com.liskovsoft.youtubeapi.videoinfo.V2;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceBase;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import retrofit2.Call;
@@ -28,17 +29,21 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
     }
 
     public VideoInfo getVideoInfo(String videoId, String clickTrackingParams, String authorization) {
-        VideoInfo result = getVideoInfoPrivate(videoId, clickTrackingParams, authorization);
+        // NOTE: Request below doesn't contain dashManifestUrl!!!
+        //VideoInfo result = getVideoInfoPrivate(videoId, clickTrackingParams, authorization); // no dash url and hls link
+        VideoInfo result = getVideoInfoRegular(videoId, clickTrackingParams, authorization);
 
         if (result != null && result.getVideoDetails() != null && result.getVideoDetails().isLive()) {
             Log.e(TAG, "Enable seeking support on the live streams...");
-            // Contains dashManifestUrl!!!
-            VideoInfo infoLive = getVideoInfoLive(videoId, clickTrackingParams, authorization);
-            if (infoLive != null && infoLive.getDashManifestUrl() != null) {
-                result.sync(getDashInfo(infoLive.getDashManifestUrl()));
-                result.setDashManifestUrl(infoLive.getDashManifestUrl());
-            }
-        } else if (result != null && result.isRent()) {
+            result.sync(getDashInfo2(result));
+
+            // Add dash and hls manifests (for backward compatibility)
+            //if (YouTubeMediaService.instance().isOldStreamsEnabled()) {
+            //    VideoInfo result2 = getVideoInfoLive(videoId, clickTrackingParams, authorization);
+            //    result.setDashManifestUrl(result2.getDashManifestUrl());
+            //    result.setHlsManifestUrl(result2.getHlsManifestUrl());
+            //}
+        } else if (result != null && result.isRent() && result.isUnplayable()) {
             Log.e(TAG, "Found rent content. Show trailer instead...");
             result = getVideoInfoPrivate(result.getTrailerVideoId(), clickTrackingParams, authorization);
         } else if (result != null && result.isUnplayable()) {
@@ -61,6 +66,9 @@ public class VideoInfoServiceSigned extends VideoInfoServiceBase {
         return result;
     }
 
+    /**
+     * NOTE: Doesn't contain dash manifest url and hls link
+     */
     private VideoInfo getVideoInfoPrivate(String videoId, String clickTrackingParams, String authorization) {
         String videoInfoQuery = VideoInfoApiParams.getVideoInfoQueryPrivate(videoId, clickTrackingParams);
         Call<VideoInfo> wrapper = mVideoInfoApiSigned.getVideoInfo(videoInfoQuery, authorization, mAppService.getVisitorId());
