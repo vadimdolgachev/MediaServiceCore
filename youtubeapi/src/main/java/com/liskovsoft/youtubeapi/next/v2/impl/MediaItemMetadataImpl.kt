@@ -1,9 +1,10 @@
 package com.liskovsoft.youtubeapi.next.v2.impl
 
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
-import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo
 import com.liskovsoft.youtubeapi.common.models.kt.*
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.WatchNextResult
 import com.liskovsoft.youtubeapi.next.v2.gen.kt.*
@@ -124,12 +125,22 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
 
     private val playlistInfoItem by lazy {
         watchNextResult.getPlaylistInfo()?.let {
-            object: VideoPlaylistInfo {
+            object: PlaylistInfo {
                 override fun getTitle() = it.title
                 override fun getPlaylistId() = it.playlistId
                 override fun isSelected() = false
                 override fun getSize() = it.totalVideos ?: -1
                 override fun getCurrentIndex() = it.currentIndex ?: -1
+            }
+        }
+    }
+
+    private val chapterList by lazy {
+        watchNextResult.getChapters()?.map {
+            object : ChapterItem {
+                override fun getTitle() = it?.getTitle()
+                override fun getStartTimeMs() = it?.getStartTimeMs() ?: -1
+                override fun getCardImageUrl() = it?.getThumbnailUrl()
             }
         }
     }
@@ -210,7 +221,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return suggestionList
     }
 
-    override fun getPlaylistInfo(): VideoPlaylistInfo? {
+    override fun getPlaylistInfo(): PlaylistInfo? {
         return playlistInfoItem
     }
 
@@ -220,5 +231,9 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
 
     override fun getDislikesCount(): String? {
         return null
+    }
+
+    override fun getChapters(): List<ChapterItem>? {
+        return chapterList
     }
 }

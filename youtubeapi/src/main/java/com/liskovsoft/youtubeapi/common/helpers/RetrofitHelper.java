@@ -1,7 +1,5 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
-import androidx.annotation.NonNull;
-import com.itkacher.okhttpprofiler.OkHttpProfilerInterceptor;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
@@ -9,7 +7,6 @@ import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.okhttp.OkHttpCommons;
-import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.BuildConfig;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.common.converters.gson.GsonConverterFactory;
@@ -20,6 +17,7 @@ import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPath
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
 import com.liskovsoft.youtubeapi.common.interceptors.UnzippingInterceptor;
+import com.localebro.okhttpprofiler.OkHttpProfilerInterceptor;
 import okhttp3.Dns;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -35,8 +33,8 @@ import retrofit2.Retrofit;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class RetrofitHelper {
@@ -71,8 +69,16 @@ public class RetrofitHelper {
     public static <T> T get(Call<T> wrapper) {
         try {
             return wrapper.execute().body();
+        } catch (SocketException e) {
+            // ConnectException - server is down
+            // SocketException - no internet
+            //wrapper.cancel(); // fix background running when RxJava object is disposed?
+            e.printStackTrace();
+            throw new IllegalStateException(e); // notify called about network condition
         } catch (IOException e) {
-            //wrapper.cancel(); // fix background running when RxJava object is disposed
+            // InterruptedIOException - Thread interrupted. Thread died!!
+            // UnknownHostException: Unable to resolve host (DNS error) Thread died?
+            // Don't rethrow!!! These exceptions cannot be caught inside RxJava!!! Thread died!!!
             e.printStackTrace();
         }
 
@@ -219,7 +225,8 @@ public class RetrofitHelper {
     }
 
     private static void preferIPv4Dns(OkHttpClient.Builder okBuilder) {
-        okBuilder.dns(new PreferIpv4Dns());
+        okBuilder.dns(new OkHttpDNSSelector(OkHttpDNSSelector.IPvMode.IPV4_FIRST));
+        //okBuilder.dns(new PreferIpv4Dns());
     }
 
     private static void forceIPv4Dns(OkHttpClient.Builder okBuilder) {
@@ -288,31 +295,5 @@ public class RetrofitHelper {
         }
 
         return null;
-    }
-
-    private static class PreferIpv4Dns implements Dns {
-        @NonNull
-        @Override
-        public List<InetAddress> lookup(@NonNull String hostname) throws UnknownHostException {
-            InetAddress[] addresses = InetAddress.getAllByName(hostname);
-            if (addresses == null || addresses.length == 0) {
-                throw new UnknownHostException("Bad host: " + hostname);
-            }
-
-            // prefer IPv4; list IPv4 first
-            ArrayList<InetAddress> result = new ArrayList<>();
-            for (InetAddress address : addresses) {
-                if (address instanceof Inet4Address) {
-                    result.add(address);
-                }
-            }
-            for (InetAddress address : addresses) {
-                if (!(address instanceof Inet4Address)) {
-                    result.add(address);
-                }
-            }
-
-            return result;
-        }
     }
 }

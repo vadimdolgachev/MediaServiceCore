@@ -1,9 +1,6 @@
 package com.liskovsoft.youtubeapi.next.v2.gen.kt
 
-import com.liskovsoft.youtubeapi.common.models.kt.getBrowseId
-import com.liskovsoft.youtubeapi.common.models.kt.getOverlaySubscribeButton
-import com.liskovsoft.youtubeapi.common.models.kt.getSubscribeParams
-import com.liskovsoft.youtubeapi.common.models.kt.getText
+import com.liskovsoft.youtubeapi.common.models.kt.*
 
 //////
 
@@ -16,6 +13,7 @@ fun VideoOwnerItem.getParams() = navigationEndpoint?.getOverlaySubscribeButton()
 /////
 
 private fun WatchNextResult.getWatchNextResults() = contents?.singleColumnWatchNextResults
+private fun WatchNextResult.getPlayerOverlays() = playerOverlays?.playerOverlayRenderer
 fun WatchNextResult.getSuggestedSections() = getWatchNextResults()?.pivot?.let { it.pivot ?: it.sectionListRenderer }?.contents?.map { it?.shelfRenderer }
 fun WatchNextResult.getVideoMetadata() = getWatchNextResults()?.results?.results?.contents?.getOrNull(0)?.
     itemSectionRenderer?.contents?.map { it?.videoMetadataRenderer ?: it?.musicWatchMetadataRenderer }?.firstOrNull()
@@ -28,6 +26,8 @@ fun WatchNextResult.getReplayItemWrapper() = getWatchNextResults()?.autoplay?.au
 fun WatchNextResult.getButtonStateItem() = transportControls?.transportControlsRenderer
 fun WatchNextResult.getLiveChatKey() = getWatchNextResults()?.conversationBar?.liveChatRenderer?.continuations?.getOrNull(0)?.reloadContinuationData?.continuation
 fun WatchNextResult.getPlaylistInfo() = getWatchNextResults()?.playlist?.playlist
+fun WatchNextResult.getChapters() = getPlayerOverlays()?.decoratedPlayerBarRenderer?.decoratedPlayerBarRenderer?.
+    playerBar?.multiMarkersPlayerBarRenderer?.markersMap?.firstOrNull()?.value?.chapters
 
 ///////
 
@@ -77,3 +77,9 @@ fun NextVideoItem.getThumbnails() = item?.previewButtonRenderer?.thumbnail
 fun NextVideoItem.getPlaylistId() = endpoint?.watchEndpoint?.playlistId
 fun NextVideoItem.getPlaylistIndex() = endpoint?.watchEndpoint?.index
 fun NextVideoItem.getParams() = endpoint?.watchEndpoint?.params
+
+///////
+
+fun ChapterItem.getTitle() = chapterRenderer?.title?.toString()
+fun ChapterItem.getStartTimeMs() = chapterRenderer?.timeRangeStartMillis
+fun ChapterItem.getThumbnailUrl() = chapterRenderer?.thumbnail?.findOptimalResThumbnailUrl()

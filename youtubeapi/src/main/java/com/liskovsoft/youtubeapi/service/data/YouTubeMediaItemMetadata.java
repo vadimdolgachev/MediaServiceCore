@@ -1,9 +1,10 @@
 package com.liskovsoft.youtubeapi.service.data;
 
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.data.VideoPlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.models.sections.Chip;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
@@ -264,7 +265,12 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     }
 
     @Override
-    public VideoPlaylistInfo getPlaylistInfo() {
+    public PlaylistInfo getPlaylistInfo() {
+        return null;
+    }
+
+    @Override
+    public List<ChapterItem> getChapters() {
         return null;
     }
 }
