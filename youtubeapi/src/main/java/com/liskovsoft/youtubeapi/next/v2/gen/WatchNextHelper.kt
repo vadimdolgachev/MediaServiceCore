@@ -1,20 +1,20 @@
-package com.liskovsoft.youtubeapi.next.v2.gen.kt
+package com.liskovsoft.youtubeapi.next.v2.gen
 
-import com.liskovsoft.youtubeapi.common.models.kt.*
+import com.liskovsoft.youtubeapi.common.models.gen.*
 
 //////
 
 fun VideoOwnerItem.isSubscribed() = subscriptionButton?.subscribed ?: subscribed ?: subscribeButton?.subscribeButtonRenderer?.subscribed ?:
-    navigationEndpoint?.getOverlaySubscribeButton()?.isToggled
+    navigationEndpoint?.getOverlayToggleButton()?.isToggled ?: navigationEndpoint?.getOverlaySubscribeButton()?.subscribed
 fun VideoOwnerItem.getChannelId() = navigationEndpoint?.getBrowseId() ?: subscribeButton?.subscribeButtonRenderer?.channelId
 fun VideoOwnerItem.getThumbnails() = thumbnail
-fun VideoOwnerItem.getParams() = navigationEndpoint?.getOverlaySubscribeButton()?.getSubscribeParams()
+fun VideoOwnerItem.getParams() = navigationEndpoint?.getOverlayToggleButton()?.getSubscribeParams() ?: navigationEndpoint?.getOverlaySubscribeButton()?.getParams()
 
 /////
 
 private fun WatchNextResult.getWatchNextResults() = contents?.singleColumnWatchNextResults
 private fun WatchNextResult.getPlayerOverlays() = playerOverlays?.playerOverlayRenderer
-fun WatchNextResult.getSuggestedSections() = getWatchNextResults()?.pivot?.let { it.pivot ?: it.sectionListRenderer }?.contents?.map { it?.shelfRenderer }
+fun WatchNextResult.getSuggestedSections() = getWatchNextResults()?.pivot?.let { it.pivot ?: it.sectionListRenderer }?.contents?.mapNotNull { it?.shelfRenderer }
 fun WatchNextResult.getVideoMetadata() = getWatchNextResults()?.results?.results?.contents?.getOrNull(0)?.
     itemSectionRenderer?.contents?.map { it?.videoMetadataRenderer ?: it?.musicWatchMetadataRenderer }?.firstOrNull()
 
@@ -82,4 +82,17 @@ fun NextVideoItem.getParams() = endpoint?.watchEndpoint?.params
 
 fun ChapterItem.getTitle() = chapterRenderer?.title?.toString()
 fun ChapterItem.getStartTimeMs() = chapterRenderer?.timeRangeStartMillis
-fun ChapterItem.getThumbnailUrl() = chapterRenderer?.thumbnail?.findOptimalResThumbnailUrl()
+fun ChapterItem.getThumbnailUrl() = chapterRenderer?.thumbnail?.getOptimalResThumbnailUrl()
+
+///////
+
+fun ContinuationItem.getKey(): String? = nextContinuationData?.continuation ?: reloadContinuationData?.continuation
+fun ContinuationItem.getLabel(): String? = nextContinuationData?.label?.getText()
+
+///////
+
+fun EngagementPanel.getMenu() = engagementPanelSectionListRenderer?.header?.engagementPanelTitleHeaderRenderer?.menu
+fun EngagementPanel.getTopCommentsKey(): String? = getMenu()?.getSubMenuItems()?.getOrNull(0)?.continuation?.getKey()
+fun EngagementPanel.getNewCommentsKey(): String? = getMenu()?.getSubMenuItems()?.getOrNull(1)?.continuation?.getKey()
+fun EngagementPanel.isCommentsSection(): Boolean = engagementPanelSectionListRenderer?.panelIdentifier == "comment-item-section"
+fun Menu.getSubMenuItems() = sortFilterSubMenuRenderer?.subMenuItems

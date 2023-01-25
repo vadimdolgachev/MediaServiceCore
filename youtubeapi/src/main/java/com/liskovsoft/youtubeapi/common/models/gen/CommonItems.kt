@@ -1,4 +1,7 @@
-package com.liskovsoft.youtubeapi.common.models.kt
+package com.liskovsoft.youtubeapi.common.models.gen
+
+import com.liskovsoft.youtubeapi.next.v2.gen.ContinuationItem
+import com.liskovsoft.youtubeapi.next.v2.gen.VideoOwnerItem
 
 data class NavigationEndpointItem(
     val browseEndpoint: BrowseEndpoint?,
@@ -28,18 +31,32 @@ data class NavigationEndpointItem(
                             val overlayPanelRenderer: OverlayPanelRenderer?
                         ) {
                             data class OverlayPanelRenderer(
-                                val content: Content?
+                                val content: Content?,
+                                val header: Header?
                             ) {
                                 data class Content(
-                                    val overlayPanelItemListRenderer: OverlayPanelItemListRenderer?
+                                    val overlayPanelItemListRenderer: OverlayPanelItemListRenderer?,
+                                    val itemSectionRenderer: ItemSectionRenderer?
                                 ) {
                                     data class OverlayPanelItemListRenderer(
                                         val items: List<Item?>?
                                     ) {
                                         data class Item(
-                                            val toggleButtonRenderer: ToggleButtonRenderer?
+                                            val toggleButtonRenderer: ToggleButtonRenderer?,
+                                            val subscribeButtonRenderer: SubscribeButtonRenderer?
                                         )
                                     }
+
+                                    data class ItemSectionRenderer(
+                                        val continuations: List<ContinuationItem?>?
+                                    )
+                                }
+                                data class Header(
+                                    val overlayPanelHeaderRenderer: OverlayPanelHeaderRenderer?
+                                ) {
+                                    data class OverlayPanelHeaderRenderer(
+                                        val title: TextItem?
+                                    )
                                 }
                             }
                         }
@@ -84,9 +101,16 @@ data class ToggleButtonRenderer(
     val toggledServiceEndpoint: ToggledServiceEndpoint?
 )
 
+data class SubscribeButtonRenderer(
+    val subscribed: Boolean?,
+    val channelId: String?,
+    val serviceEndpoints: List<DefaultServiceEndpoint?>?
+)
+
 data class TextItem(
     val runs: List<Run?>?,
-    val simpleText: String?
+    val simpleText: String?,
+    val accessibility: AccessibilityItem?
 ) {
     data class Run(
         val text: String?,
@@ -95,7 +119,8 @@ data class TextItem(
     )
 
     override fun toString(): String {
-        return getText() ?: super.toString()
+        // Use empty string instead of super.toString() to fix output like "com.package.name.TextItem@0"
+        return getText() ?: ""
     }
 }
 
@@ -114,6 +139,14 @@ data class ThumbnailItem(
         val url: String?,
         val width: String?,
         val height: String?
+    )
+}
+
+data class AccessibilityItem(
+    val accessibilityData: AccessibilityData?
+) {
+    data class AccessibilityData(
+        val label: String?
     )
 }
 

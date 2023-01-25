@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.formatbuilders.hlsbuilder.YouTubeUrlListBuilder;
 import com.liskovsoft.youtubeapi.formatbuilders.mpdbuilder.YouTubeMPDBuilder;
@@ -277,7 +278,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public Observable<InputStream> createMpdStreamObservable() {
-        return Observable.fromCallable(this::createMpdStream);
+        return RxHelper.fromCallable(this::createMpdStream);
     }
 
     @Override

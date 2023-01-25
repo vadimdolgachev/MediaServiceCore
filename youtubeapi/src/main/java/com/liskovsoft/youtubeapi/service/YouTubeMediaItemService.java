@@ -11,7 +11,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.block.SponsorBlockService;
 import com.liskovsoft.youtubeapi.block.data.SegmentList;
-import com.liskovsoft.sharedutils.rx.ObservableHelper;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper;
 import com.liskovsoft.youtubeapi.next.v1.result.WatchNextResult;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
@@ -86,17 +86,17 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<MediaItemFormatInfo> getFormatInfoObserve(MediaItem item) {
-        return ObservableHelper.fromNullable(() -> getFormatInfo(item));
+        return RxHelper.fromNullable(() -> getFormatInfo(item));
     }
 
     @Override
     public Observable<MediaItemFormatInfo> getFormatInfoObserve(String videoId) {
-        return ObservableHelper.fromNullable(() -> getFormatInfo(videoId));
+        return RxHelper.fromNullable(() -> getFormatInfo(videoId));
     }
 
     @Override
     public Observable<MediaItemFormatInfo> getFormatInfoObserve(String videoId, String clickTrackingParams) {
-        return ObservableHelper.fromNullable(() -> getFormatInfo(videoId, clickTrackingParams));
+        return RxHelper.fromNullable(() -> getFormatInfo(videoId, clickTrackingParams));
     }
 
     @Override
@@ -112,12 +112,12 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<MediaItemStoryboard> getStoryboardObserve(MediaItem item) {
-        return ObservableHelper.fromNullable(() -> getStoryboard(item));
+        return RxHelper.fromNullable(() -> getStoryboard(item));
     }
 
     @Override
     public Observable<MediaItemStoryboard> getStoryboardObserve(String videoId) {
-        return ObservableHelper.fromNullable(() -> getStoryboard(videoId));
+        return RxHelper.fromNullable(() -> getStoryboard(videoId));
     }
 
     @Override
@@ -179,7 +179,7 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<MediaItemMetadata> getMetadataObserve(MediaItem item) {
-        return Observable.create(emitter -> {
+        return RxHelper.create(emitter -> {
             MediaItemMetadata metadata = getMetadata(item);
 
             if (metadata != null) {
@@ -187,24 +187,24 @@ public class YouTubeMediaItemService implements MediaItemService {
                 emitter.onNext(metadata);
                 emitter.onComplete();
             } else {
-                ObservableHelper.onError(emitter, "getMetadataObserve result is null");
+                RxHelper.onError(emitter, "getMetadataObserve result is null");
             }
         });
     }
 
     @Override
     public Observable<MediaItemMetadata> getMetadataObserve(String videoId) {
-        return ObservableHelper.fromNullable(() -> getMetadata(videoId));
+        return RxHelper.fromNullable(() -> getMetadata(videoId));
     }
 
     @Override
     public Observable<MediaItemMetadata> getMetadataObserve(String videoId, String playlistId, int playlistIndex, String playlistParams) {
-        return ObservableHelper.fromNullable(() -> getMetadata(videoId, playlistId, playlistIndex, playlistParams));
+        return RxHelper.fromNullable(() -> getMetadata(videoId, playlistId, playlistIndex, playlistParams));
     }
 
     @Override
     public Observable<MediaGroup> continueGroupObserve(MediaGroup mediaGroup) {
-        return ObservableHelper.fromNullable(() -> continueGroup(mediaGroup));
+        return RxHelper.fromNullable(() -> continueGroup(mediaGroup));
     }
 
     @Override
@@ -231,52 +231,52 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<Void> updateHistoryPositionObserve(MediaItem item, float positionSec) {
-        return ObservableHelper.fromVoidable(() -> updateHistoryPosition(item, positionSec));
+        return RxHelper.fromVoidable(() -> updateHistoryPosition(item, positionSec));
     }
 
     @Override
     public Observable<Void> updateHistoryPositionObserve(String videoId, float positionSec) {
-        return ObservableHelper.fromVoidable(() -> updateHistoryPosition(videoId, positionSec));
+        return RxHelper.fromVoidable(() -> updateHistoryPosition(videoId, positionSec));
     }
 
     @Override
     public Observable<Void> subscribeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> subscribe(item));
+        return RxHelper.fromVoidable(() -> subscribe(item));
     }
 
     @Override
     public Observable<Void> subscribeObserve(String channelId) {
-        return ObservableHelper.fromVoidable(() -> subscribe(channelId));
+        return RxHelper.fromVoidable(() -> subscribe(channelId));
     }
 
     @Override
     public Observable<Void> unsubscribeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> unsubscribe(item));
+        return RxHelper.fromVoidable(() -> unsubscribe(item));
     }
 
     @Override
     public Observable<Void> unsubscribeObserve(String channelId) {
-        return ObservableHelper.fromVoidable(() -> unsubscribe(channelId));
+        return RxHelper.fromVoidable(() -> unsubscribe(channelId));
     }
 
     @Override
     public Observable<Void> setLikeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> setLike(item));
+        return RxHelper.fromVoidable(() -> setLike(item));
     }
 
     @Override
     public Observable<Void> removeLikeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> removeLike(item));
+        return RxHelper.fromVoidable(() -> removeLike(item));
     }
 
     @Override
     public Observable<Void> setDislikeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> setDislike(item));
+        return RxHelper.fromVoidable(() -> setDislike(item));
     }
 
     @Override
     public Observable<Void> removeDislikeObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> removeDislike(item));
+        return RxHelper.fromVoidable(() -> removeDislike(item));
     }
 
     @Override
@@ -344,7 +344,7 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<Void> markAsNotInterestedObserve(MediaItem item) {
-        return ObservableHelper.fromVoidable(() -> markAsNotInterested(item));
+        return RxHelper.fromVoidable(() -> markAsNotInterested(item));
     }
 
     @Override
@@ -421,52 +421,52 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<List<PlaylistInfo>> getPlaylistsInfoObserve(String videoId) {
-        return Observable.fromCallable(() -> getPlaylistsInfo(videoId));
+        return RxHelper.fromCallable(() -> getPlaylistsInfo(videoId));
     }
 
     @Override
     public Observable<Void> addToPlaylistObserve(String playlistId, String videoId) {
-        return ObservableHelper.fromVoidable(() -> addToPlaylist(playlistId, videoId));
+        return RxHelper.fromVoidable(() -> addToPlaylist(playlistId, videoId));
     }
 
     @Override
     public Observable<Void> removeFromPlaylistObserve(String playlistId, String videoId) {
-        return ObservableHelper.fromVoidable(() -> removeFromPlaylist(playlistId, videoId));
+        return RxHelper.fromVoidable(() -> removeFromPlaylist(playlistId, videoId));
     }
 
     @Override
     public Observable<Void> renamePlaylistObserve(String playlistId, String newName) {
-        return ObservableHelper.fromVoidable(() -> renamePlaylist(playlistId, newName));
+        return RxHelper.fromVoidable(() -> renamePlaylist(playlistId, newName));
     }
 
     @Override
     public Observable<Void> setPlaylistOrderObserve(String playlistId, int playlistOrder) {
-        return ObservableHelper.fromVoidable(() -> setPlaylistOrder(playlistId, playlistOrder));
+        return RxHelper.fromVoidable(() -> setPlaylistOrder(playlistId, playlistOrder));
     }
 
     @Override
     public Observable<Void> savePlaylistObserve(String playlistId) {
-        return ObservableHelper.fromVoidable(() -> savePlaylist(playlistId));
+        return RxHelper.fromVoidable(() -> savePlaylist(playlistId));
     }
 
     @Override
     public Observable<Void> removePlaylistObserve(String playlistId) {
-        return ObservableHelper.fromVoidable(() -> removePlaylist(playlistId));
+        return RxHelper.fromVoidable(() -> removePlaylist(playlistId));
     }
 
     @Override
     public Observable<Void> createPlaylistObserve(String playlistName, String videoId) {
-        return ObservableHelper.fromVoidable(() -> createPlaylist(playlistName, videoId));
+        return RxHelper.fromVoidable(() -> createPlaylist(playlistName, videoId));
     }
 
     @Override
     public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId) {
-        return ObservableHelper.fromNullable(() -> getSponsorSegments(videoId));
+        return RxHelper.fromNullable(() -> getSponsorSegments(videoId));
     }
 
     @Override
     public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId, Set<String> categories) {
-        return ObservableHelper.fromNullable(() -> getSponsorSegments(videoId, categories));
+        return RxHelper.fromNullable(() -> getSponsorSegments(videoId, categories));
     }
 
     public void invalidateCache() {

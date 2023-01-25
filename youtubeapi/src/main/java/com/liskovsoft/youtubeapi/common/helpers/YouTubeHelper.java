@@ -5,7 +5,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.models.items.Thumbnail;
-import com.liskovsoft.youtubeapi.common.models.kt.ThumbnailItem;
+import com.liskovsoft.youtubeapi.common.models.gen.ThumbnailItem;
 import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup;
 
@@ -17,11 +17,11 @@ public final class YouTubeHelper {
      * NOTE: Optimal thumbnail index is 3. Lower values cause black borders around images on Chromecast and Sony.
      */
     public static final int OPTIMAL_RES_THUMBNAIL_INDEX = 3;
-    private static final int SHORTS_LEN_MS = 60 * 1_000;
+    private static final int SHORTS_LEN_MS = 90 * 1_000;
 
     /**
      * Find optimal thumbnail for tv screen<br/>
-     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.kt.ItemHelperKt#findOptimalResThumbnailUrl(ThumbnailItem)}
+     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.gen.CommonHelperKt#getOptimalResThumbnailUrl(ThumbnailItem)}
      */
     public static String findOptimalResThumbnailUrl(List<Thumbnail> thumbnails) {
         if (thumbnails == null) {
@@ -38,7 +38,7 @@ public final class YouTubeHelper {
     }
 
     /**
-     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.kt.ItemHelperKt#findHighResThumbnailUrl(ThumbnailItem)}
+     * For Kotlin counterpart see: {@link com.liskovsoft.youtubeapi.common.models.gen.CommonHelperKt#getHighResThumbnailUrl(ThumbnailItem)}
      */
     public static String findHighResThumbnailUrl(List<Thumbnail> thumbnails) {
         if (thumbnails == null) {
@@ -91,8 +91,9 @@ public final class YouTubeHelper {
                     (GlobalPreferences.sInstance.isHideShortsFromHomeEnabled() && mediaGroup.getType() == MediaGroup.TYPE_HOME) ||
                     (GlobalPreferences.sInstance.isHideShortsFromHistoryEnabled() && mediaGroup.getType() == MediaGroup.TYPE_HISTORY);
             boolean isHideUpcomingEnabled = GlobalPreferences.sInstance.isHideUpcomingEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS;
+            boolean isHideStreamsEnabled = (GlobalPreferences.sInstance.isHideStreamsFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS);
 
-            if (isHideShortsEnabled || isHideUpcomingEnabled) {
+            if (isHideShortsEnabled || isHideUpcomingEnabled || isHideStreamsEnabled) {
                 // NOTE: The group could be empty after filtering! Fix for that.
 
                 // Remove Shorts and/or Upcoming
@@ -102,7 +103,8 @@ public final class YouTubeHelper {
                         return false;
                     }
 
-                    return (isHideShortsEnabled && isShort(mediaItem)) || (isHideUpcomingEnabled && mediaItem.isUpcoming());
+                    return (isHideShortsEnabled && isShort(mediaItem)) || (isHideUpcomingEnabled && mediaItem.isUpcoming()) ||
+                            (isHideStreamsEnabled && mediaItem.isLive());
                 });
             }
         }
