@@ -31,8 +31,8 @@ public class TestHelpersV1 {
     // Cyberpunk
     public static final String VIDEO_ID_AGE_RESTRICTED = "8X2kIfS6fb8";
 
-    // First Independent
-    public static final String VIDEO_ID_LIVE = "Q-g2gHLm6MU";
+    // CNA News Live
+    public static final String VIDEO_ID_LIVE = "XWq5kBlakcQ";
 
     // Mathematik
     public static final String VIDEO_ID_MUSIC_2 = "0YEZiDtnbdA";
@@ -68,6 +68,6 @@ public class TestHelpersV1 {
 
     public static boolean urlExists(String url) {
         // disable profiler because it could cause out of memory error
-        return OkHttpManager.instance(false).doGetOkHttpRequest(url) != null;
+        return OkHttpManager.instance(false).doGetRequest(url) != null;
     }
 }

@@ -21,7 +21,7 @@ public class YouTubeAccountManager {
     private static final String TAG = YouTubeAccountManager.class.getSimpleName();
     private static YouTubeAccountManager sInstance;
     private final AuthService mAuthService;
-    private final YouTubeSignInService mSignInManager;
+    private final YouTubeSignInService mSignInService;
     /**
      * Fix ConcurrentModificationException when using {@link #getSelectedAccount()}
      */
@@ -40,9 +40,9 @@ public class YouTubeAccountManager {
         }
     };
 
-    private YouTubeAccountManager(YouTubeSignInService signInManager) {
+    private YouTubeAccountManager(YouTubeSignInService signInService) {
         mAuthService = AuthService.instance();
-        mSignInManager = signInManager;
+        mSignInService = signInService;
     }
 
     public static YouTubeAccountManager instance(YouTubeSignInService signInManager) {
@@ -91,10 +91,13 @@ public class YouTubeAccountManager {
 
         addAccount(YouTubeAccount.fromToken(refreshToken));
 
-        List<AccountInt> accountsInt = mAuthService.getAccounts(mSignInManager.getAuthorizationHeader());
+        mSignInService.checkAuth();
+
+        List<AccountInt> accountsInt = mAuthService.getAccounts();
 
         if (accountsInt != null) {
             for (AccountInt accountInt : accountsInt) {
+                // Refresh token should be unique per account but we only have one.
                 if (accountInt.isSelected()) {
                     YouTubeAccount account = YouTubeAccount.from(accountInt);
                     account.setRefreshToken(refreshToken);
@@ -155,7 +158,7 @@ public class YouTubeAccountManager {
 
         setAccountManagerData(Helpers.mergeArray(nonEmptyAccounts.toArray()));
 
-        mSignInManager.invalidateCache();
+        mSignInService.invalidateCache();
     }
 
     private void restoreAccounts() {

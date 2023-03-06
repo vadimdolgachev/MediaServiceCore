@@ -2,11 +2,8 @@ package com.liskovsoft.youtubeapi.track;
 
 import com.liskovsoft.youtubeapi.track.models.WatchTimeEmptyResult;
 import retrofit2.Call;
-import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
-import retrofit2.http.Headers;
-import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface TrackingApi {
@@ -25,8 +22,7 @@ public interface TrackingApi {
             @Query("cpn") String clientPlaybackNonce,    // Client Playback Nonce, unique hash code for each query (see AppService)
             @Query("ei") String eventId,                 // Event Id, ei param from get_video_info
             @Query("vm") String vm,                      // Visitor Monitoring?, vm param from get_video_info
-            @Query("of") String of,                      // New param. Mandatory.
-            @Header("Authorization") String auth
+            @Query("of") String of                       // New param. Mandatory.
     );
 
     /**
@@ -41,8 +37,7 @@ public interface TrackingApi {
             @Query("cpn") String clientPlaybackNonce,    // Client Playback Nonce, unique hash code for each query (see AppService)
             @Query("ei") String eventId,                 // Event Id, ei param from get_video_info
             @Query("vm") String vm,                      // Visitor Monitoring?, vm param from get_video_info
-            @Query("of") String of,                      // New param. Mandatory.
-            @Header("Authorization") String auth
+            @Query("of") String of                       // New param. Mandatory.
     );
 
     /**
@@ -59,8 +54,7 @@ public interface TrackingApi {
             @Query("st") float jumpFromToSec,            // e.g. 0,119.405 or 119.405
             @Query("et") float jumpFromToSecAlt,         // e.g. 0,119.405 or 119.405
             @Query("cpn") String clientPlaybackNonce,    // Client Playback Nonce, unique hash code for each query (see AppService)
-            @Query("ei") String eventId,                 // Event Id, ei param from get_video_info
-            @Header("Authorization") String auth
+            @Query("ei") String eventId                  // Event Id, ei param from get_video_info
     );
 
     /**
@@ -76,19 +70,6 @@ public interface TrackingApi {
             @Query("st") float jumpFromToSec,            // e.g. 0,119.405 or 119.405
             @Query("et") float jumpFromToSecAlt,         // e.g. 0,119.405 or 119.405
             @Query("cpn") String clientPlaybackNonce,    // Client Playback Nonce, unique hash code for each query (see AppService)
-            @Query("ei") String eventId,                 // Event Id, ei param from get_video_info
-            @Header("Authorization") String auth
+            @Query("ei") String eventId                  // Event Id, ei param from get_video_info
     );
-
-    @Headers("Content-Type: application/json")
-    @POST("https://www.youtube.com/youtubei/v1/history/pause_watch_history")
-    Call<Void> pauseWatchHistory(@Body String historyQuery, @Header("Authorization") String auth);
-
-    @Headers("Content-Type: application/json")
-    @POST("https://www.youtube.com/youtubei/v1/history/resume_watch_history")
-    Call<Void> resumeWatchHistory(@Body String historyQuery, @Header("Authorization") String auth);
-
-    @Headers("Content-Type: application/json")
-    @POST("https://www.youtube.com/youtubei/v1/history/clear_watch_history")
-    Call<Void> clearWatchHistory(@Body String historyQuery, @Header("Authorization") String auth);
 }

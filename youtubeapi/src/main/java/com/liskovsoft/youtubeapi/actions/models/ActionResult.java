@@ -3,17 +3,15 @@ package com.liskovsoft.youtubeapi.actions.models;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPath;
 
 public class ActionResult {
-    @JsonPath("$.trackingParams")
+    /**
+     * Serves as result health checking
+     */
+    @JsonPath("$.responseContext.serviceTrackingParams[0].service")
     private String mTrackingParams;
 
+    /**
+     * Serves as result health checking
+     */
     @JsonPath("$.responseContext.visitorData")
     private String mVisitorData;
-
-    public String getTrackingParams() {
-        return mTrackingParams;
-    }
-
-    public String getVisitorData() {
-        return mVisitorData;
-    }
 }

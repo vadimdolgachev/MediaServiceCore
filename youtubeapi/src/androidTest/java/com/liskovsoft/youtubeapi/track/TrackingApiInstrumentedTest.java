@@ -1,14 +1,13 @@
 package com.liskovsoft.youtubeapi.track;
 
 import com.liskovsoft.youtubeapi.app.AppService;
-import com.liskovsoft.youtubeapi.auth.V2.AuthService;
-import com.liskovsoft.youtubeapi.browse.BrowseServiceSigned;
-import com.liskovsoft.youtubeapi.browse.models.grid.GridTab;
+import com.liskovsoft.youtubeapi.browse.v1.BrowseService;
+import com.liskovsoft.youtubeapi.browse.v1.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpClient;
 import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2;
 import com.liskovsoft.youtubeapi.common.models.V2.TileItem;
 import com.liskovsoft.youtubeapi.common.models.items.ItemWrapper;
-import com.liskovsoft.youtubeapi.next.v1.WatchNextServiceSigned;
 import com.liskovsoft.youtubeapi.track.models.WatchTimeEmptyResult;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
@@ -26,22 +25,20 @@ public class TrackingApiInstrumentedTest {
     private AppService mAppService;
     private TrackingApi mTrackingApi;
     private VideoInfoService mVideoInfoService;
-    private AuthService mAuthService;
     private static String sAuthorization;
-    private BrowseServiceSigned mBrowseServiceSigned;
-    private WatchNextServiceSigned mWatchNextServiceSigned;
+    private BrowseService mBrowseService;
 
     @Before
     public void setUp() {
         mTrackingApi = RetrofitHelper.withJsonPath(TrackingApi.class);
         mAppService = AppService.instance();
         mVideoInfoService = VideoInfoService.instance();
-        mAuthService = AuthService.instance();
         if (sAuthorization == null) {
             sAuthorization = TestHelpersV2.getAuthorization();
         }
-        mBrowseServiceSigned = BrowseServiceSigned.instance();
-        mWatchNextServiceSigned = WatchNextServiceSigned.instance();
+        mBrowseService = BrowseService.instance();
+
+        RetrofitOkHttpClient.getAuthHeaders().put("Authorization", TestHelpersV2.getAuthorization());
     }
 
     //@Test
@@ -71,7 +68,7 @@ public class TrackingApiInstrumentedTest {
 
         assertTrue("Update watch time response successful", response.isSuccessful());
 
-        GridTab history = mBrowseServiceSigned.getHistory(sAuthorization);
+        GridTab history = mBrowseService.getHistory();
 
         TileItem historyItem = null;
 
@@ -95,11 +92,10 @@ public class TrackingApiInstrumentedTest {
 
     private Response<WatchTimeEmptyResult> createWatchRecord(String videoId, String playbackNonce) throws IOException {
         //String playbackNonce = mAppService.getClientPlaybackNonce();
-        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null, sAuthorization);
+        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null);
 
         Call<WatchTimeEmptyResult> wrapper = mTrackingApi.createWatchRecordShort(
-                videoId, playbackNonce, videoInfo.getEventId(), videoInfo.getVisitorMonitoringData(), videoInfo.getOfParam(), sAuthorization
-        );
+                videoId, playbackNonce, videoInfo.getEventId(), videoInfo.getVisitorMonitoringData(), videoInfo.getOfParam());
 
         return wrapper.execute();
     }
@@ -118,35 +114,32 @@ public class TrackingApiInstrumentedTest {
 
     private Response<WatchTimeEmptyResult> createWatchRecord(String videoId, float positionSec, String playbackNonce) throws IOException {
         //String playbackNonce = mAppService.getClientPlaybackNonce();
-        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null, sAuthorization);
+        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null);
 
         Call<WatchTimeEmptyResult> wrapper = mTrackingApi.createWatchRecord(
                 videoId, Float.parseFloat(videoInfo.getVideoDetails().getLengthSeconds()), positionSec,
-                positionSec, playbackNonce, videoInfo.getEventId(), videoInfo.getVisitorMonitoringData(), videoInfo.getOfParam(), sAuthorization
-        );
+                positionSec, playbackNonce, videoInfo.getEventId(), videoInfo.getVisitorMonitoringData(), videoInfo.getOfParam());
 
         return wrapper.execute();
     }
 
     private Response<WatchTimeEmptyResult> updateWatchTime(String videoId, float positionSec, String playbackNonce) throws IOException {
         //String playbackNonce = mAppService.getClientPlaybackNonce();
-        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null, sAuthorization);
+        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null);
 
         Call<WatchTimeEmptyResult> wrapper = mTrackingApi.updateWatchTime(
                 videoId, Float.parseFloat(videoInfo.getVideoDetails().getLengthSeconds()), positionSec,
-                positionSec, playbackNonce, videoInfo.getEventId(), sAuthorization
-        );
+                positionSec, playbackNonce, videoInfo.getEventId());
 
         return wrapper.execute();
     }
 
     private Response<WatchTimeEmptyResult> updateWatchTimeAlt(String videoId, float positionSec, String playbackNonce) throws IOException {
         //String playbackNonce = mAppService.getClientPlaybackNonce();
-        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null, sAuthorization);
+        VideoInfo videoInfo = mVideoInfoService.getVideoInfo(videoId, null);
 
         Call<WatchTimeEmptyResult> wrapper = mTrackingApi.updateWatchTimeShort(
-                videoId, positionSec, positionSec, playbackNonce, videoInfo.getEventId(), sAuthorization
-        );
+                videoId, positionSec, positionSec, playbackNonce, videoInfo.getEventId());
 
         return wrapper.execute();
     }

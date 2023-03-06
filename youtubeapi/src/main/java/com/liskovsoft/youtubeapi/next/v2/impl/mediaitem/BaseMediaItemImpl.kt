@@ -29,6 +29,8 @@ open class BaseMediaItemImpl : MediaItem {
         get() = field ?: playlistParamsItem
 
     private val _id by lazy { videoId?.hashCode() ?: channelId?.hashCode() ?: sId++ }
+    // TODO: time conversion doesn't take into account locale specific delimiters
+    private val durationMsItem by lazy { ServiceHelper.timeTextToMillis(lengthText ?: badgeTextItem) }
 
     protected open val reloadPageKeyItem: String? = null // TODO: override in the subclasses
     protected open val badgeTextItem: String? = null
@@ -44,6 +46,7 @@ open class BaseMediaItemImpl : MediaItem {
     protected open val lengthText: String? = null
     protected open val cardThumbImageUrl: String? = null
     protected open val backgroundThumbImageUrl: String? = null
+    protected open val previewUrl: String? = null
     protected open val playlistIdItem: String? = null
     protected open val playlistIndexItem: Int? = null
     protected open val channelIdItem: String? = null
@@ -52,6 +55,8 @@ open class BaseMediaItemImpl : MediaItem {
     protected open val isLiveItem: Boolean? = null
     protected open val isUpcomingItem: Boolean? = null
     protected open val isMovieItem: Boolean? = null
+    protected open val feedbackTokenItem: String? = null
+    protected open val percentWatchedItem: Int? = null
 
     protected companion object {
         var sId: Int = 0
@@ -128,7 +133,7 @@ open class BaseMediaItemImpl : MediaItem {
     }
 
     override fun getDurationMs(): Int {
-        return lengthText?.let { ServiceHelper.timeTextToMillis(it) } ?: -1
+        return durationMsItem
     }
 
     override fun getBadgeText(): String? {
@@ -172,7 +177,7 @@ open class BaseMediaItemImpl : MediaItem {
     }
 
     override fun getPercentWatched(): Int {
-        return -1
+        return percentWatchedItem ?: -1
     }
 
     override fun getAuthor(): String? {
@@ -180,7 +185,7 @@ open class BaseMediaItemImpl : MediaItem {
     }
 
     override fun getFeedbackToken(): String? {
-        return null
+        return feedbackTokenItem
     }
 
     override fun hasNewContent(): Boolean {
@@ -196,7 +201,7 @@ open class BaseMediaItemImpl : MediaItem {
     }
 
     override fun getVideoPreviewUrl(): String? {
-        return null
+        return previewUrl
     }
 
     override fun hasUploads(): Boolean {

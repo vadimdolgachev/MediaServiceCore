@@ -1,10 +1,11 @@
 package com.liskovsoft.youtubeapi.app;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.common.helpers.DefaultHeaders;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
-import com.liskovsoft.youtubeapi.auth.V1.AuthManager;
+import com.liskovsoft.youtubeapi.auth.V1.AuthApi;
 import com.liskovsoft.youtubeapi.common.js.V8Runtime;
 
 import java.util.Arrays;
@@ -15,7 +16,7 @@ public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
     private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
     private static AppService sInstance;
-    private final AppManagerWrapper mAppManager;
+    private final AppApiWrapper mAppApiWrapper;
     //private Duktape mDuktape;
     private AppInfo mCachedAppInfo;
     private PlayerData mCachedPlayerData;
@@ -25,7 +26,7 @@ public class AppService {
     private long mBaseDataUpdateTimeMs;
 
     private AppService() {
-        mAppManager = new AppManagerWrapper();
+        mAppApiWrapper = new AppApiWrapper();
     }
 
     public static AppService instance() {
@@ -126,7 +127,7 @@ public class AppService {
     //}
 
     /**
-     * Constant used in {@link AuthManager}
+     * Constant used in {@link AuthApi}
      */
     public String getClientId() {
         updateBaseData();
@@ -136,7 +137,7 @@ public class AppService {
     }
 
     /**
-     * Constant used in {@link AuthManager}
+     * Constant used in {@link AuthApi}
      */
     public String getClientSecret() {
         updateBaseData();
@@ -283,7 +284,7 @@ public class AppService {
 
         Log.d(TAG, "updateAppInfoData");
 
-        mCachedAppInfo = mAppManager.getAppInfo(AppConstants.APP_USER_AGENT);
+        mCachedAppInfo = mAppApiWrapper.getAppInfo(DefaultHeaders.APP_USER_AGENT);
 
         if (mCachedAppInfo != null) {
             mAppInfoUpdateTimeMs = System.currentTimeMillis();
@@ -297,7 +298,7 @@ public class AppService {
 
         Log.d(TAG, "updatePlayerData");
 
-        mCachedPlayerData = mAppManager.getPlayerData(getPlayerUrl());
+        mCachedPlayerData = mAppApiWrapper.getPlayerData(getPlayerUrl());
 
         if (mCachedPlayerData != null) {
             mPlayerDataUpdateTimeMs = System.currentTimeMillis();
@@ -311,7 +312,7 @@ public class AppService {
 
         Log.d(TAG, "updateBaseData");
 
-        mCachedBaseData = mAppManager.getBaseData(getBaseUrl());
+        mCachedBaseData = mAppApiWrapper.getBaseData(getBaseUrl());
 
         if (mCachedBaseData != null) {
             mBaseDataUpdateTimeMs = System.currentTimeMillis();
