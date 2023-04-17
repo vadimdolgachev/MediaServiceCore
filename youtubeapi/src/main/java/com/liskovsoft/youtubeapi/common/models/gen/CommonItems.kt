@@ -1,7 +1,6 @@
 package com.liskovsoft.youtubeapi.common.models.gen
 
 import com.liskovsoft.youtubeapi.next.v2.gen.ContinuationItem
-import com.liskovsoft.youtubeapi.next.v2.gen.VideoOwnerItem
 
 data class NavigationEndpointItem(
     val browseEndpoint: BrowseEndpoint?,
@@ -95,8 +94,14 @@ data class ToggledServiceEndpoint(
     val unsubscribeEndpoint: ChannelsEndpoint?
 )
 
+data class ButtonRenderer(
+    val isDisabled: Boolean?,
+    val text: TextItem?
+)
+
 data class ToggleButtonRenderer(
     val isToggled: Boolean?,
+    val isDisabled: Boolean?,
     val defaultServiceEndpoint: DefaultServiceEndpoint?,
     val toggledServiceEndpoint: ToggledServiceEndpoint?
 )
@@ -123,6 +128,10 @@ data class TextItem(
         return getText() ?: ""
     }
 }
+
+data class IconItem(
+    val iconType: String?
+)
 
 data class LiveChatEmoji(
     val emojiId: String?,
@@ -153,7 +162,9 @@ data class AccessibilityItem(
 data class ItemWrapper(
     val tileRenderer: TileItem?,
     val gridVideoRenderer: VideoItem?,
+    val videoRenderer: VideoItem?,
     val pivotVideoRenderer: VideoItem?,
+    val reelItemRenderer: VideoItem?,
     val compactVideoRenderer: VideoItem?,
     val tvMusicVideoRenderer: MusicItem?,
     val gridRadioRenderer: RadioItem?,
@@ -164,14 +175,15 @@ data class ItemWrapper(
     val compactChannelRenderer: ChannelItem?,
     val gridPlaylistRenderer: PlaylistItem?,
     val pivotPlaylistRenderer: PlaylistItem?,
-    val compactPlaylistRenderer: PlaylistItem?
+    val compactPlaylistRenderer: PlaylistItem?,
+    val guideEntryRenderer: GuideItem?
 )
 
 data class TileItem(
     val metadata: Metadata?,
     val header: Header?,
     val onSelectCommand: NavigationEndpointItem?,
-    val menu: MenuItem?,
+    val menu: MenuWrapper?,
     val contentType: String?
 ) {
     data class Metadata(
@@ -232,13 +244,14 @@ data class TileItem(
 data class VideoItem(
     val thumbnail: ThumbnailItem?,
     val title: TextItem?,
+    val headline: TextItem?,
     val shortBylineText: TextItem?,
     val longBylineText: TextItem?,
     val shortViewCountText: TextItem?,
     val viewCountText: TextItem?,
     val publishedTimeText: TextItem?,
     val videoId: String?,
-    val menu: MenuItem?,
+    val menu: MenuWrapper?,
     val badges: List<BadgeItem?>?,
     val upcomingEventData: UpcomingEvent?,
     val richThumbnail: RichThumbnailItem?,
@@ -278,7 +291,7 @@ data class MusicItem(
     val tertiaryText: TextItem?,
     val navigationEndpoint: NavigationEndpoint?,
     val lengthText: TextItem?,
-    val menu: MenuItem?
+    val menu: MenuWrapper?
 ) {
     data class NavigationEndpoint(
         val watchEndpoint: WatchEndpointItem?
@@ -339,33 +352,46 @@ data class PlaylistItem(
 
 }
 
-data class MenuItem(
+data class GuideItem(
+    val thumbnail: ThumbnailItem?,
+    val formattedTitle: TextItem?,
+    val navigationEndpoint: NavigationEndpointItem?,
+    val badges: Badges?
+) {
+    data class Badges(
+        val liveBroadcasting: Boolean?
+    )
+}
+
+data class MenuWrapper(
     val menuRenderer: MenuRenderer?
 ) {
     data class MenuRenderer(
-        val items: List<Item?>?
-    ) {
-        data class Item(
-            val menuServiceItemRenderer: MenuServiceItemRenderer?,
-            val menuNavigationItemRenderer: MenuNavigationItemRenderer?
-        ) {
-            data class MenuServiceItemRenderer(
-                val serviceEndpoint: ServiceEndpoint?
-            ) {
-                data class ServiceEndpoint(
-                    val feedbackEndpoint: FeedbackEndpoint?
-                ) {
-                    data class FeedbackEndpoint(
-                        val feedbackToken: String?
-                    )
-                }
-            }
+        val items: List<MenuItem?>?
+    )
+}
 
-            data class MenuNavigationItemRenderer(
-                val navigationEndpoint: NavigationEndpointItem?
+data class MenuItem(
+    val menuServiceItemRenderer: MenuServiceItemRenderer?,
+    val menuNavigationItemRenderer: MenuNavigationItemRenderer?
+) {
+    data class MenuServiceItemRenderer(
+        val text: TextItem?,
+        val icon: IconItem?,
+        val serviceEndpoint: ServiceEndpoint?
+    ) {
+        data class ServiceEndpoint(
+            val feedbackEndpoint: FeedbackEndpoint?
+        ) {
+            data class FeedbackEndpoint(
+                val feedbackToken: String?
             )
         }
     }
+
+    data class MenuNavigationItemRenderer(
+        val navigationEndpoint: NavigationEndpointItem?
+    )
 }
 
 data class RichThumbnailItem(

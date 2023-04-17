@@ -56,6 +56,7 @@ open class BaseMediaItemImpl : MediaItem {
     protected open val isUpcomingItem: Boolean? = null
     protected open val isMovieItem: Boolean? = null
     protected open val feedbackTokenItem: String? = null
+    protected open val feedbackTokenItem2: String? = null
     protected open val percentWatchedItem: Int? = null
 
     protected companion object {
@@ -188,6 +189,10 @@ open class BaseMediaItemImpl : MediaItem {
         return feedbackTokenItem
     }
 
+    override fun getFeedbackToken2(): String? {
+        return feedbackTokenItem2
+    }
+
     override fun hasNewContent(): Boolean {
         return false
     }
@@ -243,10 +248,6 @@ open class BaseMediaItemImpl : MediaItem {
     }
 
     // End Fake params
-
-    open fun isEmpty(): Boolean {
-        return title == null && cardImageUrl == null
-    }
 
     override fun sync(metadata: MediaItemMetadata?) {
         if (metadata == null) {

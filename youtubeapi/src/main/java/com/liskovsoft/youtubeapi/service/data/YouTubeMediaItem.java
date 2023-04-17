@@ -478,6 +478,11 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     @Override
+    public String getFeedbackToken2() {
+        return null;
+    }
+
+    @Override
     public boolean hasUploads() {
         return mReloadPageKey != null;
     }
@@ -502,10 +507,6 @@ public class YouTubeMediaItem implements MediaItem {
     @Override
     public String getReloadPageKey() {
         return mReloadPageKey;
-    }
-
-    public boolean isEmpty() {
-        return mTitle == null && mCardImageUrl == null;
     }
 
     @NonNull

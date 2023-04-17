@@ -16,6 +16,8 @@ private const val BADGE_STYLE_SHORTS = "SHORTS"
 private const val BADGE_STYLE_DEFAULT = "DEFAULT"
 private const val BADGE_STYLE_MOVIE = "BADGE_STYLE_TYPE_YPC"
 private const val OLD_BADGE_STYLE_LIVE = "BADGE_STYLE_TYPE_LIVE_NOW"
+private const val ICON_TYPE_NOT_INTERESTED = "NOT_INTERESTED"
+private const val ICON_TYPE_REMOVE = "REMOVE"
 
 ///////////
 
@@ -49,8 +51,7 @@ fun ThumbnailItem.Thumbnail.getUrl(): String? {
 fun NavigationEndpointItem.getBrowseId() = browseEndpoint?.browseId
 fun NavigationEndpointItem.getOverlayToggleButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.toggleButtonRenderer }
 fun NavigationEndpointItem.getOverlaySubscribeButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.subscribeButtonRenderer }
-fun NavigationEndpointItem.isSubscribed() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.subscribeButtonRenderer }
-    ?.subscribed
+fun NavigationEndpointItem.isSubscribed() = getOverlaySubscribeButton()?.subscribed
 fun NavigationEndpointItem.getContinuation() = getContent()?.itemSectionRenderer?.continuations?.getOrNull(0)
 fun NavigationEndpointItem.getTitle() = getHeader()?.overlayPanelHeaderRenderer?.title?.getText()
 private fun NavigationEndpointItem.getOverlayPanel() = openPopupAction?.popup?.overlaySectionRenderer?.overlay
@@ -60,15 +61,21 @@ private fun NavigationEndpointItem.getHeader() = getOverlayPanel()?.header
 
 ////////
 
-fun MenuItem.getBrowseId() = menuRenderer?.items?.firstNotNullOfOrNull { it?.menuNavigationItemRenderer?.navigationEndpoint?.getBrowseId() }
-fun MenuItem.getFeedbackToken() = menuRenderer?.items?.firstNotNullOfOrNull {
-    it?.menuServiceItemRenderer?.serviceEndpoint?.feedbackEndpoint?.feedbackToken
-}
+fun MenuWrapper.getBrowseId() = menuRenderer?.items?.firstNotNullOfOrNull { it?.getBrowseId() }
+fun MenuWrapper.getFeedbackTokens(): List<String?>? = menuRenderer?.items?.mapNotNull { it?.getFeedbackToken() }
+// Filter by icon not robust. Icon item not always present.
+fun MenuWrapper.getVideoToken() = menuRenderer?.items?.firstOrNull {
+        it?.getIconType() == ICON_TYPE_NOT_INTERESTED
+    }?.getFeedbackToken()
+// Filter by icon not robust. Icon item not always present.
+fun MenuWrapper.getChannelToken() = menuRenderer?.items?.firstOrNull {
+        it?.getIconType() == ICON_TYPE_REMOVE
+    }?.getFeedbackToken()
 
 //////////
 
 // gridVideoRenderer
-fun VideoItem.getTitle() = title?.getText()
+fun VideoItem.getTitle() = title?.getText() ?: headline?.getText()
 fun VideoItem.getVideoId() = videoId
 fun VideoItem.getThumbnails() = thumbnail
 fun VideoItem.getMovingThumbnails() = richThumbnail?.movingThumbnailRenderer?.movingThumbnailDetails
@@ -144,7 +151,7 @@ fun TileItem.Metadata.getBadgeStyle() = tileMetadataRenderer?.lines?.firstNotNul
 
 ////////////
 
-private fun ItemWrapper.getVideoItem() = gridVideoRenderer ?: pivotVideoRenderer ?: compactVideoRenderer
+private fun ItemWrapper.getVideoItem() = gridVideoRenderer ?: videoRenderer ?: pivotVideoRenderer ?: compactVideoRenderer ?: reelItemRenderer
 private fun ItemWrapper.getMusicItem() = tvMusicVideoRenderer
 private fun ItemWrapper.getChannelItem() = gridChannelRenderer ?: pivotChannelRenderer ?: compactChannelRenderer
 private fun ItemWrapper.getPlaylistItem() = gridPlaylistRenderer ?: pivotPlaylistRenderer ?: compactPlaylistRenderer
@@ -191,10 +198,11 @@ fun ItemWrapper.getPlaylistIndex() = getVideoItem()?.getPlaylistIndex() ?: getMu
 fun ItemWrapper.isLive() = getVideoItem()?.isLive() ?: getMusicItem()?.isLive() ?: getTileItem()?.isLive()
 fun ItemWrapper.isUpcoming() = getVideoItem()?.isUpcoming() ?: getMusicItem()?.isUpcoming() ?: getTileItem()?.isUpcoming()
 fun ItemWrapper.isMovie() = getTileItem()?.isMovie()
-fun ItemWrapper.isShorts() = getVideoItem()?.isShorts() ?: getTileItem()?.isShorts()
+fun ItemWrapper.isShorts() = reelItemRenderer != null || getVideoItem()?.isShorts() ?: getTileItem()?.isShorts() ?: false
 fun ItemWrapper.getDescriptionText() = getTileItem()?.getRichTextTileText()
 fun ItemWrapper.getContinuationKey() = getTileItem()?.getContinuationKey()
-fun ItemWrapper.getFeedbackToken() = getVideoItem()?.menu?.getFeedbackToken()
+fun ItemWrapper.getFeedbackToken() = getVideoItem()?.menu?.getFeedbackTokens()?.getOrNull(0)
+fun ItemWrapper.getFeedbackToken2() = getVideoItem()?.menu?.getFeedbackTokens()?.getOrNull(1)
 
 /////
 
@@ -215,3 +223,13 @@ fun SubscribeButtonRenderer.getParams() = serviceEndpoints?.firstNotNullOfOrNull
 //////
 
 fun VideoItem.UpcomingEvent.getStartTimeMs() = startTime?.toLong()?.let { it * 1_000 } ?: -1
+
+//////
+
+fun IconItem.getType() = iconType
+
+//////
+
+fun MenuItem.getIconType() = menuServiceItemRenderer?.icon?.getType()
+fun MenuItem.getFeedbackToken() = menuServiceItemRenderer?.serviceEndpoint?.feedbackEndpoint?.feedbackToken
+fun MenuItem.getBrowseId() = menuNavigationItemRenderer?.navigationEndpoint?.getBrowseId()
