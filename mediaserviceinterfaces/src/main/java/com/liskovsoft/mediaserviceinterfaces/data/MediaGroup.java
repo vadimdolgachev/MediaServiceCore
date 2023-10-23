@@ -17,11 +17,13 @@ public interface MediaGroup {
     int TYPE_CHANNEL = 10;
     int TYPE_SETTINGS = 11;
     int TYPE_CHANNEL_UPLOADS = 12;
-    int getId();
+    int TYPE_KIDS_HOME = 13;
+    int TYPE_TRENDING = 14;
+    int TYPE_SHORTS = 15;
+    int TYPE_NOTIFICATIONS = 16;
     int getType();
     List<MediaItem> getMediaItems();
     String getTitle();
-    void setTitle(String title);
     // Below settings for Channel section group
     String getChannelId();
     String getParams();

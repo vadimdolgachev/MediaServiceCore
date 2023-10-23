@@ -12,6 +12,7 @@ import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoHeaders;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.VideoFormat;
+import okhttp3.Headers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,8 @@ public abstract class VideoInfoServiceBase {
         List<String> throttleFixed = mAppService.throttleFix(throttled);
         applyThrottleFixedStrings(throttleFixed, formats);
 
-        applyAdditionalStrings(formats);
+        // What this for? Could this fix throttling or maybe the source error?
+        //applyAdditionalStrings(formats);
     }
 
     private static List<String> extractCipheredStrings(List<? extends VideoFormat> formats) {
@@ -89,13 +91,15 @@ public abstract class VideoInfoServiceBase {
         }
     }
 
+    /**
+     * What this for? Could this fix throttling?
+     */
     private static void applyAdditionalStrings(List<? extends VideoFormat> formats) {
         String cpn = AppService.instance().getClientPlaybackNonce();
 
         for (VideoFormat format : formats) {
             format.setCpn(cpn);
-            format.setClientVersion(AppConstants.CLIENT_VERSION_WEB);
-            //format.setParam("alr", "yes");
+            //format.setClientVersion(AppConstants.CLIENT_VERSION_WEB);
         }
     }
 
@@ -105,6 +109,14 @@ public abstract class VideoInfoServiceBase {
         }
 
         return RetrofitHelper.get(mDashInfoApi.getDashInfoUrl(url + SMALL_RANGE));
+    }
+
+    private Headers getDashInfoHeaders(String url) {
+        if (url == null) {
+            return null;
+        }
+
+        return RetrofitHelper.getHeaders(mDashInfoApi.getDashInfoHeaders(url + SMALL_RANGE));
     }
 
     protected DashInfo getDashInfo2(VideoInfo videoInfo) {
@@ -127,8 +139,8 @@ public abstract class VideoInfoServiceBase {
 
         try {
             AdaptiveVideoFormat format = getSmallestAudio(videoInfo);
-            dashInfo = new DashInfoHeaders(mDashInfoApi.getDashInfoHeaders(format.getUrl() + SMALL_RANGE));
-        } catch (ArithmeticException | NumberFormatException ex) {
+            dashInfo = new DashInfoHeaders(getDashInfoHeaders(format.getUrl()));
+        } catch (ArithmeticException | NumberFormatException | IllegalStateException ex) {
             // Segment isn't available
             //AdaptiveVideoFormat format = getSmallestVideo(videoInfo);
             //dashInfo = new DashInfoHeaders(mDashInfoApi.getDashInfoHeaders(format.getUrl() + SMALL_RANGE));

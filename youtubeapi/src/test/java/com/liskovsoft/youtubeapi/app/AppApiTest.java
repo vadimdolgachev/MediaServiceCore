@@ -33,13 +33,13 @@ public class AppApiTest {
 
     @Test
     public void testThatAppInfoContainsAllRequiredFields() throws IOException {
-        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_COBALT);
+        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_TV);
         assertTrue("Player url should ends with js", playerUrl.endsWith(".js"));
     }
 
     @Test
     public void testThatDecipherFunctionIsValid() {
-        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_COBALT);
+        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_TV);
 
         PlayerData playerData = mAppApiWrapper.getPlayerData(playerUrl);
 
@@ -55,13 +55,13 @@ public class AppApiTest {
 
     @Test
     public void testThatPlaybackNonceFunctionIsValid() {
-        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_COBALT);
+        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_TV);
 
         PlayerData clientPlaybackNonceFunction = mAppApiWrapper.getPlayerData(playerUrl);
 
         assertNotNull("Playback nonce result not null", clientPlaybackNonceFunction);
 
-        String playbackNonceFunctionContent = clientPlaybackNonceFunction.getClientPlaybackNonceFunction();
+        String playbackNonceFunctionContent = clientPlaybackNonceFunction.getRawClientPlaybackNonceFunction();
         assertNotNull("Playback nonce function not null", playbackNonceFunctionContent);
         assertFalse("Playback nonce function not empty", playbackNonceFunctionContent.isEmpty());
         assertTrue("Playback nonce has valid content", playbackNonceFunctionContent.startsWith("function ") &&
@@ -70,7 +70,7 @@ public class AppApiTest {
 
     @Test
     public void testThrottleFunctionIsValid() {
-        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_COBALT);
+        String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_TV);
 
         PlayerData playerData = mAppApiWrapper.getPlayerData(playerUrl);
 
@@ -85,14 +85,7 @@ public class AppApiTest {
 
     @Test
     public void testThatClientIdAndSecretNotEmpty() {
-        for (String userAgent : new String[]{
-                DefaultHeaders.USER_AGENT_COBALT,
-                DefaultHeaders.USER_AGENT_SAMSUNG,
-                DefaultHeaders.USER_AGENT_SAMSUNG_2,
-                DefaultHeaders.USER_AGENT_LG_2013
-        }) {
-            testThatClientIdAndSecretNotEmpty(userAgent);
-        }
+        testThatClientIdAndSecretNotEmpty(DefaultHeaders.USER_AGENT_TV);
     }
 
     public void testThatClientIdAndSecretNotEmpty(String userAgent) {

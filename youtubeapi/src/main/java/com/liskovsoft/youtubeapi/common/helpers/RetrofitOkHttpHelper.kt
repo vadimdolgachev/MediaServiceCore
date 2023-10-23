@@ -7,17 +7,26 @@ import com.liskovsoft.sharedutils.okhttp.OkHttpCommons
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.youtubeapi.app.AppConstants
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-object RetrofitOkHttpHelper {
+internal object RetrofitOkHttpHelper {
+    private var skipAuthNums: Int = 0;
+
     @JvmStatic
     val authHeaders = mutableMapOf<String, String>()
 
     @JvmStatic
     val client: OkHttpClient by lazy { createClient() }
 
+    @JvmStatic
     var disableCompression: Boolean = false
+
+    @JvmStatic
+    fun skipAuth() {
+        skipAuthNums++
+    }
 
     private val headers = mapOf(
         "User-Agent" to DefaultHeaders.APP_USER_AGENT,
@@ -47,13 +56,15 @@ object RetrofitOkHttpHelper {
             val headers = request.headers()
             val requestBuilder = request.newBuilder()
 
-            apply(this.headers, headers, requestBuilder)
+            applyHeaders(this.headers, headers, requestBuilder)
 
             if (Helpers.startsWithAny(request.url().toString(), *apiPrefixes)) {
-                if (authHeaders.isEmpty()) {
-                    applyApiKey(request, requestBuilder)
+                if (authHeaders.isEmpty() || skipAuthNums > 0) {
+                    if (skipAuthNums > 0) skipAuthNums--
+                    applyQueryKeys(mapOf("key" to AppConstants.API_KEY, "prettyPrint" to "false"), request, requestBuilder)
                 } else {
-                    apply(authHeaders, headers, requestBuilder)
+                    applyQueryKeys(mapOf("prettyPrint" to "false"), request, requestBuilder)
+                    applyHeaders(authHeaders, headers, requestBuilder)
                 }
             }
 
@@ -61,7 +72,7 @@ object RetrofitOkHttpHelper {
         }
     }
 
-    private fun apply(newHeaders: Map<String, String>, oldHeaders: Headers, builder: Request.Builder) {
+    private fun applyHeaders(newHeaders: Map<String, String>, oldHeaders: Headers, builder: Request.Builder) {
         for (header in newHeaders) {
             if (disableCompression && header.key == "Accept-Encoding") {
                 continue
@@ -72,16 +83,24 @@ object RetrofitOkHttpHelper {
         }
     }
 
-    private fun applyApiKey(request: Request, builder: Request.Builder) {
+    private fun applyQueryKeys(keys: Map<String, String>, request: Request, builder: Request.Builder) {
         val originUrl = request.url()
 
-        originUrl.queryParameter("key") ?: run {
-            val newUrl = originUrl
-                .newBuilder()
-                .addQueryParameter("key", AppConstants.API_KEY)
-                .build()
+        var newUrlBuilder: HttpUrl.Builder? = null
 
-            builder.url(newUrl)
+        for (entry in keys) {
+            // Don't override existing keys
+            originUrl.queryParameter(entry.key) ?: run {
+                if (newUrlBuilder == null) {
+                    newUrlBuilder = originUrl.newBuilder()
+                }
+
+                newUrlBuilder?.addQueryParameter(entry.key, entry.value)
+            }
+        }
+
+        newUrlBuilder?.run {
+            builder.url(build())
         }
     }
 

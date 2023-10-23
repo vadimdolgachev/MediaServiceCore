@@ -11,7 +11,7 @@ public interface MediaGroupService {
     MediaGroup getSearch(String searchText, int options);
     List<MediaGroup> getSearchAlt(String searchText);
     List<MediaGroup> getSearchAlt(String searchText, int options);
-    List<String> getSearchTags(String searchText);
+    List<String> getSearchTags(String searchText, boolean popular);
     MediaGroup getSubscriptions();
     /**
      * NOTE: recommended is a part of Home
@@ -19,9 +19,11 @@ public interface MediaGroupService {
     MediaGroup getRecommended();
     MediaGroup getHistory();
     List<MediaGroup> getHome();
-    MediaGroup getSubscribedChannelsUpdate();
-    MediaGroup getSubscribedChannelsAZ();
-    MediaGroup getSubscribedChannelsLastViewed();
+    MediaGroup getSubscribedChannels();
+    MediaGroup getSubscribedChannelsByUpdate();
+    MediaGroup getSubscribedChannelsByName();
+    MediaGroup getSubscribedChannelsByName2();
+    MediaGroup getSubscribedChannelsByViewed();
     MediaGroup getGroup(MediaItem mediaGroup);
     /**
      * NOTE: returns unnamed group
@@ -37,14 +39,18 @@ public interface MediaGroupService {
     Observable<MediaGroup> getSearchObserve(String searchText, int options);
     Observable<List<MediaGroup>> getSearchAltObserve(String searchText);
     Observable<List<MediaGroup>> getSearchAltObserve(String searchText, int options);
-    Observable<List<String>> getSearchTagsObserve(String searchText);
+    Observable<List<String>> getSearchTagsObserve(String searchText, boolean popular);
     Observable<MediaGroup> getSubscriptionsObserve();
     /**
      * NOTE: recommended is a part of Home
      */
     Observable<MediaGroup> getRecommendedObserve();
     Observable<MediaGroup> getHistoryObserve();
+    Observable<List<MediaGroup>> getHomeV1Observe();
     Observable<List<MediaGroup>> getHomeObserve();
+    Observable<List<MediaGroup>> getTrendingObserve();
+    Observable<MediaGroup> getShortsObserve();
+    Observable<List<MediaGroup>> getKidsHomeObserve();
     Observable<List<MediaGroup>> getMusicObserve();
     Observable<List<MediaGroup>> getNewsObserve();
     Observable<List<MediaGroup>> getGamingObserve();
@@ -52,13 +58,15 @@ public interface MediaGroupService {
     Observable<List<MediaGroup>> getChannelObserve(MediaItem item);
     Observable<List<MediaGroup>> getPlaylistsObserve();
     Observable<MediaGroup> getEmptyPlaylistsObserve();
-    Observable<MediaGroup> getSubscribedChannelsUpdateObserve();
-    Observable<MediaGroup> getSubscribedChannelsAZObserve();
-    Observable<MediaGroup> getSubscribedChannelsLastViewedObserve();
+    Observable<MediaGroup> getSubscribedChannelsObserve();
+    Observable<MediaGroup> getSubscribedChannelsByUpdateObserve();
+    Observable<MediaGroup> getSubscribedChannelsByNameObserve();
+    Observable<MediaGroup> getSubscribedChannelsByName2Observe();
+    Observable<MediaGroup> getSubscribedChannelsByViewedObserve();
     Observable<MediaGroup> getGroupObserve(MediaItem mediaItem);
     /**
      * NOTE: returns unnamed group
      */
     Observable<MediaGroup> getGroupObserve(String reloadPageKey);
-    Observable<MediaGroup> continueGroupObserve(MediaGroup mediaTab);
+    Observable<MediaGroup> continueGroupObserve(MediaGroup mediaGroup);
 }

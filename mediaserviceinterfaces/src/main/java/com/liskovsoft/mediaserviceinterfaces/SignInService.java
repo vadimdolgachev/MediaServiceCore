@@ -9,8 +9,10 @@ public interface SignInService {
     void signOut();
     boolean isSigned();
     List<Account> getAccounts();
+    Account getSelectedAccount();
     void selectAccount(Account account);
     void removeAccount(Account account);
+    void setOnChange(Runnable onChange);
 
     // RxJava interfaces
     /**

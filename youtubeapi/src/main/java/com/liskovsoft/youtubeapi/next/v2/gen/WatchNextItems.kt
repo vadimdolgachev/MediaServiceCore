@@ -2,7 +2,7 @@ package com.liskovsoft.youtubeapi.next.v2.gen
 
 import com.liskovsoft.youtubeapi.common.models.gen.*
 
-data class NextVideoItem(
+internal data class NextVideoItem(
     val item: Item?,
     val endpoint: Endpoint?
 ) {
@@ -13,7 +13,7 @@ data class NextVideoItem(
     data class Endpoint(val watchEndpoint: WatchEndpointItem?)
 }
 
-data class ShelfItem(
+internal data class ShelfItem(
     val title: TextItem?,
     val content: Content?,
     val headerRenderer: HeaderRenderer?
@@ -32,8 +32,17 @@ data class ShelfItem(
         val chipCloudRenderer: ChipCloudRenderer?
     ) {
         data class ShelfHeaderRenderer(
-                val title: TextItem?
-        )
+                val title: TextItem?,
+                val avatarLockup: AvatarLockup?
+        ) {
+            data class AvatarLockup(
+                val avatarLockupRenderer: AvatarLockupRenderer?
+            ) {
+                data class AvatarLockupRenderer(
+                    val title: TextItem?
+                )
+            }
+        }
 
         data class ChipCloudRenderer(
                 val chips: List<ChipItem?>?
@@ -41,7 +50,7 @@ data class ShelfItem(
     }
 }
 
-data class ChipItem(
+internal data class ChipItem(
         val chipCloudChipRenderer: ChipCloudChipRenderer?
 ) {
     data class ChipCloudChipRenderer(
@@ -68,7 +77,7 @@ data class ChipItem(
     }
 }
 
-data class ContinuationItem(
+internal data class ContinuationItem(
     val reloadContinuationData: ReloadContinuationData?,
     val nextContinuationData: NextContinuationData?,
     val invalidationContinuationData: LiveChatContinuationData?, // live chats
@@ -89,7 +98,7 @@ data class ContinuationItem(
     )
 }
 
-data class VideoOwnerItem(
+internal data class VideoOwnerItem(
     val thumbnail: ThumbnailItem?,
     val title: TextItem?,
     val subscribed: Boolean?,
@@ -106,7 +115,7 @@ data class VideoOwnerItem(
     )
 }
 
-data class VideoMetadataItem(
+internal data class VideoMetadataItem(
     val owner: Owner?,
     val title: TextItem?,
     val byline: TextItem?,
@@ -142,7 +151,8 @@ data class VideoMetadataItem(
             val likeButtonRenderer: LikeButtonRenderer?
     ) {
         data class LikeButtonRenderer(
-                val likeStatus: String?
+                val likeStatus: String?,
+                val likeCountText: TextItem?
         )
     }
 
@@ -155,7 +165,7 @@ data class VideoMetadataItem(
     }
 }
 
-data class ButtonStateItem(
+internal data class ButtonStateItem(
     val subscribeButton: SubscribeButton?,
     val likeButton: LikeButton?,
     val dislikeButton: DislikeButton?,
@@ -190,7 +200,7 @@ data class ButtonStateItem(
     }
 }
 
-data class PlaylistInfo(
+internal data class PlaylistInfo(
     val title: String?,
     val currentIndex: Int?,
     val playlistId: String?,
@@ -199,7 +209,7 @@ data class PlaylistInfo(
     val isEditable: Boolean?
 )
 
-data class ChapterItem(
+internal data class ChapterItem(
    val chapterRenderer: ChapterRenderer?
 ) {
     data class ChapterRenderer(
@@ -211,12 +221,13 @@ data class ChapterItem(
 
 //////////
 
-data class EngagementPanel(
+internal data class EngagementPanel(
     val engagementPanelSectionListRenderer: EngagementPanelSectionListRenderer?
 ) {
     data class EngagementPanelSectionListRenderer(
         val panelIdentifier: String?,
-        val header: Header?
+        val header: Header?,
+        val content: Content?
     ) {
         data class Header(
             val engagementPanelTitleHeaderRenderer: EngagementPanelTitleHeaderRenderer?
@@ -225,10 +236,29 @@ data class EngagementPanel(
                 val menu: Menu?
             )
         }
+        data class Content(
+            val structuredDescriptionContentRenderer: StructuredDescriptionContentRenderer?
+        ) {
+            data class StructuredDescriptionContentRenderer(
+                 val items: List<Item?>?
+            ) {
+                data class Item(
+                    val videoDescriptionHeaderRenderer: VideoDescriptionHeaderRenderer?
+                )
+            }
+        }
     }
 }
 
-data class Menu(
+internal data class VideoDescriptionHeaderRenderer(
+    val title: TextItem?,
+    val channel: TextItem?,
+    val views: TextItem?,
+    val publishDate: TextItem,
+    val channelNavigationEndpoint: NavigationEndpointItem?
+)
+
+internal data class Menu(
     val sortFilterSubMenuRenderer: SortFilterSubMenuRenderer?
 ) {
     data class SortFilterSubMenuRenderer(
@@ -236,7 +266,7 @@ data class Menu(
     )
 }
 
-data class SubMenuItem(
+internal data class SubMenuItem(
     val continuation: ContinuationItem?
 )
 

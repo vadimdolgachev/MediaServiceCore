@@ -6,7 +6,7 @@ import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2
 import com.liskovsoft.youtubeapi.next.v2.WatchNextApi
 import com.liskovsoft.youtubeapi.next.v2.WatchNextApiHelper
 import com.liskovsoft.youtubeapi.next.v2.gen.getCommentPanel
-import com.liskovsoft.youtubeapi.next.v2.gen.getTopCommentsKey
+import com.liskovsoft.youtubeapi.next.v2.gen.getTopCommentsToken
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -41,7 +41,7 @@ class CommentsApiTest {
     fun testThatCommentCanBeContinued() {
         val commentsResult = getCommentsResult(getCommentsKey())
 
-        assertNotNull("Has continuation key", commentsResult?.getComments()?.getOrNull(0)?.getCommentItem()?.getContinuationKey())
+        assertNotNull("Has continuation key", getContinuableComment(commentsResult)?.getContinuationKey())
         assertNotNull("Has continuation key", commentsResult?.getContinuationKey())
     }
 
@@ -52,7 +52,7 @@ class CommentsApiTest {
         val commentsResultNext = getCommentsResult(commentsResult?.getContinuationKey())
         assertNotNull("Has continuations", commentsResultNext?.getComments()?.isNotEmpty())
 
-        val nestedCommentsResult = getCommentsResult(commentsResult?.getComments()?.getOrNull(0)?.getCommentItem()?.getContinuationKey())
+        val nestedCommentsResult = getCommentsResult(getContinuableComment(commentsResult)?.getContinuationKey())
         assertNotNull("Has nested comments", nestedCommentsResult?.getComments()?.isNotEmpty())
     }
 
@@ -69,7 +69,16 @@ class CommentsApiTest {
     private fun getCommentsKey(): String? {
         val watchNextResult = mApi2?.getWatchNextResult(WatchNextApiHelper.getWatchNextQuery(TestHelpersV2.VIDEO_ID_CAPTIONS))
         val watchNext = watchNextResult?.execute()?.body()
-        val commentsKey = watchNext?.getCommentPanel()?.getTopCommentsKey()
+        val commentsKey = watchNext?.getCommentPanel()?.getTopCommentsToken()
         return commentsKey
+    }
+
+    private fun getContinuableComment(commentsResult: CommentsResult?): CommentRenderer? {
+        commentsResult?.getComments()?.forEach {
+            val commentItem = it?.getCommentItem()
+            if (commentItem?.getContinuationKey() != null) return commentItem
+        }
+
+        return null
     }
 }

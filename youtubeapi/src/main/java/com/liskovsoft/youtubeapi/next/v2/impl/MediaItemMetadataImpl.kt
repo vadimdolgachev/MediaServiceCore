@@ -1,18 +1,21 @@
 package com.liskovsoft.youtubeapi.next.v2.impl
 
+import com.liskovsoft.mediaserviceinterfaces.data.*
 import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
 import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo
+import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.youtubeapi.common.models.gen.*
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResult
-import com.liskovsoft.youtubeapi.next.v2.impl.mediagroup.MediaGroupImpl
-import com.liskovsoft.youtubeapi.next.v2.impl.mediaitem.NextMediaItemImpl
+import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup
+import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.NextMediaItem
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
+import com.liskovsoft.youtubeapi.common.models.impl.NotificationStateImpl
 import com.liskovsoft.youtubeapi.next.v2.gen.*
 
-data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaItemMetadata {
+internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
+                                 val dislikesResult: DislikesResult? = null,
+                                 val suggestionsResult: WatchNextResult? = null) : MediaItemMetadata {
     private val channelIdItem by lazy {
         videoDetails?.getChannelId() ?: videoOwner?.getChannelId() ?: channelOwner?.getChannelId()
     }
@@ -20,7 +23,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         videoMetadata?.getPercentWatched() ?: 0
     }
     private val suggestedSections by lazy {
-        watchNextResult.getSuggestedSections()
+        (suggestionsResult ?: watchNextResult).getSuggestedSections()
     }
     private val videoMetadata by lazy {
         watchNextResult.getVideoMetadata()
@@ -32,10 +35,10 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         watchNextResult.getCommentPanel()
     }
     private val liveChatKeyItem by lazy {
-        watchNextResult.getLiveChatKey()
+        watchNextResult.getLiveChatToken()
     }
     private val commentsKeyItem: String? by lazy {
-        commentsPanel?.getTopCommentsKey()
+        commentsPanel?.getTopCommentsToken()
         // Old val
         //suggestedSections?.lastOrNull()?.getItemWrappers()?.getOrNull(1)?.getContinuationKey()
     }
@@ -45,11 +48,14 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
     private val channelOwner by lazy {
         watchNextResult.transportControls?.transportControlsRenderer?.getChannelOwner()
     }
+    private val notificationPreference by lazy {
+        videoOwner?.getNotificationPreference()
+    }
     private val videoDetails by lazy {
         watchNextResult.getVideoDetails()
     }
     private val nextMediaItem by lazy {
-        nextVideoItem?.let { NextMediaItemImpl(it) }
+        nextVideoItem?.let { NextMediaItem(it) }
     }
     private val isSubscribedItem by lazy {
         videoOwner?.isSubscribed() ?: channelOwner?.isSubscribed() ?: false
@@ -64,7 +70,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         watchNextResult.getButtonStateItem()
     }
     private val videoTitle by lazy {
-        videoMetadata?.getTitle()
+        videoDetails?.getTitle() ?: videoMetadata?.getTitle()
     }
     private val isUpcomingItem by lazy {
         videoMetadata?.isUpcoming() ?: false
@@ -100,14 +106,14 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
     private val videoAuthor by lazy { videoDetails?.getUserName() }
     private val videoAuthorImageUrl by lazy { (videoOwner?.getThumbnails() ?: channelOwner?.getThumbnails())?.getOptimalResThumbnailUrl() }
     private val suggestionList by lazy {
-        val list = suggestedSections?.mapNotNull { if (it?.getItemWrappers() != null) MediaGroupImpl(it) else null }
+        val list = suggestedSections?.mapNotNull { if (it?.getItemWrappers() != null) SuggestionsGroup(it) else null }
         if (list?.size ?: 0 > 0)
             list
         else
             // In rare cases first chip item contains all shelfs
             suggestedSections?.firstOrNull()?.getChipItems()?.firstOrNull()?.run {
                 val chipTitle = getTitle() // shelfs inside a chip aren't have a titles
-                getShelfItems()?.map { it?.let { MediaGroupImpl(it).apply { title = title ?: chipTitle } } }
+                getShelfItems()?.map { it?.let { SuggestionsGroup(it).apply { title = title ?: chipTitle } } }
             }
     }
 
@@ -128,7 +134,7 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
     }
 
     private val isLiveStream by lazy {
-        videoMetadata?.isLive() ?: false
+        videoMetadata?.isLive() ?: liveChatKeyItem != null
     }
 
     private val playlistInfoItem by lazy {
@@ -145,12 +151,31 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
 
     private val chapterList by lazy {
         watchNextResult.getChapters()?.map {
-            object : ChapterItem {
+            object: ChapterItem {
                 override fun getTitle() = it?.getTitle()
                 override fun getStartTimeMs() = it?.getStartTimeMs() ?: -1
                 override fun getCardImageUrl() = it?.getThumbnailUrl()
             }
         }
+    }
+
+    private val notificationStateList by lazy {
+        val currentId = notificationPreference?.getCurrentStateId()
+        val result = notificationPreference?.getItems()?.mapNotNull {
+            it?.let { NotificationStateImpl(it, currentId) }
+        }
+
+        result?.forEach { it.allStates = result }
+
+        result
+    }
+
+    private val likeCountItem by lazy {
+        dislikesResult?.getLikeCount()?.let { "$it ${Helpers.THUMB_UP}" }
+    }
+
+    private val dislikeCountItem by lazy {
+        dislikesResult?.getDislikeCount()?.let { "$it ${Helpers.THUMB_DOWN}" }
     }
 
     override fun getTitle(): String? {
@@ -229,6 +254,14 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return likeStatusItem
     }
 
+    override fun getLikeCount(): String? {
+        return likeCountItem
+    }
+
+    override fun getDislikeCount(): String? {
+        return dislikeCountItem
+    }
+
     override fun getSuggestions(): List<MediaGroup?>? {
         return suggestionList
     }
@@ -237,15 +270,11 @@ data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult) : MediaIt
         return playlistInfoItem
     }
 
-    override fun getLikesCount(): String? {
-        return null
-    }
-
-    override fun getDislikesCount(): String? {
-        return null
-    }
-
     override fun getChapters(): List<ChapterItem>? {
         return chapterList
+    }
+
+    override fun getNotificationStates(): List<NotificationState?>? {
+        return notificationStateList
     }
 }

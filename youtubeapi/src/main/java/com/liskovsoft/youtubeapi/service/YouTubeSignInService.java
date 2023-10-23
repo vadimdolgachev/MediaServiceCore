@@ -91,6 +91,11 @@ public class YouTubeSignInService implements SignInService {
         return RxHelper.fromCallable(this::getAccounts);
     }
 
+    @Override
+    public Account getSelectedAccount() {
+        return mAccountManager.getSelectedAccount();
+    }
+
     /**
      * For testing purposes
      */
@@ -103,8 +108,6 @@ public class YouTubeSignInService implements SignInService {
 
     public void invalidateCache() {
         mCachedAuthorizationHeader = null;
-
-        syncWithRetrofit();
     }
 
     @Override
@@ -168,7 +171,7 @@ public class YouTubeSignInService implements SignInService {
         return token;
     }
 
-    private synchronized void syncWithRetrofit() {
+    private void syncWithRetrofit() {
         Map<String, String> headers = RetrofitOkHttpHelper.getAuthHeaders();
 
         if (mCachedAuthorizationHeader != null) {
@@ -176,5 +179,10 @@ public class YouTubeSignInService implements SignInService {
         } else {
             headers.remove("Authorization");
         }
+    }
+
+    @Override
+    public void setOnChange(Runnable onChange) {
+        mAccountManager.setOnChange(onChange);
     }
 }

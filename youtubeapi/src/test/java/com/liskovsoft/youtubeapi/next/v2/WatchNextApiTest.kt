@@ -1,14 +1,18 @@
 package com.liskovsoft.youtubeapi.next.v2
 
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
+import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper
+import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
 import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV1
-import com.liskovsoft.youtubeapi.next.v2.WatchNextApiHelper
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResult
 import com.liskovsoft.youtubeapi.next.v2.mock.MockUtils
 import com.liskovsoft.youtubeapi.next.v2.mock.WatchNextApiMock
 import com.liskovsoft.youtubeapi.next.v2.mock.WatchNextApiMock2
+import com.liskovsoft.youtubeapi.next.v2.mock.WatchNextApiMock3
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,8 +22,9 @@ import org.robolectric.shadows.ShadowLog
 @RunWith(RobolectricTestRunner::class)
 class WatchNextApiTest {
     private var mApi: WatchNextApi? = null
-    private var mManagerMock: WatchNextApiMock? = null
-    private var mManagerMock2: WatchNextApiMock2? = null
+    private var mApiMock: WatchNextApiMock? = null
+    private var mApiMock2: WatchNextApiMock2? = null
+    private var mApiMock3: WatchNextApiMock3? = null
     private var mService: WatchNextService? = null
     @Before
     fun setUp() {
@@ -30,8 +35,10 @@ class WatchNextApiTest {
         mApi = RetrofitHelper.withGson(WatchNextApi::class.java)
         mService = WatchNextService.instance()
 
-        mManagerMock = MockUtils.mockWithGson(WatchNextApiMock::class.java)
-        mManagerMock2 = MockUtils.mockWithGson(WatchNextApiMock2::class.java)
+        mApiMock = MockUtils.mockWithGson(WatchNextApiMock::class.java)
+        mApiMock2 = MockUtils.mockWithGson(WatchNextApiMock2::class.java)
+        mApiMock3 = MockUtils.mockWithGson(WatchNextApiMock3::class.java)
+        RetrofitOkHttpHelper.disableCompression = true
     }
 
     @Test
@@ -50,7 +57,7 @@ class WatchNextApiTest {
 
     @Test
     fun testThatMockedWatchNextResultCanBeConverted() {
-        mService!!.setWatchNextManager(mManagerMock as WatchNextApi)
+        mService!!.setWatchNextApi(mApiMock as WatchNextApi)
 
         val metadata = getMediaItemMetadataUnsigned()
 
@@ -59,7 +66,7 @@ class WatchNextApiTest {
 
     @Test
     fun testThatMockedWatchNextSuggestionsNotEmpty() {
-        mService!!.setWatchNextManager(mManagerMock as WatchNextApi)
+        mService!!.setWatchNextApi(mApiMock as WatchNextApi)
 
         val metadata = getMediaItemMetadataUnsigned()
 
@@ -70,28 +77,22 @@ class WatchNextApiTest {
 
     @Test
     fun testThatMockedWatchNextResultCanBeConverted2() {
-        mService!!.setWatchNextManager(mManagerMock2 as WatchNextApi)
-
-        val metadata = getMediaItemMetadataUnsigned()
-
-        assertNotNull("Metadata isn't null", metadata)
+        testThatMockedWatchNextResultCanBeConverted(mApiMock2 as WatchNextApi)
     }
 
     @Test
     fun testThatMockedWatchNextSuggestionsNotEmpty2() {
-        // Testing groups inside a Chip
+        testThatMockedWatchNextSuggestionsNotEmpty(mApiMock2 as WatchNextApi)
+    }
 
-        mService!!.setWatchNextManager(mManagerMock2 as WatchNextApi)
+    @Test
+    fun testThatMockedWatchNextResultCanBeConverted3() {
+        testThatMockedWatchNextResultCanBeConverted(mApiMock3 as WatchNextApi)
+    }
 
-        val metadata = getMediaItemMetadataUnsigned()
-
-        val firstGroup = metadata?.suggestions?.getOrNull(0)
-
-        assertNotNull("Group inside a Chip has a title", firstGroup?.title)
-
-        val anyItem = firstGroup?.mediaItems?.getOrNull(0)
-
-        assertNotNull("anyItem isn't null", anyItem)
+    @Test
+    fun testThatMockedWatchNextSuggestionsNotEmpty3() {
+        testThatMockedWatchNextSuggestionsNotEmpty(mApiMock3 as WatchNextApi)
     }
 
     @Test
@@ -105,8 +106,7 @@ class WatchNextApiTest {
     fun testThatSuggestedContinuationNotNull() {
         val metadata = getMediaItemMetadataUnsigned()
 
-        val firstGroup = metadata?.suggestions?.first()
-        val continuation = mService!!.continueGroup(firstGroup)
+        val continuation = mService!!.continueGroup(getContinuableRow(metadata))
 
         assertNotNull("Continuation not null", continuation)
     }
@@ -116,6 +116,15 @@ class WatchNextApiTest {
         val metadata = getMediaItemMetadataUnsigned();
 
         testBaseFields(metadata)
+    }
+
+    @Test
+    fun testThatDislikesIsWorking() {
+        val dislikes = mApi!!.getDislikes("KIeAtU-Toxw")
+        val dislikesResult = RetrofitHelper.get(dislikes)
+
+        assertNotNull("Contains dislikes", dislikesResult?.dislikes)
+        assertTrue("Dislikes count bigger than zero", dislikesResult?.dislikes ?: 0 > 0)
     }
 
     private fun testBaseFields(metadata: MediaItemMetadata?) {
@@ -138,45 +147,39 @@ class WatchNextApiTest {
 
     private fun getMockedWatchNextResult(): WatchNextResult? {
         val watchNextQuery = WatchNextApiHelper.getWatchNextQuery(TestHelpersV1.VIDEO_ID_CAPTIONS)
-        val wrapper = mManagerMock!!.getWatchNextResult(watchNextQuery)
+        val wrapper = mApiMock!!.getWatchNextResult(watchNextQuery)
         return RetrofitHelper.get(wrapper)
     }
 
-//    @Test
-//    fun testThatWatchNextContainsAllRequiredFields() {
-//        checkWatchNextResultFields(watchNextResult)
-//    }
-//
-//    @Test
-//    fun testThatResultProperlyLocalized() {
-//        LocaleManager.instance().language = "en"
-//        var watchNextResult = watchNextResult
-//        var firstSuggesting = watchNextResult.suggestedSections[0]
-//        Assert.assertEquals("Suggestion title is localized to english", "Suggestions", firstSuggesting.title)
-//        LocaleManager.instance().language = "ru"
-//        watchNextResult = watchNextResult
-//        firstSuggesting = watchNextResult.suggestedSections[0]
-//        Assert.assertEquals("Suggestion title is localized to russian", "Рекомендации", firstSuggesting.title)
-//    }
-//
-//    @Test
-//    fun testThatWatchNextRowsCouldBeContinued() {
-//        val watchNextResult = watchNextResult
-//        val rootNextPageKey = watchNextResult.suggestedSections[0].nextPageKey
-//        Assert.assertNotNull("Root contains next key", rootNextPageKey)
-//        val continuation = continueWatchNext(rootNextPageKey)
-//        val nextPageKey = continuation.nextPageKey
-//        Assert.assertNotNull("Continuations contains next key", nextPageKey)
-//    }
-//
-//    private fun continueWatchNext(nextPageKey: String): WatchNextResultContinuation {
-//        val wrapper = mManager!!.continueWatchNextResult(BrowseManagerParams.getContinuationQuery(nextPageKey))
-//        return RetrofitHelper.get(wrapper)
-//    }
-//
-//    private val watchNextResult: WatchNextResult
-//        private get() {
-//            val wrapper = mManager!!.getWatchNextResult(WatchNextManagerParams.getWatchNextQuery(TestHelpersV1.VIDEO_ID_CAPTIONS))
-//            return RetrofitHelper.get(wrapper)
-//        }
+    private fun testThatMockedWatchNextResultCanBeConverted(api: WatchNextApi) {
+        mService!!.setWatchNextApi(api)
+
+        val metadata = getMediaItemMetadataUnsigned()
+
+        assertNotNull("Metadata isn't null", metadata)
+    }
+
+    private fun testThatMockedWatchNextSuggestionsNotEmpty(api: WatchNextApi) {
+        // Testing groups inside a Chip
+
+        mService!!.setWatchNextApi(api)
+
+        val metadata = getMediaItemMetadataUnsigned()
+
+        val firstGroup = metadata?.suggestions?.getOrNull(0)
+
+        assertNotNull("Group inside a Chip has a title", firstGroup?.title)
+
+        val anyItem = firstGroup?.mediaItems?.getOrNull(0)
+
+        assertNotNull("anyItem isn't null", anyItem)
+    }
+
+    private fun getContinuableRow(metadata: MediaItemMetadata?): MediaGroup? {
+        metadata?.suggestions?.forEach {
+            if (YouTubeHelper.extractNextKey(it) != null) return it
+        }
+
+        return null
+    }
 }

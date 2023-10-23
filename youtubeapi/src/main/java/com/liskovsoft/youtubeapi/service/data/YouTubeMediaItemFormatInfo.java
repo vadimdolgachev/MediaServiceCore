@@ -47,9 +47,12 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private boolean mIsAgeRestricted;
     private final long mCreatedTimeMs;
     private String mStartTimestamp;
+    private String mUploadDate;
     private long mStartTimeMs;
     private int mStartSegmentNum;
     private int mSegmentDurationUs;
+    private boolean mHasExtendedHlsFormats;
+    private float mLoudnessDb;
 
     public YouTubeMediaItemFormatInfo() {
         mCreatedTimeMs = System.currentTimeMillis();
@@ -103,10 +106,13 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mPlayabilityStatus = videoInfo.getPlayabilityStatus();
         formatInfo.mIsStreamSeekable = videoInfo.isHfr() || videoInfo.isStreamSeekable();
         formatInfo.mStartTimestamp = videoInfo.getStartTimestamp();
+        formatInfo.mUploadDate = videoInfo.getUploadDate();
         formatInfo.mStartTimeMs = videoInfo.getStartTimeMs();
         formatInfo.mStartSegmentNum = videoInfo.getStartSegmentNum();
         formatInfo.mSegmentDurationUs = videoInfo.getSegmentDurationUs();
         formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
+        formatInfo.mHasExtendedHlsFormats = videoInfo.hasExtendedHlsFormats();
+        formatInfo.mLoudnessDb = videoInfo.getLoudnessDb();
 
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
 
@@ -262,6 +268,27 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
+    public boolean hasExtendedHlsFormats() {
+        return mHasExtendedHlsFormats;
+    }
+
+    @Override
+    public float getVolumeLevel() {
+        float result = 1.0f;
+
+        if (mLoudnessDb != 0) {
+            // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
+            // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
+            float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 50.0f);
+            result = Math.min(normalLevel, 2.5f);
+        }
+
+        result *= 0.8f; // minimize distortions
+
+        return result;
+    }
+
+    @Override
     public String getHlsManifestUrl() {
         return mHlsManifestUrl;
     }
@@ -315,6 +342,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     @Override
     public String getStartTimestamp() {
         return mStartTimestamp;
+    }
+
+    @Override
+    public String getUploadDate() {
+        return mUploadDate;
     }
 
     @Override

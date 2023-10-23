@@ -6,6 +6,7 @@ import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,11 +66,11 @@ public class ServiceHelper {
                 String.format(Locale.US, "%d%s%02d", minutes, TIME_TEXT_DELIM, seconds);
     }
 
-    public static String createQueryUA(String data) {
-        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_TV, data, "uk", "UA");
+    public static String createQueryTV_UA(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_TV, null, data, "uk", "UA");
     }
 
-    public static String createQuery(String data) {
+    public static String createQueryTV(String data) {
         return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_TV, data);
     }
 
@@ -85,11 +86,19 @@ public class ServiceHelper {
         return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_ANDROID, data);
     }
 
-    private static String createQuery(String postTemplate, String data) {
-        return createQuery(postTemplate, data, null, null);
+    public static String createQueryKids(String data) {
+        return createQuery(AppConstants.JSON_POST_DATA_TEMPLATE_KIDS, data);
     }
 
-    private static String createQuery(String postTemplate, String data, String language, String country) {
+    public static String createQuery(String postTemplate, String data) {
+        return createQuery(postTemplate, null, data, null, null);
+    }
+
+    public static String createQuery(String postTemplate, String data1, String data2) {
+        return createQuery(postTemplate, data1, data2, null, null);
+    }
+
+    private static String createQuery(String postTemplate, String data1, String data2, String language, String country) {
         LocaleManager localeManager = LocaleManager.instance();
         AppService appService = AppService.instance();
         if (language == null) {
@@ -99,7 +108,7 @@ public class ServiceHelper {
             country = localeManager.getCountry();
         }
         return String.format(postTemplate, language, country,
-                localeManager.getUtcOffsetMinutes(), appService.getVisitorId(), data);
+                localeManager.getUtcOffsetMinutes(), appService.getVisitorId(), data1 != null ? data1 : "", data2);
     }
 
     /**
@@ -283,5 +292,17 @@ public class ServiceHelper {
 
     public static <T> T getFirst(List<T> list) {
         return list != null && !list.isEmpty() ? list.get(0) : null;
+    }
+
+    public static String prettyCount(Number number) {
+        char[] suffix = {' ', 'K', 'M', 'B', 'T', 'P', 'E'};
+        long numValue = number.longValue();
+        int value = (int) Math.floor(Math.log10(numValue));
+        int base = value / 3;
+        if (value >= 3 && base < suffix.length) {
+            return new DecimalFormat("#0.#").format(numValue / Math.pow(10, base * 3)) + suffix[base];
+        } else {
+            return new DecimalFormat("#,##0").format(numValue);
+        }
     }
 }

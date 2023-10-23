@@ -2,6 +2,7 @@ package com.liskovsoft.youtubeapi.service.data;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.browse.v1.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.browse.v1.models.grid.GridTabContinuation;
 import com.liskovsoft.youtubeapi.browse.v1.models.sections.Chip;
@@ -50,8 +51,8 @@ public class YouTubeMediaGroup implements MediaGroup {
         YouTubeMediaGroup baseGroup = new YouTubeMediaGroup(groupType);
         baseGroup.mReloadPageKey = reloadPageKey;
         MediaGroup mediaGroup = from(continuation, baseGroup);
-        if (mediaGroup != null) {
-            mediaGroup.setTitle(groupTitle);
+        if (mediaGroup instanceof YouTubeMediaGroup) {
+            ((YouTubeMediaGroup) mediaGroup).setTitle(groupTitle);
         }
         return mediaGroup;
     }
@@ -61,18 +62,21 @@ public class YouTubeMediaGroup implements MediaGroup {
             return null;
         }
 
+        YouTubeMediaGroup newGroup = new YouTubeMediaGroup(baseGroup.getType());
+        newGroup.mTitle = baseGroup.getTitle();
+
         // Subscribed channel view. Add details.
         if (continuation.getBrowseId() != null) {
-            ((YouTubeMediaGroup) baseGroup).mChannelId = continuation.getBrowseId();
+            newGroup.mChannelId = continuation.getBrowseId();
         }
         if (continuation.getParams() != null) {
-            ((YouTubeMediaGroup) baseGroup).mParams = continuation.getParams();
+            newGroup.mParams = continuation.getParams();
         }
         if (continuation.getCanonicalBaseUrl() != null) {
-            ((YouTubeMediaGroup) baseGroup).mChannelUrl = continuation.getCanonicalBaseUrl();
+            newGroup.mChannelUrl = continuation.getCanonicalBaseUrl();
         }
 
-        return create((YouTubeMediaGroup) baseGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
+        return create(newGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
     }
 
     public static MediaGroup from(WatchNextResultContinuation continuation, MediaGroup baseGroup) {
@@ -80,7 +84,10 @@ public class YouTubeMediaGroup implements MediaGroup {
             return null;
         }
 
-        return create((YouTubeMediaGroup) baseGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
+        YouTubeMediaGroup newGroup = new YouTubeMediaGroup(baseGroup.getType());
+        newGroup.mTitle = baseGroup.getTitle();
+
+        return create(newGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
     }
 
     public static MediaGroup from(Section section, int type) {
@@ -108,11 +115,14 @@ public class YouTubeMediaGroup implements MediaGroup {
     }
 
     public static MediaGroup from(SectionContinuation continuation, MediaGroup baseGroup) {
-        if (continuation == null) {
+        if (continuation == null || baseGroup == null) {
             return null;
         }
 
-        return create((YouTubeMediaGroup) baseGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
+        YouTubeMediaGroup newGroup = new YouTubeMediaGroup(baseGroup.getType());
+        newGroup.mTitle = baseGroup.getTitle();
+
+        return create(newGroup, continuation.getItemWrappers(), continuation.getNextPageKey());
     }
 
     public static List<MediaGroup> from(SearchResult searchResult, int type) {
@@ -141,11 +151,14 @@ public class YouTubeMediaGroup implements MediaGroup {
     }
 
     public static MediaGroup from(SearchResultContinuation nextSearchResult, MediaGroup baseGroup) {
-        if (nextSearchResult == null) {
+        if (nextSearchResult == null || baseGroup == null) {
             return null;
         }
 
-        return create((YouTubeMediaGroup) baseGroup, nextSearchResult.getTileItems(), nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
+        YouTubeMediaGroup newGroup = new YouTubeMediaGroup(baseGroup.getType());
+        newGroup.mTitle = baseGroup.getTitle();
+
+        return create(newGroup, nextSearchResult.getTileItems(), nextSearchResult.getVideoItems(), nextSearchResult.getMusicItems(),
                 nextSearchResult.getChannelItems(), nextSearchResult.getRadioItems(), nextSearchResult.getPlaylistItems(), nextSearchResult.getNextPageKey());
     }
 
@@ -206,7 +219,6 @@ public class YouTubeMediaGroup implements MediaGroup {
         return mTitle;
     }
 
-    @Override
     public void setTitle(String title) {
         mTitle = title;
     }
@@ -214,14 +226,6 @@ public class YouTubeMediaGroup implements MediaGroup {
     @Override
     public int getType() {
         return mType;
-    }
-
-    /**
-     * TODO: create unique id by reload page key
-     */
-    @Override
-    public int getId() {
-        return mTitle != null ? mTitle.hashCode() : hashCode();
     }
 
     @Override

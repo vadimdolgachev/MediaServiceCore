@@ -22,6 +22,7 @@ public class YouTubeAccountManager {
     private static YouTubeAccountManager sInstance;
     private final AuthService mAuthService;
     private final YouTubeSignInService mSignInService;
+    private Runnable mOnChange;
     /**
      * Fix ConcurrentModificationException when using {@link #getSelectedAccount()}
      */
@@ -32,6 +33,7 @@ public class YouTubeAccountManager {
                 return false;
             }
 
+            // Don't remove these lines or you won't be able to enter to the account.
             while (contains(account)) {
                 remove(account);
             }
@@ -121,6 +123,10 @@ public class YouTubeAccountManager {
     }
 
     public void selectAccount(Account newAccount) {
+        if (Helpers.equals(newAccount, getSelectedAccount())) {
+            return;
+        }
+
         for (Account account : mAccounts) {
             ((YouTubeAccount) account).setSelected(newAccount != null && newAccount.equals(account));
         }
@@ -129,7 +135,7 @@ public class YouTubeAccountManager {
     }
 
     public void removeAccount(Account account) {
-        if (account != null) {
+        if (account != null && mAccounts.contains(account)) {
             mAccounts.remove(account);
             persistAccounts();
         }
@@ -159,6 +165,11 @@ public class YouTubeAccountManager {
         setAccountManagerData(Helpers.mergeArray(nonEmptyAccounts.toArray()));
 
         mSignInService.invalidateCache();
+
+        if (mOnChange != null) {
+            // Fix sign in bug
+            RxHelper.runUser(mOnChange);
+        }
     }
 
     private void restoreAccounts() {
@@ -171,6 +182,10 @@ public class YouTubeAccountManager {
             for (String spec : split) {
                 mAccounts.add(YouTubeAccount.from(spec));
             }
+        }
+
+        if (mOnChange != null) {
+            mOnChange.run();
         }
     }
 
@@ -215,5 +230,9 @@ public class YouTubeAccountManager {
             persistRefreshToken(token);
             GlobalPreferences.sInstance.setMediaServiceRefreshToken(null);
         }
+    }
+
+    public void setOnChange(Runnable onChange) {
+        mOnChange = onChange;
     }
 }

@@ -24,7 +24,8 @@ public class TileItem {
     })
     private Header mHeader;
 
-    @JsonPath("$.metadata.tileMetadataRenderer")
+    @JsonPath({"$.metadata.tileMetadataRenderer",
+            "$.header.tileHeaderRenderer.thumbnailOverlays[0].tileMetadataRenderer"}) // V4 search metadata
     private Metadata mMetadata;
 
     @JsonPath({
@@ -41,13 +42,15 @@ public class TileItem {
 
     @JsonPath({
             // New videos row in Music section
-            "$.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.videoId"
+            "$.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.videoId",
+            "$.onLongPressCommand.showMenuCommand.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.videoId" // v2 feedback token
     })
     private List<String> mVideoIds;
 
     @JsonPath({
             // New videos row in Music section
-            "$.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.playlistId"
+            "$.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.playlistId",
+            "$.onLongPressCommand.showMenuCommand.menu.menuRenderer.items[*].menuNavigationItemRenderer.navigationEndpoint.watchEndpoint.playlistId" // v2 feedback token
     })
     private List<String> mPlaylistIds;
 
@@ -60,7 +63,8 @@ public class TileItem {
     @JsonPath("$.contentType")
     private String mContentType;
 
-    @JsonPath("$.menu.menuRenderer.items[*].menuServiceItemRenderer.serviceEndpoint.feedbackEndpoint.feedbackToken")
+    @JsonPath({"$.menu.menuRenderer.items[*].menuServiceItemRenderer.serviceEndpoint.feedbackEndpoint.feedbackToken",
+            "$.onLongPressCommand.showMenuCommand.menu.menuRenderer.items[*].menuServiceItemRenderer.serviceEndpoint.feedbackEndpoint.feedbackToken"}) // v2 feedback token
     private List<String> mFeedbackToken;
 
     public Header getHeader() {

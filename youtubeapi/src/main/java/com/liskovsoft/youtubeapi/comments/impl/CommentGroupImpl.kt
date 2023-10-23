@@ -3,9 +3,9 @@ package com.liskovsoft.youtubeapi.comments.impl
 import com.liskovsoft.mediaserviceinterfaces.data.CommentGroup
 import com.liskovsoft.mediaserviceinterfaces.data.CommentItem
 import com.liskovsoft.youtubeapi.comments.gen.CommentsResult
-import com.liskovsoft.youtubeapi.next.v2.gen.getKey
+import com.liskovsoft.youtubeapi.next.v2.gen.getToken
 
-data class CommentGroupImpl(val commentsResult: CommentsResult): CommentGroup {
+internal data class CommentGroupImpl(val commentsResult: CommentsResult): CommentGroup {
     private val itemSectionContinuation by lazy {
         commentsResult.continuationContents?.itemSectionContinuation
     }
@@ -15,7 +15,7 @@ data class CommentGroupImpl(val commentsResult: CommentsResult): CommentGroup {
     }
 
     private val nextCommentsKeyItem by lazy {
-        itemSectionContinuation?.continuations?.firstOrNull()?.getKey()
+        itemSectionContinuation?.continuations?.firstOrNull()?.getToken()
     }
 
     private val commentItems by lazy {
