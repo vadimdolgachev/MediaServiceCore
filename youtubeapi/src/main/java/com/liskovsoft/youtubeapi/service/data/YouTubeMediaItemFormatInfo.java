@@ -44,6 +44,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private String mStoryboardSpec;
     private boolean mIsUnplayable;
     private String mPlayabilityStatus;
+    private boolean mIsAgeRestricted;
     private final long mCreatedTimeMs;
     private String mStartTimestamp;
     private String mUploadDate;
@@ -109,6 +110,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mStartTimeMs = videoInfo.getStartTimeMs();
         formatInfo.mStartSegmentNum = videoInfo.getStartSegmentNum();
         formatInfo.mSegmentDurationUs = videoInfo.getSegmentDurationUs();
+        formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
         formatInfo.mHasExtendedHlsFormats = videoInfo.hasExtendedHlsFormats();
         formatInfo.mLoudnessDb = videoInfo.getLoudnessDb();
 
@@ -360,6 +362,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     @Override
     public int getSegmentDurationUs() {
         return mSegmentDurationUs;
+    }
+
+    @Override
+    public boolean isAgeRestricted() {
+        return mIsAgeRestricted;
     }
 
     public String getEventId() {

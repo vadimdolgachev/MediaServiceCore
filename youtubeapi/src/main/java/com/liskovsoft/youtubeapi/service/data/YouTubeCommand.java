@@ -10,6 +10,8 @@ import com.liskovsoft.youtubeapi.lounge.models.commands.PlaylistParams;
 import com.liskovsoft.youtubeapi.lounge.models.commands.VoiceParams;
 import com.liskovsoft.youtubeapi.lounge.models.commands.VolumeParams;
 
+import org.apache.commons.io.mod.Objects;
+
 public class YouTubeCommand implements Command {
     private int mType = Command.TYPE_UNDEFINED;
     private String mVideoId;
@@ -49,9 +51,11 @@ public class YouTubeCommand implements Command {
                 command.mCurrentTimeMs = ServiceHelper.toMillis(seekToParams.getNewTimeSec());
                 break;
             case CommandItem.TYPE_SET_VOLUME:
-                command.mType = Command.TYPE_VOLUME;
                 VolumeParams volumeParams = info.getVolumeParams();
-                command.mVolume = Helpers.parseInt(volumeParams.getVolume());
+                if (Objects.isNull(volumeParams.getDelta())) {
+                    command.mType = Command.TYPE_VOLUME;
+                    command.mVolume = Helpers.parseInt(volumeParams.getVolume());
+                }
                 break;
             case CommandItem.TYPE_PLAY:
                 command.mType = Command.TYPE_PLAY;

@@ -62,4 +62,5 @@ public interface MediaItemFormatInfo {
      * Used inside live streams
      */
     int getSegmentDurationUs();
+    boolean isAgeRestricted();
 }

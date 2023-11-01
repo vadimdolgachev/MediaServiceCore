@@ -1,6 +1,8 @@
 package com.liskovsoft.youtubeapi.common.converters.jsonpath.converter;
 
 import android.util.Log;
+
+import com.liskovsoft.youtubeapi.BuildConfig;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathTypeAdapter;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -19,7 +21,9 @@ public class JsonPathRequestBodyConverter<T> implements Converter<T, RequestBody
     @EverythingIsNonNull
     @Override
     public RequestBody convert(T value) {
-        Log.d(TAG, value.toString());
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, value.toString());
+        }
         return RequestBody.create(MEDIA_TYPE, value.toString());
     }
 }

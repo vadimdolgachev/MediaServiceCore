@@ -21,7 +21,6 @@ public class YouTubeMediaService implements MediaService {
     private static final String TAG = YouTubeMediaService.class.getSimpleName();
     private static YouTubeMediaService sInstance;
     private final YouTubeSignInService mSignInManager;
-    private final YouTubeRemoteControlService mDeviceLinkManager;
     private final MediaGroupService mMediaGroupManager;
     private final MediaItemService mMediaItemManager;
     private final YouTubeLiveChatService mLiveChatService;
@@ -32,7 +31,6 @@ public class YouTubeMediaService implements MediaService {
         Log.d(TAG, "Starting...");
 
         mSignInManager = YouTubeSignInService.instance();
-        mDeviceLinkManager = YouTubeRemoteControlService.instance();
         mMediaGroupManager = YouTubeMediaGroupService.instance();
         mMediaItemManager = YouTubeMediaItemService.instance();
         mLiveChatService = YouTubeLiveChatService.instance();
@@ -54,7 +52,7 @@ public class YouTubeMediaService implements MediaService {
 
     @Override
     public RemoteControlService getRemoteControlService() {
-        return mDeviceLinkManager;
+        return null;
     }
 
     @Override
