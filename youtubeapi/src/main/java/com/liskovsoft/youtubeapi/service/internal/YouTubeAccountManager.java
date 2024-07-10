@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.service.internal;
 
-import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
@@ -13,7 +13,6 @@ import com.liskovsoft.youtubeapi.service.YouTubeSignInService;
 import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
 import io.reactivex.Observable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -33,12 +32,24 @@ public class YouTubeAccountManager {
                 return false;
             }
 
+            merge(account);
+
             // Don't remove these lines or you won't be able to enter to the account.
             while (contains(account)) {
                 remove(account);
             }
 
             return super.add(account);
+        }
+
+        private void merge(Account account) {
+            int index = indexOf(account);
+
+            if (index != -1) {
+                Account matched = get(index);
+                ((YouTubeAccount) account).merge(matched);
+                remove(matched);
+            }
         }
     };
 
@@ -91,30 +102,39 @@ public class YouTubeAccountManager {
             return;
         }
 
-        addAccount(YouTubeAccount.fromToken(refreshToken));
+        // Create initial account (with only refresh key)
+        YouTubeAccount tempAccount = YouTubeAccount.fromToken(refreshToken);
+        addAccount(tempAccount);
 
+        // Use initial account to create auth header
         mSignInService.checkAuth();
 
-        List<AccountInt> accountsInt = mAuthService.getAccounts();
+        // Remove initial account (with only refresh key)
+        removeAccount(tempAccount);
+
+        List<AccountInt> accountsInt = mAuthService.getAccounts(); // runs under auth header from above
 
         if (accountsInt != null) {
             for (AccountInt accountInt : accountsInt) {
-                // Refresh token should be unique per account but we only have one.
-                if (accountInt.isSelected()) {
-                    YouTubeAccount account = YouTubeAccount.from(accountInt);
-                    account.setRefreshToken(refreshToken);
-                    addAccount(account);
-                    break;
-                }
+                YouTubeAccount account = YouTubeAccount.from(accountInt);
+                account.setRefreshToken(refreshToken);
+                addAccount(account);
             }
         }
+
+        fixSelectedAccount();
+
+        // Apply merged tokens
+        mSignInService.checkAuth();
 
         Log.d(TAG, "Success. Refresh token stored successfully in registry: " + refreshToken);
     }
 
     private void addAccount(Account newAccount) {
-        for (Account account : mAccounts) {
-            ((YouTubeAccount) account).setSelected(false);
+        if (newAccount.isSelected()) {
+            for (Account account : mAccounts) {
+                ((YouTubeAccount) account).setSelected(false);
+            }
         }
 
         mAccounts.add(newAccount);
@@ -152,17 +172,7 @@ public class YouTubeAccountManager {
     }
 
     private void persistAccounts() {
-        List<Account> nonEmptyAccounts = new ArrayList<>();
-
-        for (Account account : mAccounts) {
-            if (account.isEmpty()) {
-                continue;
-            }
-
-            nonEmptyAccounts.add(account);
-        }
-
-        setAccountManagerData(Helpers.mergeArray(nonEmptyAccounts.toArray()));
+        setAccountManagerData(Helpers.mergeArray(mAccounts.toArray()));
 
         mSignInService.invalidateCache();
 
@@ -213,26 +223,23 @@ public class YouTubeAccountManager {
 
     public void init() {
         restoreAccounts();
-        applyLegacyAccounts();
-    }
-
-    private void applyLegacyAccounts() {
-        // We don't have context, so can't create instance here.
-        // Let's hope someone already created one for us.
-        if (GlobalPreferences.sInstance == null) {
-            Log.e(TAG, "GlobalPreferences is null!");
-            return;
-        }
-
-        String token = GlobalPreferences.sInstance.getMediaServiceRefreshToken();
-
-        if (token != null) {
-            persistRefreshToken(token);
-            GlobalPreferences.sInstance.setMediaServiceRefreshToken(null);
-        }
     }
 
     public void setOnChange(Runnable onChange) {
         mOnChange = onChange;
+    }
+
+    /**
+     * Fix situations when there is no selected account<br/>
+     * Mark first one as selected.
+     */
+    private void fixSelectedAccount() {
+        if (mAccounts.isEmpty()) {
+            return;
+        }
+
+        if (getSelectedAccount() == null) {
+            selectAccount(mAccounts.get(0));
+        }
     }
 }

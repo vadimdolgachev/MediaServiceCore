@@ -1,9 +1,9 @@
 package com.liskovsoft.youtubeapi.service.data;
 
-import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaFormat;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemStoryboard;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaSubtitle;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.formatbuilders.hlsbuilder.YouTubeUrlListBuilder;
@@ -281,9 +281,8 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
             // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
             float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 50.0f);
             result = Math.min(normalLevel, 2.5f);
+            result *= 0.6f; // minimize distortions
         }
-
-        result *= 0.8f; // minimize distortions
 
         return result;
     }

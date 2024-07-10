@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.next.v2.gen
 
+import com.liskovsoft.youtubeapi.browse.v2.gen.SectionWrapper
 import com.liskovsoft.youtubeapi.common.models.gen.*
 
 internal data class NextVideoItem(
@@ -13,14 +14,25 @@ internal data class NextVideoItem(
     data class Endpoint(val watchEndpoint: WatchEndpointItem?)
 }
 
-internal data class ShelfItem(
+internal data class ShelfRenderer(
     val title: TextItem?,
     val content: Content?,
-    val headerRenderer: HeaderRenderer?
+    val headerRenderer: HeaderRenderer?,
+    val endpoint: NavigationEndpointItem?
 ) {
     data class Content(
-            val horizontalListRenderer: HorizontalListRenderer?
+        val gridRenderer: GridRenderer?,
+        val expandedShelfContentsRenderer: ExpandedShelfContentsRenderer?,
+        val horizontalListRenderer: HorizontalListRenderer?
     ) {
+        data class GridRenderer(
+            val items: List<ItemWrapper?>?
+        )
+
+        data class ExpandedShelfContentsRenderer(
+            val items: List<ItemWrapper?>?
+        )
+
         data class HorizontalListRenderer(
                 val items: List<ItemWrapper?>?,
                 val continuations: List<ContinuationItem?>?
@@ -67,10 +79,10 @@ internal data class ChipItem(
             )
 
             data class SectionListRenderer(
-                    val contents: List<Content?>?
+                    val contents: List<Shelf?>?
             ) {
-                data class Content(
-                        val shelfRenderer: ShelfItem?
+                data class Shelf(
+                        val shelfRenderer: ShelfRenderer?
                 )
             }
         }
@@ -102,6 +114,7 @@ internal data class VideoOwnerItem(
     val thumbnail: ThumbnailItem?,
     val title: TextItem?,
     val subscribed: Boolean?,
+    val subscriberCountText: TextItem?,
     val subscriptionButton: SubscriptionButton?,
     val subscribeButton: SubscribeButton?,
     val navigationEndpoint: NavigationEndpointItem?
@@ -115,7 +128,7 @@ internal data class VideoOwnerItem(
     )
 }
 
-internal data class VideoMetadataItem(
+internal data class VideoMetadataRenderer(
     val owner: Owner?,
     val title: TextItem?,
     val byline: TextItem?,
@@ -152,6 +165,7 @@ internal data class VideoMetadataItem(
     ) {
         data class LikeButtonRenderer(
                 val likeStatus: String?,
+                val likeCount: Int?,
                 val likeCountText: TextItem?
         )
     }
@@ -209,16 +223,6 @@ internal data class PlaylistInfo(
     val isEditable: Boolean?
 )
 
-internal data class ChapterItem(
-   val chapterRenderer: ChapterRenderer?
-) {
-    data class ChapterRenderer(
-        val title: TextItem?,
-        val timeRangeStartMillis: Long?,
-        val thumbnail: ThumbnailItem?
-    )
-}
-
 //////////
 
 internal data class EngagementPanel(
@@ -233,11 +237,14 @@ internal data class EngagementPanel(
             val engagementPanelTitleHeaderRenderer: EngagementPanelTitleHeaderRenderer?
         ) {
             data class EngagementPanelTitleHeaderRenderer(
-                val menu: Menu?
+                val menu: Menu?,
+                val title: TextItem?
             )
         }
         data class Content(
-            val structuredDescriptionContentRenderer: StructuredDescriptionContentRenderer?
+            val structuredDescriptionContentRenderer: StructuredDescriptionContentRenderer?,
+            val macroMarkersListRenderer: MacroMarkersListRenderer?,
+            val sectionListRenderer: SectionListRenderer?
         ) {
             data class StructuredDescriptionContentRenderer(
                  val items: List<Item?>?
@@ -246,6 +253,12 @@ internal data class EngagementPanel(
                     val videoDescriptionHeaderRenderer: VideoDescriptionHeaderRenderer?
                 )
             }
+            data class MacroMarkersListRenderer(
+                val contents: List<ChapterItemWrapper?>
+            )
+            data class SectionListRenderer(
+                val contents: List<SectionWrapper?>?
+            )
         }
     }
 }
@@ -269,5 +282,41 @@ internal data class Menu(
 internal data class SubMenuItem(
     val continuation: ContinuationItem?
 )
+
+///////// Chapters V1
+
+internal data class ChapterItem(
+    val chapterRenderer: ChapterRenderer?
+)
+
+internal data class ChapterRenderer(
+    val title: TextItem?,
+    val timeRangeStartMillis: Long?,
+    val thumbnail: ThumbnailItem?
+)
+
+///////// Chapters V2
+
+internal data class ChapterItemWrapper(
+    val chapterRenderer: ChapterRenderer?,
+    val macroMarkersListItemRenderer: MacroMarkersListItemRenderer?
+)
+
+internal data class MacroMarkersListItemRenderer(
+    val title: TextItem?,
+    val timeDescription: TextItem?,
+    val thumbnail: ThumbnailItem?,
+    val onTap: TapItem?
+)
+
+internal data class TapItem(
+    val watchEndpoint: WatchEndpoint?
+) {
+    data class WatchEndpoint(
+        val videoId: String?,
+        val playlistId: String?,
+        val startTimeSeconds: Float?
+    )
+}
 
 //////////

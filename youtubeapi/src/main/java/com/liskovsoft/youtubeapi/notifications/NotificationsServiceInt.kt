@@ -1,8 +1,9 @@
 package com.liskovsoft.youtubeapi.notifications
 
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
-import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState
+import com.liskovsoft.youtubeapi.actions.ActionsService
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.NotificationsMediaGroup
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.models.impl.NotificationStateImpl
@@ -26,6 +27,11 @@ internal object NotificationsServiceInt {
     fun modifyNotification(notificationState: NotificationState?) {
         if (notificationState is NotificationStateImpl) {
             notificationState.setSelected()
+
+            if (!notificationState.isSubscribed) {
+                ActionsService.instance().subscribe(notificationState.channelId, notificationState.params)
+            }
+
             modifyNotification(notificationState.stateParams)
         }
     }
@@ -40,12 +46,12 @@ internal object NotificationsServiceInt {
         RetrofitHelper.get(result)
     }
 
-    private fun modifyNotification(modifyNotificationToken: String?) {
-        if (modifyNotificationToken == null) {
+    private fun modifyNotification(modifyNotificationParams: String?) {
+        if (modifyNotificationParams == null) {
             return
         }
 
-        val result = mService.getModifyNotification(NotificationsApiHelper.getModifyNotificationQuery(modifyNotificationToken))
+        val result = mService.getModifyNotification(NotificationsApiHelper.getModifyNotificationQuery(modifyNotificationParams))
 
         RetrofitHelper.get(result)
     }

@@ -1,18 +1,21 @@
 package com.liskovsoft.youtubeapi.service;
 
-import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
-import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
-import com.liskovsoft.mediaserviceinterfaces.data.SponsorSegment;
+import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.DeArrowData;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.DislikeData;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemStoryboard;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.SponsorSegment;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.actions.ActionsService;
 import com.liskovsoft.youtubeapi.block.SponsorBlockService;
 import com.liskovsoft.youtubeapi.block.data.SegmentList;
+import com.liskovsoft.youtubeapi.dearrow.DeArrowService;
 import com.liskovsoft.youtubeapi.feedback.FeedbackService;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup;
@@ -34,8 +37,6 @@ public class YouTubeMediaItemService implements MediaItemService {
     private static YouTubeMediaItemService sInstance;
     private final YouTubeSignInService mSignInManager;
     private final SponsorBlockService mSponsorBlockService;
-    private final WatchNextService mWatchNextService;
-    //private final WatchNextServiceOld mWatchNextServiceOld;
     private final TrackingService mTrackingService;
     private final VideoInfoService mVideoInfoService;
     private final ActionsService mActionsService;
@@ -46,8 +47,6 @@ public class YouTubeMediaItemService implements MediaItemService {
     private YouTubeMediaItemService() {
         mSignInManager = YouTubeSignInService.instance();
         mSponsorBlockService = SponsorBlockService.instance();
-        mWatchNextService = WatchNextService.instance();
-        //mWatchNextServiceOld = WatchNextServiceOld.instance();
         mTrackingService = TrackingService.instance();
         mVideoInfoService = VideoInfoService.instance();
         mActionsService = ActionsService.instance();
@@ -140,7 +139,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataV2(String videoId, String playlistId, int playlistIndex, String playlistParams) {
-        return mWatchNextService.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
+        return WatchNextService.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
     }
 
     @Override
@@ -149,7 +148,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataIntV2(String videoId) {
-        return mWatchNextService.getMetadata(videoId);
+        return WatchNextService.getMetadata(videoId);
     }
 
     //@Override
@@ -175,11 +174,11 @@ public class YouTubeMediaItemService implements MediaItemService {
         checkSigned();
 
         if (mediaGroup instanceof SuggestionsGroup) {
-            return mWatchNextService.continueGroup(mediaGroup);
+            return WatchNextService.continueGroup(mediaGroup);
         }
 
         // Continue special embedded section group
-        return YouTubeMediaGroupService.instance().continueGroup(mediaGroup);
+        return YouTubeContentService.instance().continueGroup(mediaGroup);
     }
 
     @Override
@@ -473,6 +472,33 @@ public class YouTubeMediaItemService implements MediaItemService {
     @Override
     public Observable<List<SponsorSegment>> getSponsorSegmentsObserve(String videoId, Set<String> categories) {
         return RxHelper.fromNullable(() -> getSponsorSegments(videoId, categories));
+    }
+
+    @Override
+    public Observable<DeArrowData> getDeArrowDataObserve(String videoId) {
+        return RxHelper.fromNullable(() -> getDeArrowData(videoId));
+    }
+
+    @Override
+    public Observable<DeArrowData> getDeArrowDataObserve(List<String> videoIds) {
+        return RxHelper.create(emitter -> {
+            for (String videoId : videoIds) {
+                DeArrowData result = getDeArrowData(videoId);
+                if (result != null) {
+                    emitter.onNext(result);
+                }
+            }
+            emitter.onComplete();
+        });
+    }
+
+    private DeArrowData getDeArrowData(String videoId) {
+        return DeArrowService.getData(videoId);
+    }
+
+    @Override
+    public Observable<DislikeData> getDislikeDataObserve(String videoId) {
+        return RxHelper.fromNullable(() -> WatchNextService.getDislikeData(videoId));
     }
 
     public void invalidateCache() {

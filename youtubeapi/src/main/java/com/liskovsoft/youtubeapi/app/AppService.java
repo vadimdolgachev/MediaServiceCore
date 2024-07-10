@@ -4,7 +4,7 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.common.helpers.DefaultHeaders;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
-import com.liskovsoft.youtubeapi.app.models.clientdata.ClientData;
+import com.liskovsoft.youtubeapi.app.models.ClientData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthApi;
 import com.liskovsoft.youtubeapi.common.js.V8Runtime;
 
@@ -14,16 +14,16 @@ import java.util.List;
 
 public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
-    private static final long CACHE_REFRESH_PERIOD_MS = 30 * 60 * 1_000; // NOTE: auth token max lifetime is 60 min
+    private static final long CACHE_REFRESH_PERIOD_MS = 10 * 60 * 60 * 1_000; // NOTE: auth token max lifetime is unknown (between 60 min and 24 hours)
     private static AppService sInstance;
     private final AppApiWrapper mAppApiWrapper;
     //private Duktape mDuktape;
     private AppInfo mCachedAppInfo;
     private PlayerData mCachedPlayerData;
-    private ClientData mCachedBaseData;
+    private ClientData mCachedClientData;
     private long mAppInfoUpdateTimeMs;
     private long mPlayerDataUpdateTimeMs;
-    private long mBaseDataUpdateTimeMs;
+    private long mClientDataUpdateTimeMs;
 
     private AppService() {
         mAppApiWrapper = new AppApiWrapper();
@@ -113,6 +113,16 @@ public class AppService {
         return V8Runtime.instance().evaluate(function);
     }
 
+    public String getPoTokenResult() {
+        String function = getPoTokenResultFunction();
+
+        if (function == null) {
+            return null;
+        }
+
+        return V8Runtime.instance().evaluate(function);
+    }
+
     /**
      * A nonce is a unique value chosen by an entity in a protocol, and it is used to protect that entity against attacks which fall under the very large umbrella of "replay".
      */
@@ -130,19 +140,19 @@ public class AppService {
      * Constant used in {@link AuthApi}
      */
     public String getClientId() {
-        updateBaseData();
+        updateClientData();
 
         // TODO: NPE 1.6K!!!
-        return mCachedBaseData != null ? mCachedBaseData.getClientId() : null;
+        return mCachedClientData != null ? mCachedClientData.getClientId() : null;
     }
 
     /**
      * Constant used in {@link AuthApi}
      */
     public String getClientSecret() {
-        updateBaseData();
+        updateClientData();
 
-        return mCachedBaseData != null ? mCachedBaseData.getClientSecret() : null;
+        return mCachedClientData != null ? mCachedClientData.getClientSecret() : null;
     }
 
     /**
@@ -242,29 +252,36 @@ public class AppService {
     private String getThrottleFunction() {
         updatePlayerData();
 
-        // TODO: NPE 24 events
+        // NOTE: NPE 24 events
         return mCachedPlayerData != null ? mCachedPlayerData.getThrottleFunction() : null;
     }
 
     private String getClientPlaybackNonceFunction() {
         updatePlayerData();
 
-        // TODO: NPE 10K!!!
+        // NOTE: NPE 10K!!!
         return mCachedPlayerData != null ? mCachedPlayerData.getClientPlaybackNonceFunction() : null;
+    }
+
+    private String getPoTokenResultFunction() {
+        updatePlayerData();
+
+        // NOTE: NPE
+        return mCachedPlayerData != null ? mCachedPlayerData.getPoTokenResultFunction() : null;
     }
 
     private String getPlayerUrl() {
         updateAppInfoData();
 
-        // TODO: NPE 2.5K
+        // NOTE: NPE 2.5K
         return mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
     }
 
-    private String getBaseUrl() {
+    private String getClientUrl() {
         updateAppInfoData();
 
-        // TODO: NPE 143K!!!
-        return mCachedAppInfo != null ? mCachedAppInfo.getBaseUrl() : null;
+        // NOTE: NPE 143K!!!
+        return mCachedAppInfo != null ? mCachedAppInfo.getClientUrl() : null;
     }
 
     private synchronized void updateAppInfoData() {
@@ -295,33 +312,37 @@ public class AppService {
         }
     }
 
-    private synchronized void updateBaseData() {
-        if (mCachedBaseData != null && System.currentTimeMillis() - mBaseDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
+    private synchronized void updateClientData() {
+        if (mCachedClientData != null && System.currentTimeMillis() - mClientDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
             return;
         }
 
-        Log.d(TAG, "updateBaseData");
+        Log.d(TAG, "updateClientData");
 
-        mCachedBaseData = mAppApiWrapper.getBaseData(getBaseUrl());
+        mCachedClientData = mAppApiWrapper.getClientData(getClientUrl());
 
-        if (mCachedBaseData != null) {
-            mBaseDataUpdateTimeMs = System.currentTimeMillis();
+        if (mCachedClientData != null) {
+            mClientDataUpdateTimeMs = System.currentTimeMillis();
         }
     }
 
     public void invalidateCache() {
         mCachedAppInfo = null;
         mCachedPlayerData = null;
-        mCachedBaseData = null;
+        mCachedClientData = null;
     }
 
     public void refreshCacheIfNeeded() {
         updateAppInfoData();
         updatePlayerData();
-        updateBaseData();
+        updateClientData();
     }
 
     public boolean isCacheActual() {
         return System.currentTimeMillis() - mPlayerDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS;
+    }
+
+    public void invalidateVisitorData() {
+        mAppApiWrapper.invalidateVisitorData();
     }
 }

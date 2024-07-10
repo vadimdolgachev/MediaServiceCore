@@ -26,7 +26,7 @@ internal data class WatchNextResult(
                     val contents: List<Content?>?
                 ) {
                     data class Content(
-                        val shelfRenderer: ShelfItem?
+                        val shelfRenderer: ShelfRenderer?
                     )
                 }
             }
@@ -44,8 +44,8 @@ internal data class WatchNextResult(
                             val contents: List<Content?>?
                         ) {
                             data class Content(
-                                val videoMetadataRenderer: VideoMetadataItem?,
-                                val musicWatchMetadataRenderer: VideoMetadataItem?
+                                val videoMetadataRenderer: VideoMetadataRenderer?,
+                                val musicWatchMetadataRenderer: VideoMetadataRenderer?
                             )
                         }
                     }
@@ -120,7 +120,7 @@ internal data class WatchNextResult(
                                 val value: Value?
                             ) {
                                 data class Value(
-                                    val chapters: List<ChapterItem?>?
+                                    val chapters: List<ChapterItemWrapper?>?
                                 )
                             }
                         }

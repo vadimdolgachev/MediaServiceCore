@@ -1,12 +1,12 @@
 package com.liskovsoft.youtubeapi.common.models.impl.mediagroup
 
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
 import com.liskovsoft.youtubeapi.next.v2.gen.*
 import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.WrapperMediaItem
 import java.util.*
 
-internal data class SuggestionsGroup(val shelf: ShelfItem): MediaGroup {
+internal data class SuggestionsGroup(val shelf: ShelfRenderer): MediaGroup {
     private var _titleItem: String? = null
                     get() = field ?: titleItem
     private var _mediaItemList: List<MediaItem?>? = null
@@ -73,11 +73,11 @@ internal data class SuggestionsGroup(val shelf: ShelfItem): MediaGroup {
                 return null
             }
 
-            val newGroup = SuggestionsGroup(ShelfItem(null, null, null))
+            val newGroup = SuggestionsGroup(ShelfRenderer(null, null, null, null))
 
             val mediaItems = ArrayList<MediaItem>()
 
-            val items = continuation.continuationContents?.horizontalListContinuation?.items
+            val items = continuation.getItems()
 
             if (items != null) {
                 for (i in items.indices) {
@@ -99,8 +99,7 @@ internal data class SuggestionsGroup(val shelf: ShelfItem): MediaGroup {
 
             // Fix duplicated items after previous group reuse
             newGroup.mediaItems = if (mediaItems.isNotEmpty()) mediaItems else null
-            val nextKey = continuation.continuationContents?.horizontalListContinuation?.continuations
-                ?.firstNotNullOfOrNull { it?.nextContinuationData?.continuation }
+            val nextKey = continuation.getNextPageKey()
             newGroup.nextPageKey = nextKey
             newGroup.title = baseGroup.title
 

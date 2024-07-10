@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.comments.impl
 
-import com.liskovsoft.mediaserviceinterfaces.data.CommentItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.CommentItem
 import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.youtubeapi.comments.gen.CommentItemWrapper
 import com.liskovsoft.youtubeapi.comments.gen.getContinuationKey
@@ -25,7 +25,7 @@ internal data class CommentItemImpl(val commentItemWrapper: CommentItemWrapper):
 
     private val nestedCommentKeyItem by lazy { commentRenderer?.getContinuationKey() }
 
-    private val replyCountItem by lazy { commentRenderer?.getContinuationLabel() }
+    private val replyCountItem by lazy { commentRenderer?.getContinuationLabel()?.replace(" ", Helpers.NON_BREAKING_SPACE) }
 
     private val isLikedItem by lazy { commentRenderer?.isLiked ?: false }
 
@@ -41,7 +41,7 @@ internal data class CommentItemImpl(val commentItemWrapper: CommentItemWrapper):
 
     override fun getPublishedDate(): String? = publishedDateItem
 
-    override fun getNestedCommentsKey(): String? = nestedCommentKeyItem
+    override fun getNestedCommentsKey(): String? = replyCountItem?.let { nestedCommentKeyItem } // empty replies fix
 
     override fun isLiked(): Boolean = isLikedItem
 

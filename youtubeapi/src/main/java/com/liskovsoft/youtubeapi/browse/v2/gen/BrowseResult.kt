@@ -1,6 +1,8 @@
 package com.liskovsoft.youtubeapi.browse.v2.gen
 
 import com.liskovsoft.youtubeapi.common.models.gen.MenuWrapper
+import com.liskovsoft.youtubeapi.common.models.gen.NavigationEndpointItem
+import com.liskovsoft.youtubeapi.common.models.gen.PlaylistItem
 import com.liskovsoft.youtubeapi.next.v2.gen.EngagementPanel
 
 /**
@@ -9,7 +11,9 @@ import com.liskovsoft.youtubeapi.next.v2.gen.EngagementPanel
  * browse_subs_chrome_12.02.2023.json
  */
 internal data class BrowseResult(
-    val contents: Contents?
+    val contents: Contents?,
+    val header: Header?,
+    val onResponseReceivedActions: List<OnResponseReceivedAction?>?
 ) {
     data class Contents(
         val twoColumnBrowseResultsRenderer: TwoColumnBrowseResultsRenderer?
@@ -18,27 +22,37 @@ internal data class BrowseResult(
             val tabs: List<Tab?>?
         ) {
             data class Tab(
-             val tabRenderer: TabRenderer?
+                val tabRenderer: TabRenderer?,
+                val expandableTabRenderer: TabRenderer?
             )
         }
     }
+    data class Header(
+        val playlistHeaderRenderer: PlaylistItem?
+    )
 }
 
 internal data class ContinuationResult(
     val onResponseReceivedActions: List<OnResponseReceivedAction?>?
-) {
-    data class OnResponseReceivedAction(
-        val appendContinuationItemsAction: AppendContinuationItemsAction?,
-        val reloadContinuationItemsCommand: ReloadContinuationItemsCommand?
-    ) {
-        data class AppendContinuationItemsAction(
-            val continuationItems: List<Section?>?
-        )
+)
 
-        data class ReloadContinuationItemsCommand(
-            val continuationItems: List<Section?>?
-        )
-    }
+internal data class OnResponseReceivedAction(
+    val appendContinuationItemsAction: AppendContinuationItemsAction?,
+    val reloadContinuationItemsCommand: ReloadContinuationItemsCommand?,
+    val navigateAction: NavigateAction?
+) {
+    data class AppendContinuationItemsAction(
+        val continuationItems: List<SectionWrapper?>?
+    )
+
+    data class ReloadContinuationItemsCommand(
+        val continuationItems: List<SectionWrapper?>?,
+        val slot: String?
+    )
+
+    data class NavigateAction(
+        val endpoint: NavigationEndpointItem?
+    )
 }
 
 internal data class GuideResult(
@@ -118,5 +132,29 @@ internal data class ReelContinuationResult(
         data class Command(
             val reelWatchEndpoint: ReelWatchEndpoint?
         )
+    }
+}
+
+internal data class BrowseResultTV(
+    val contents: Contents?
+) {
+    data class Contents(
+        val tvBrowseRenderer: TvBrowseRenderer?
+    ) {
+        data class TvBrowseRenderer(
+            val content: Content?
+        ) {
+            data class Content(
+                val tvSurfaceContentRenderer: TvSurfaceContentRenderer?
+            ) {
+                data class TvSurfaceContentRenderer(
+                    val content: Content?
+                ) {
+                    data class Content(
+                        val sectionListRenderer: ItemSectionRenderer?
+                    )
+                }
+            }
+        }
     }
 }

@@ -45,6 +45,12 @@ public class MediaServiceData {
         return mDeviceId;
     }
 
+    public void reset() {
+        mDeviceId = null;
+        mScreenId = null;
+        persistData();
+    }
+
     private void restoreData() {
         if (GlobalPreferences.sInstance == null) {
             Log.e(TAG, "Can't restore data. GlobalPreferences isn't initialized yet.");
@@ -53,7 +59,7 @@ public class MediaServiceData {
 
         String data = GlobalPreferences.sInstance.getMediaServiceData();
 
-        String[] split = Helpers.splitObject(data);
+        String[] split = Helpers.splitData(data);
 
         mScreenId = Helpers.parseStr(split, 1);
         mDeviceId = Helpers.parseStr(split, 2);
@@ -64,6 +70,6 @@ public class MediaServiceData {
             return;
         }
 
-        GlobalPreferences.sInstance.setMediaServiceData(Helpers.mergeObject(null, mScreenId, mDeviceId)); // null for ScreenItem
+        GlobalPreferences.sInstance.setMediaServiceData(Helpers.mergeData(null, mScreenId, mDeviceId)); // null for ScreenItem
     }
 }

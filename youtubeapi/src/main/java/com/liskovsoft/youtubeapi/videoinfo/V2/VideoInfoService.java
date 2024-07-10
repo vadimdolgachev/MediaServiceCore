@@ -1,7 +1,9 @@
 package com.liskovsoft.youtubeapi.videoinfo.V2;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceBase;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHls;
@@ -25,11 +27,16 @@ public class VideoInfoService extends VideoInfoServiceBase {
     }
 
     public VideoInfo getVideoInfo(String videoId, String clickTrackingParams) {
+        //RetrofitOkHttpHelper.skipAuth();
+
         // NOTE: Request below doesn't contain dashManifestUrl!!!
         //VideoInfo result = getVideoInfoPrivate(videoId, clickTrackingParams); // no dash url and hls link
         //VideoInfo result = getVideoInfoLive(videoId, clickTrackingParams); // no seek preview, no dash url, fix 403 error?
-        VideoInfo result = getVideoInfoGeoBlocked(videoId, clickTrackingParams); // no seek preview, fix 403 error?
-        //VideoInfo result = getVideoInfoRegular(videoId, clickTrackingParams); // all included, the best
+        VideoInfo result = getVideoInfoGeoBlocked(videoId, clickTrackingParams); // no seek preview, fix 403 error!!
+        //VideoInfo result = getVideoInfoRegular(videoId, clickTrackingParams); // all included, the best but many 403 errors(
+        //VideoInfo result = getVideoInfoIOS(videoId, clickTrackingParams); // only FullHD, no 403 error?
+
+        //result.sync(getVideoInfoRegular(videoId, clickTrackingParams));
 
         applyFixesIfNeeded(result, videoId, clickTrackingParams);
         result = retryIfNeeded(result, videoId, clickTrackingParams);
@@ -67,6 +74,11 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
     private VideoInfo getVideoInfoGeoBlocked(String videoId, String clickTrackingParams) {
         String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQueryGeoBlocked(videoId, clickTrackingParams);
+        return getVideoInfo(videoInfoQuery);
+    }
+
+    private VideoInfo getVideoInfoIOS(String videoId, String clickTrackingParams) {
+        String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQueryHls(videoId, clickTrackingParams);
         return getVideoInfo(videoInfoQuery);
     }
 
@@ -128,7 +140,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
             //    result.setDashManifestUrl(result2.getDashManifestUrl());
             //    result.setHlsManifestUrl(result2.getHlsManifestUrl());
             //}
-        } else if (result.isExtendedHlsFormatsBroken() || result.isStoryboardBroken()) {
+        } else if (isExtendedHlsFormatsEnabled() && result.isExtendedHlsFormatsBroken() || result.isStoryboardBroken()) {
             VideoInfoHls videoInfoHls = getVideoInfoHls(videoId, clickTrackingParams);
             if (videoInfoHls != null && result.getHlsManifestUrl() == null) {
                 result.setHlsManifestUrl(videoInfoHls.getHlsManifestUrl());
@@ -151,11 +163,11 @@ public class VideoInfoService extends VideoInfoServiceBase {
             Log.e(TAG, "Found restricted video. Retrying with embed query method...");
             result = getVideoInfoEmbed(videoId, clickTrackingParams);
 
-            if (result != null && result.isUnplayable()) {
+            if (result == null || result.isUnplayable()) {
                 Log.e(TAG, "Found restricted video. Retrying with restricted query method...");
                 result = getVideoInfoRestricted(videoId, clickTrackingParams);
 
-                if (result != null && result.isUnplayable()) {
+                if (result == null || result.isUnplayable()) {
                     Log.e(TAG, "Found video clip blocked in current location...");
                     result = getVideoInfoGeoBlocked(videoId, clickTrackingParams);
                 }
@@ -163,5 +175,9 @@ public class VideoInfoService extends VideoInfoServiceBase {
         }
 
         return result;
+    }
+
+    private static boolean isExtendedHlsFormatsEnabled() {
+        return GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isExtendedHlsFormatsEnabled();
     }
 }

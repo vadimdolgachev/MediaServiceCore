@@ -1,7 +1,8 @@
 package com.liskovsoft.youtubeapi.service;
 
-import com.liskovsoft.mediaserviceinterfaces.SignInService;
-import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import androidx.annotation.Nullable;
+import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -22,6 +23,7 @@ public class YouTubeSignInService implements SignInService {
     private final AuthService mAuthService;
     private final YouTubeAccountManager mAccountManager;
     private String mCachedAuthorizationHeader;
+    private String mCachedAuthorizationHeader2;
     private long mLastUpdateTime;
 
     private YouTubeSignInService() {
@@ -31,7 +33,7 @@ public class YouTubeSignInService implements SignInService {
         GlobalPreferences.setOnInit(() -> {
             mAccountManager.init();
             try {
-                this.updateAuthorizationHeader();
+                updateAuthHeadersIfNeeded();
             } catch (Exception e) {
                 // Host not found
                 e.printStackTrace();
@@ -66,8 +68,27 @@ public class YouTubeSignInService implements SignInService {
     }
 
     public void checkAuth() {
+        updateAuthHeadersIfNeeded();
+    }
+
+    private void updateAuthHeadersIfNeeded() {
+        if (mCachedAuthorizationHeader != null && System.currentTimeMillis() - mLastUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
+            return;
+        }
+
+        updateAuthHeaders();
+    }
+
+    private synchronized void updateAuthHeaders() {
+        Account account = mAccountManager.getSelectedAccount();
+        String refreshToken = account != null ? ((YouTubeAccount) account).getRefreshToken() : null;
+        String refreshToken2 = account != null ? ((YouTubeAccount) account).getRefreshToken2() : null;
         // get or create authorization on fly
-        updateAuthorizationHeader();
+        mCachedAuthorizationHeader = createAuthorizationHeader(refreshToken);
+        mCachedAuthorizationHeader2 = createAuthorizationHeader(refreshToken2);
+        syncWithRetrofit();
+
+        mLastUpdateTime = System.currentTimeMillis();
     }
 
     @Override
@@ -91,6 +112,7 @@ public class YouTubeSignInService implements SignInService {
         return RxHelper.fromCallable(this::getAccounts);
     }
 
+    @Nullable
     @Override
     public Account getSelectedAccount() {
         return mAccountManager.getSelectedAccount();
@@ -101,6 +123,7 @@ public class YouTubeSignInService implements SignInService {
      */
     public void setAuthorizationHeader(String authorizationHeader) {
         mCachedAuthorizationHeader = authorizationHeader;
+        mCachedAuthorizationHeader2 = null;
         mLastUpdateTime = System.currentTimeMillis();
 
         syncWithRetrofit();
@@ -123,28 +146,23 @@ public class YouTubeSignInService implements SignInService {
     /**
      * Authorization should be updated periodically (see expire_in field in response)
      */
-    private synchronized void updateAuthorizationHeader() {
-        if (mCachedAuthorizationHeader != null && System.currentTimeMillis() - mLastUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
-            return;
-        }
-
+    private String createAuthorizationHeader(String refreshToken) {
         Log.d(TAG, "Updating authorization header...");
 
-        mCachedAuthorizationHeader = null;
+        String authorizationHeader = null;
 
-        AccessToken token = obtainAccessToken();
+        AccessToken token = obtainAccessToken(refreshToken);
 
         if (token != null) {
-            mCachedAuthorizationHeader = String.format("%s %s", token.getTokenType(), token.getAccessToken());
-            mLastUpdateTime = System.currentTimeMillis();
+            authorizationHeader = String.format("%s %s", token.getTokenType(), token.getAccessToken());
         } else {
             Log.e(TAG, "Access token is null!");
         }
 
-        syncWithRetrofit();
+        return authorizationHeader;
     }
 
-    private AccessToken obtainAccessToken() {
+    private AccessToken obtainAccessToken(String refreshToken) {
         // We don't have context, so can't create instance here.
         // Let's hope someone already created one for us.
         if (GlobalPreferences.sInstance == null) {
@@ -154,18 +172,8 @@ public class YouTubeSignInService implements SignInService {
 
         AccessToken token = null;
 
-        Account account = mAccountManager.getSelectedAccount();
-
-        if (account != null) {
-            token = mAuthService.getAccessToken(((YouTubeAccount) account).getRefreshToken());
-        } else {
-            String rawAuthData = GlobalPreferences.sInstance.getRawAuthData();
-
-            if (rawAuthData != null) {
-                token = mAuthService.getAccessTokenRaw(rawAuthData);
-            } else {
-                Log.e(TAG, "Refresh token data doesn't stored in the app registry!");
-            }
+        if (refreshToken != null) {
+            token = mAuthService.getAccessToken(refreshToken);
         }
 
         return token;
@@ -173,11 +181,20 @@ public class YouTubeSignInService implements SignInService {
 
     private void syncWithRetrofit() {
         Map<String, String> headers = RetrofitOkHttpHelper.getAuthHeaders();
+        Map<String, String> headers2 = RetrofitOkHttpHelper.getAuthHeaders2();
+        headers.clear();
+        headers2.clear();
 
-        if (mCachedAuthorizationHeader != null) {
+        Account selectedAccount = getSelectedAccount();
+
+        if (mCachedAuthorizationHeader != null && selectedAccount != null) {
             headers.put("Authorization", mCachedAuthorizationHeader);
-        } else {
-            headers.remove("Authorization");
+            String pageIdToken = ((YouTubeAccount) selectedAccount).getPageIdToken();
+            if (pageIdToken != null) {
+                headers2.put("Authorization", mCachedAuthorizationHeader2);
+                // Apply branded account rights (restricted videos). Branded refresh token with current account page id.
+                headers.put("X-Goog-Pageid", pageIdToken);
+            }
         }
     }
 

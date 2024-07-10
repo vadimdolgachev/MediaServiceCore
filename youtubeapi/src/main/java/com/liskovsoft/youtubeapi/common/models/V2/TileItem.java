@@ -14,6 +14,7 @@ public class TileItem {
     public static final String CONTENT_TYPE_PLAYLIST = "TILE_CONTENT_TYPE_PLAYLIST";
     public static final String CONTENT_TYPE_VIDEO = "TILE_CONTENT_TYPE_VIDEO";
     private static final String BADGE_STYLE_LIVE = "LIVE";
+    private static final String BADGE_STYLE_SHORTS = "SHORTS";
     private static final String BADGE_STYLE_UPCOMING = "UPCOMING";
     private static final String BADGE_STYLE_DEFAULT = "DEFAULT";
     private static final String BADGE_STYLE_MOVIE = "BADGE_STYLE_TYPE_YPC";
@@ -29,10 +30,14 @@ public class TileItem {
     private Metadata mMetadata;
 
     @JsonPath({
+            "$.onSelectCommand.reelWatchEndpoint.videoId", // short
             "$.onSelectCommand.watchEndpoint.videoId", // regular video
             "$.onSelectCommand.showMenuCommand.contentId" // rent movie
     })
     private String mVideoId;
+
+    @JsonPath("$.onSelectCommand.watchEndpoint.startTimeSeconds")
+    private int mStartTimeSeconds;
 
     @JsonPath({
             "$.onSelectCommand.watchEndpoint.playlistId",
@@ -115,6 +120,10 @@ public class TileItem {
         return mHeader != null ? mHeader.getPercentWatched() : -1;
     }
 
+    public int getStartTimeSeconds() {
+        return mStartTimeSeconds;
+    }
+
     public String getRichThumbnailUrl() {
         return mHeader != null ? mHeader.getMovingThumbnailUrl() : null;
     }
@@ -145,6 +154,10 @@ public class TileItem {
 
     public boolean isMovie() {
         return Helpers.equalsAny(BADGE_STYLE_MOVIE, getBadgeStyles());
+    }
+
+    public boolean isShorts() {
+        return Helpers.equalsAny(BADGE_STYLE_SHORTS, getBadgeStyles());
     }
 
     public String getFeedbackToken() {

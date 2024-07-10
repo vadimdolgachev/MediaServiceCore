@@ -1,6 +1,5 @@
 package com.liskovsoft.youtubeapi.browse.v2
 
-import com.liskovsoft.youtubeapi.browse.v1.BrowseApiHelper
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.KidsSectionMediaGroup
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
@@ -10,7 +9,10 @@ import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseParams
 import com.liskovsoft.youtubeapi.common.models.gen.getFeedbackToken
 import com.liskovsoft.youtubeapi.common.models.gen.getFeedbackToken2
+import com.liskovsoft.youtubeapi.common.models.gen.getTitle
 import com.liskovsoft.youtubeapi.common.models.gen.isLive
+import com.liskovsoft.youtubeapi.next.v2.gen.getItems
+import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertTrue
 import org.junit.Before
@@ -58,7 +60,7 @@ class BrowseApiTest {
 
         assertNotNull("Contains continuation token", subs?.getContinuationToken())
 
-        checkContinuation(subs?.getContinuationToken())
+        checkContinuationWeb(subs?.getContinuationToken())
     }
 
     @Test
@@ -74,7 +76,7 @@ class BrowseApiTest {
 
         assertNotNull("Contains continuation token", home?.getContinuationToken())
 
-        checkContinuation(home?.getContinuationToken())
+        checkContinuationWeb(home?.getContinuationToken())
     }
 
     @Test
@@ -129,7 +131,7 @@ class BrowseApiTest {
 
         assertNotNull("Chip has title", chip?.getTitle())
 
-        checkContinuation(chip?.getContinuationToken(), false) // Chips usually don't support multiple continuation
+        checkContinuationWeb(chip?.getContinuationToken(), false) // Chips usually don't support multiple continuation
     }
 
     @Ignore("Doesn't contains chips")
@@ -169,6 +171,25 @@ class BrowseApiTest {
     }
 
     @Test
+    fun testThatSportsNotEmpty() {
+        val sports = getSports()
+
+        assertNotNull("Contains sections", sports?.getShelves())
+        assertNotNull("Contains title", sports?.getShelves()?.firstOrNull()?.getTitle())
+        assertNotNull("Contains content", sports?.getShelves()?.firstOrNull()?.getItems())
+    }
+
+    @Test
+    fun testThatSportsCanBeContinued() {
+        val sports = getSports()
+
+        // recommended
+        val nextPageKey = sports?.getShelves()?.getOrNull(1)?.getNextPageKey()
+
+        checkContinuationTV(nextPageKey, true)
+    }
+
+    @Test
     fun testThatGuideNotEmpty() {
         val guide = getGuide()
 
@@ -197,6 +218,23 @@ class BrowseApiTest {
     }
 
     @Test
+    fun testLikedMusicNotEmpty() {
+        val likedMusic = getLikedMusic()
+
+        assertNotNull("List not empty", likedMusic?.getItems())
+        assertNotNull("List has title", likedMusic?.getTitle())
+    }
+
+    @Test
+    fun testThatChannelTabsNotEmpty() {
+        val home = getChannelHome(TestHelpersV2.CHANNEL_ID_3)
+
+        val firstTab = home?.getTabs()?.get(0)
+
+        assertNotNull("Tab has param", firstTab?.getBrowseParams())
+    }
+
+    @Test
     fun testThatChannelVideosTabNotEmpty() {
         val videos = getChannelVideos("UC1vCu8GeDC7_UfY7PKqsAzg")
 
@@ -210,6 +248,72 @@ class BrowseApiTest {
 
         assertTrue("Contains videos", videos?.getItems()?.filter { it?.isLive() == true }?.size ?: 0 > 1)
         assertNotNull("Has continuation", videos?.getContinuationToken())
+    }
+
+    @Test
+    fun testThatChannelLiveTabEmpty() {
+        val videos = getChannelLive(TestHelpersV2.CHANNEL_ID_3)
+
+        assertTrue("Contains videos", videos?.getItems()?.filter { it?.isLive() == true }?.size ?: 0 == 0)
+    }
+
+    @Test
+    fun testThatChannelHomeTabNotEmpty() {
+        val result = getChannelHome(TestHelpersV2.CHANNEL_ID_2)
+
+        val firstShelve = result?.getShelves()?.get(0)
+        assertNotNull("Contains title", firstShelve?.getTitle())
+        assertNotNull("Contains nested items", firstShelve?.getItems())
+    }
+
+    @Test
+    fun testThatChannelReleasesTabNotEmpty() {
+        val result = getChannelReleases(TestHelpersV2.CHANNEL_ID_3)
+
+        val first = result?.getItems()?.getOrNull(0)
+
+        assertNotNull("Contains title", result?.getTitle())
+        assertNotNull("Contains items", first?.getTitle())
+    }
+
+    @Test
+    fun testThatChannelVideosNotEmpty() {
+        val channelId = "VLPLHxc_q5EHiHQX3VxMaUDOdM8NMSTyRjkZ"
+
+        val videos = getChannelVideos(channelId)
+
+        assertTrue("Playlist not empty", videos?.getItems()?.size ?: 0 > 0)
+    }
+
+    @Test
+    fun testThatChannelVideosHasContinuation() {
+        val channelId = "VLPLHxc_q5EHiHQX3VxMaUDOdM8NMSTyRjkZ"
+
+        val videos = getChannelVideos(channelId)
+
+        assertNotNull("Playlist has continuation", videos?.getContinuationToken())
+
+        checkContinuationWeb(videos?.getContinuationToken())
+    }
+
+    @Test
+    fun testThatChannelSearchNotEmpty() {
+        val channelId = TestHelpersV2.CHANNEL_ID_3
+
+        val videos = getChannelSearch(channelId, "in the army now")
+
+        assertTrue("Has content", (videos?.getItems()?.size ?: 0) > 5)
+    }
+
+    @Test
+    fun testThatPlaylistNotEmpty() {
+        // Starfield songs
+        val channelId = "VLPL3irMzbdU-v1liRStfWBD9i9i3AvmLpY5"
+
+        val videos = getChannelPlaylist(channelId)
+
+        assertNotNull("Not empty", videos?.getItems())
+        assertNotNull("Has title", videos?.getTitle())
     }
 
     @Test
@@ -230,23 +334,32 @@ class BrowseApiTest {
     }
 
     @Test
-    fun testThatChannelPlaylistNotEmpty() {
-        val channelId = "VLPLHxc_q5EHiHQX3VxMaUDOdM8NMSTyRjkZ"
+    fun testChannelTopicContinuation() {
+        val browse = mService?.getBrowseResult(BrowseApiHelper.getChannelQueryWeb("UC1dGjtlDiiDM0gc_ghB1nTQ", "EgRsaXZl"))
 
-        val videos = getChannelVideos(channelId)
+        val result = RetrofitHelper.get(browse)
 
-        assertTrue("Playlist not empty", videos?.getItems()?.size ?: 0 > 0)
+        assertTrue("Topic has continuation token", result?.getContinuationToken() != null)
+
+        val continuation =
+            mService?.getContinuationResult(BrowseApiHelper.getContinuationQueryWeb(result?.getContinuationToken()!!))
+
+        val continuationResult = RetrofitHelper.get(continuation)
+
+        assertTrue("Topic can be continued", continuationResult?.getItems() != null)
     }
 
     @Test
-    fun testThatChannelPlaylistHasContinuation() {
-        val channelId = "VLPLHxc_q5EHiHQX3VxMaUDOdM8NMSTyRjkZ"
+    fun testTopicRandomContinuation() {
+        val key =
+            "4qmFsgL8AhIYVUMxZEdqdGxEaWlETTBnY19naEIxblRRGrACRWdaeVpXTmxiblFZQXlBQU1BRTRBZW9EeXdGSGNGVkNWMjlaUWtOdlRVSkRhWFExWkVZNWQxbFhaR3hZTTA1MVdWaENlbUZIT1RCWU1rNTJZbTVTYkdKdVVtWmtiVlo1WkVkc2FsbFhlSHBZTTBwc1dqSnNkbUp0Um5ORmFEbHFaVWRhZFZOcVZqVlpNbXg0VjFab1ZsRjZhR3BPUXpGNFlUSlNjRlF5T1ZkYVdHUkpUa1ZLYmtkcVRVRkJSMVoxUVVGR1ZsVjNRVUpXVlVWQlFWRkNWbEY2Um10U01uQXdZa1ZTY0dGVlVrNU5SMlJxV0RKa2IxRnFSblZXUmtWQlFWRkZRa0ZCUVVKQlFVRkNRVkZFZVRKeVQzRkRaMXBCUVVWbmVWVkVTUSUzRCUzRJoCLGJyb3dzZS1mZWVkVUMxZEdqdGxEaWlETTBnY19naEIxblRRcmVjZW50ODAx"
 
-        val videos = getChannelVideos(channelId)
+        val continuation =
+            mService?.getContinuationResult(BrowseApiHelper.getContinuationQueryWeb(key))
 
-        assertNotNull("Playlist has continuation", videos?.getContinuationToken())
+        val continuationResult = RetrofitHelper.get(continuation)
 
-        checkContinuation(videos?.getContinuationToken())
+        assertTrue("Topic can be continued", continuationResult?.getItems() != null)
     }
 
     private fun testReelContinuation(continuation: ReelContinuationResult?) {
@@ -281,8 +394,8 @@ class BrowseApiTest {
         assertNotNull("Contains feedback", details?.getFeedbackTokens()?.firstOrNull())
     }
 
-    private fun checkContinuation(token: String?, checkNextToken: Boolean = true) {
-        val continuationResult = mService?.getContinuationResult(BrowseApiHelper.getContinuationQueryWeb(token))
+    private fun checkContinuationWeb(token: String?, checkNextToken: Boolean = true) {
+        val continuationResult = mService?.getContinuationResult(BrowseApiHelper.getContinuationQueryWeb(token!!))
 
         val continuation = RetrofitHelper.get(continuationResult)
 
@@ -290,6 +403,18 @@ class BrowseApiTest {
 
         if (checkNextToken) {
             assertNotNull("Contains next token", continuation?.getContinuationToken())
+        }
+    }
+
+    private fun checkContinuationTV(token: String?, checkNextToken: Boolean = true) {
+        val continuationResult = mService?.getContinuationResultTV(BrowseApiHelper.getContinuationQueryTV(token!!))
+
+        val continuation = RetrofitHelper.get(continuationResult)
+
+        assertNotNull("Contains items", continuation?.getItems()?.getOrNull(0))
+
+        if (checkNextToken) {
+            assertNotNull("Contains next token", continuation?.getNextPageKey())
         }
     }
 
@@ -311,16 +436,40 @@ class BrowseApiTest {
         return RetrofitHelper.get(homeResult)
     }
 
+    private fun getChannelSearch(channelId: String?, query: String?): BrowseResult? {
+        val homeResult = mService?.getBrowseResult(BrowseApiHelper.getChannelSearchQueryWeb(channelId!!, query!!))
+
+        return RetrofitHelper.get(homeResult)
+    }
+
     private fun getChannelVideos(channelId: String?): BrowseResult? {
-        val homeResult = mService?.getBrowseResult(BrowseApiHelper.getChannelVideosQueryWeb(channelId))
+        val homeResult = mService?.getBrowseResult(BrowseApiHelper.getChannelVideosQueryWeb(channelId!!))
 
         return RetrofitHelper.get(homeResult)
     }
 
     private fun getChannelLive(channelId: String?): BrowseResult? {
-        val homeResult = mService?.getBrowseResult(BrowseApiHelper.getChannelLiveQueryWeb(channelId))
+        val homeResult = mService?.getBrowseResult(BrowseApiHelper.getChannelLiveQueryWeb(channelId!!))
 
         return RetrofitHelper.get(homeResult)
+    }
+
+    private fun getChannelHome(channelId: String?): BrowseResult? {
+        val result = mService?.getBrowseResult(BrowseApiHelper.getChannelHomeQueryWeb(channelId!!))
+
+        return RetrofitHelper.get(result)
+    }
+
+    private fun getChannelReleases(channelId: String?): BrowseResult? {
+        val result = mService?.getBrowseResult(BrowseApiHelper.getChannelReleasesQueryWeb(channelId!!))
+
+        return RetrofitHelper.get(result)
+    }
+
+    private fun getChannelPlaylist(channelId: String?): BrowseResult? {
+        val result = mService?.getBrowseResult(BrowseApiHelper.getChannelQueryWeb(channelId!!))
+
+        return RetrofitHelper.get(result)
     }
 
     private fun getGuide(): GuideResult? {
@@ -336,7 +485,13 @@ class BrowseApiTest {
     }
 
     private fun getKidsHome(params: String?): BrowseResultKids? {
-        val kidsResult = mService?.getBrowseResultKids(BrowseApiHelper.getKidsHomeQuery(params))
+        val kidsResult = mService?.getBrowseResultKids(BrowseApiHelper.getKidsHomeQuery(params!!))
+
+        return RetrofitHelper.get(kidsResult)
+    }
+
+    private fun getSports(): BrowseResultTV? {
+        val kidsResult = mService?.getBrowseResultTV(BrowseApiHelper.getSportsQueryTV())
 
         return RetrofitHelper.get(kidsResult)
     }
@@ -347,20 +502,26 @@ class BrowseApiTest {
         return RetrofitHelper.get(reelsResult)
     }
 
+    private fun getLikedMusic(): BrowseResult? {
+        val result = mService?.getBrowseResult(BrowseApiHelper.getLikedMusicQuery())
+
+        return RetrofitHelper.get(result)
+    }
+
     private fun getReelDetails(videoId: String?, params: String?): ReelResult? {
-        val details = mService?.getReelResult(BrowseApiHelper.getReelDetailsQuery(videoId, params))
+        val details = mService?.getReelResult(BrowseApiHelper.getReelDetailsQuery(videoId!!, params!!))
 
         return RetrofitHelper.get(details)
     }
 
     private fun getReelContinuation(sequenceParams: String?): ReelContinuationResult? {
-        val continuation = mService?.getReelContinuationResult(BrowseApiHelper.getReelContinuationQuery(sequenceParams))
+        val continuation = mService?.getReelContinuationResult(BrowseApiHelper.getReelContinuationQuery(sequenceParams!!))
 
         return RetrofitHelper.get(continuation)
     }
 
     private fun getReelContinuation2(nextPageKey: String?): ReelContinuationResult? {
-        val continuation = mService?.getReelContinuationResult(BrowseApiHelper.getReelContinuation2Query(nextPageKey))
+        val continuation = mService?.getReelContinuationResult(BrowseApiHelper.getReelContinuation2Query(nextPageKey!!))
 
         return RetrofitHelper.get(continuation)
     }

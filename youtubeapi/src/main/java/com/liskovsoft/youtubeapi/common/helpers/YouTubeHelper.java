@@ -1,8 +1,8 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.models.items.Thumbnail;
@@ -18,7 +18,7 @@ public final class YouTubeHelper {
      * NOTE: Optimal thumbnail index is 3. Lower values cause black borders around images on Chromecast and Sony.
      */
     public static final int OPTIMAL_RES_THUMBNAIL_INDEX = 3;
-    private static final int SHORTS_LEN_MS = 90 * 1_000;
+    private static final int SHORTS_LEN_MS = 61_000;
 
     /**
      * Find optimal thumbnail for tv screen<br/>
@@ -91,8 +91,10 @@ public final class YouTubeHelper {
             boolean isHideShortsEnabled = (GlobalPreferences.sInstance.isHideShortsFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS) ||
                     (GlobalPreferences.sInstance.isHideShortsFromHomeEnabled() && mediaGroup.getType() == MediaGroup.TYPE_HOME) ||
                     (GlobalPreferences.sInstance.isHideShortsFromHistoryEnabled() && mediaGroup.getType() == MediaGroup.TYPE_HISTORY) ||
-                    (GlobalPreferences.sInstance.isHideShortsEverywhereEnabled() && mediaGroup.getType() != MediaGroup.TYPE_USER_PLAYLISTS);
-            boolean isHideUpcomingEnabled = GlobalPreferences.sInstance.isHideUpcomingEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS;
+                    (GlobalPreferences.sInstance.isHideShortsFromChannelEnabled() && mediaGroup.getType() == MediaGroup.TYPE_CHANNEL_UPLOADS) ||
+                    (GlobalPreferences.sInstance.isHideShortsFromChannelEnabled() && mediaGroup.getType() == MediaGroup.TYPE_CHANNEL);
+            boolean isHideUpcomingEnabled = (GlobalPreferences.sInstance.isHideUpcomingFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS) ||
+                    (GlobalPreferences.sInstance.isHideUpcomingFromChannelEnabled() && mediaGroup.getType() == MediaGroup.TYPE_CHANNEL_UPLOADS);
             boolean isHideStreamsEnabled = (GlobalPreferences.sInstance.isHideStreamsFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS);
 
             if (isHideShortsEnabled || isHideUpcomingEnabled || isHideStreamsEnabled) {
@@ -120,8 +122,8 @@ public final class YouTubeHelper {
         String title = mediaItem.getTitle().toLowerCase();
 
         int lengthMs = mediaItem.getDurationMs();
-        boolean isShortLength = lengthMs > 0 && lengthMs < SHORTS_LEN_MS;
-        return isShortLength || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
+        boolean isShortLength = lengthMs > 0 && lengthMs <= SHORTS_LEN_MS;
+        return isShortLength || mediaItem.isShorts() || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
     }
 
     /**

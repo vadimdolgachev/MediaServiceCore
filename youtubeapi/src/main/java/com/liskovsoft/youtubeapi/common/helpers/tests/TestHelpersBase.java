@@ -39,8 +39,11 @@ public class TestHelpersBase {
     // GECID.com
     public static final String CHANNEL_ID = "UC3PyIqYQ7lw7YKHRLqIvXlw";
 
-    // Strana.ua
-    public static final String CHANNEL_ID_2 = "UCDuSNexflm9nFKXLeMlqN2Q";
+    // Lofi Girl
+    public static final String CHANNEL_ID_2 = "UCSJ4gkVC6NrvII8umztf0Ow";
+
+    // Captain Jack
+    public static final String CHANNEL_ID_3 = "UCa8RiU2st_48AA4WscbwYVQ";
 
     // Hayls World
     public static final String CHANNEL_ID_UNSUBSCRIBED = "UCIxLxlan8q9WA7sjuq6LdTQ";

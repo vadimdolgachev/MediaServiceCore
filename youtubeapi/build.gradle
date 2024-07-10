@@ -41,11 +41,13 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+    testImplementation project(':youtubeapi')
     testImplementation project(':sharedtests')
     testImplementation 'co.infinum:retromock:' + retromockVersion
     testImplementation 'junit:junit:' + junitVersion
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
 
+    androidTestImplementation project(':youtubeapi')
     androidTestImplementation 'junit:junit:' + junitVersion
     androidTestImplementation 'androidx.test:runner:' + testXSupportLibraryVersion
     androidTestImplementation 'androidx.test:rules:' + testXSupportLibraryVersion
@@ -77,6 +79,6 @@ dependencies {
     //implementation(name: 'j2v8-6.2.1', ext: 'aar')
 
     // Add kotlin support libs
-    implementation 'androidx.core:core-ktx:' + kotlinCoreVersion
+    implementation 'androidx.core:core-ktx:' + kotlinCoreXVersion
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:' + kotlinVersion
 }

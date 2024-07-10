@@ -36,6 +36,7 @@ internal data class WrapperMediaItem(var itemWrapper: ItemWrapper): BaseMediaIte
     override val feedbackTokenItem2 by lazy { itemWrapper.getFeedbackToken2() }
     override val mediaUrl by lazy { ServiceHelper.videoIdToFullUrl(videoIdItem) ?: null }
     override val percentWatchedItem by lazy { itemWrapper.getPercentWatched() }
+    override val startTimeSecondsItem by lazy { itemWrapper.getStartTimeSeconds() }
     //override val playlistParamsItem by lazy { itemWrapper.getParams() }
     val descriptionText by lazy { itemWrapper.getDescriptionText() }
 }
@@ -80,6 +81,6 @@ internal data class NotificationMediaItem(private val item: NotificationItem): B
     override val cardThumbImageUrl by lazy { item.getThumbnails()?.getOptimalResThumbnailUrl() }
     override val backgroundThumbImageUrl by lazy { item.getThumbnails()?.getHighResThumbnailUrl() }
     override val titleItem by lazy { item.getTitle() }
-    override val secondTitleItem by lazy { item.getSecondTitle() }
+    override val secondTitleItem by lazy { YouTubeHelper.createInfo(item.getUserName(), item.getPublishedTime()) }
     val hideNotificationToken: String? by lazy { item.getNotificationToken() }
 }

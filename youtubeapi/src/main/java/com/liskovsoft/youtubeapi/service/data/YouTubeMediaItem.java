@@ -2,8 +2,8 @@ package com.liskovsoft.youtubeapi.service.data;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.browse.v1.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
@@ -31,6 +31,7 @@ public class YouTubeMediaItem implements MediaItem {
     private String mBackgroundImageUrl;
     private String mContentType;
     private boolean mIsLive;
+    private boolean mIsShorts;
     private boolean mIsUpcoming;
     private String mLengthText;
     private String mBadgeText;
@@ -44,6 +45,7 @@ public class YouTubeMediaItem implements MediaItem {
     private double mRatingScore;
     private int mMediaItemType;
     private int mPercentWatched;
+    private int mStartTimeSeconds;
     private String mAuthor;
     private String mVideoPreviewUrl;
     private int mPlaylistIndex;
@@ -122,9 +124,11 @@ public class YouTubeMediaItem implements MediaItem {
         video.mLengthText = item.getBadgeText();
         video.mBadgeText = item.getBadgeText();
         video.mPercentWatched = item.getPercentWatched();
+        video.mStartTimeSeconds = item.getStartTimeSeconds();
         video.mAuthor = item.getUserName();
         video.mVideoPreviewUrl = item.getRichThumbnailUrl();
         video.mIsLive = item.isLive();
+        video.mIsShorts = item.isShorts();
         video.mIsUpcoming = item.isUpcoming();
         video.mFeedbackToken = item.getFeedbackToken();
         video.mClickTrackingParams = item.getClickTrackingParams();
@@ -159,6 +163,7 @@ public class YouTubeMediaItem implements MediaItem {
         video.mLengthText = item.getLengthText() != null ? item.getLengthText() : item.getBadgeText();
         video.mBadgeText = item.getBadgeText() != null ? item.getBadgeText() : item.getLengthText();
         video.mPercentWatched = item.getPercentWatched();
+        video.mStartTimeSeconds = item.getStartTimeSeconds();
         video.mAuthor = item.getUserName();
         video.mVideoPreviewUrl = item.getRichThumbnailUrl();
         video.mIsLive = item.isLive();
@@ -368,7 +373,7 @@ public class YouTubeMediaItem implements MediaItem {
 
     @Override
     public boolean isShorts() {
-        return false;
+        return mIsShorts;
     }
 
     @Override
@@ -453,6 +458,11 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     @Override
+    public int getStartTimeSeconds() {
+        return mStartTimeSeconds;
+    }
+
+    @Override
     public String getAuthor() {
         return mAuthor;
     }
@@ -517,7 +527,7 @@ public class YouTubeMediaItem implements MediaItem {
     @NonNull
     @Override
     public String toString() {
-        return String.format("%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s", mReloadPageKey, mTitle, mSecondTitle, mCardImageUrl, mVideoId, mPlaylistId, mChannelId);
+        return String.format("%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s&mi;%s", mReloadPageKey, mTitle, mSecondTitle, mCardImageUrl, mVideoId, mPlaylistId, mChannelId, mMediaItemType);
     }
 
     public static MediaItem fromString(String spec) {
@@ -527,7 +537,12 @@ public class YouTubeMediaItem implements MediaItem {
 
         String[] split = spec.split("&mi;");
 
-        if (split.length != 7) {
+        // 'mMediaItemType' backward compatibility
+        if (split.length == 7) {
+            split = Helpers.appendArray(split, new String[]{"-1"});
+        }
+
+        if (split.length != 8) {
             return null;
         }
 
@@ -540,6 +555,7 @@ public class YouTubeMediaItem implements MediaItem {
         mediaItem.mVideoId = Helpers.parseStr(split[4]);
         mediaItem.mPlaylistId = Helpers.parseStr(split[5]);
         mediaItem.mChannelId = Helpers.parseStr(split[6]);
+        mediaItem.mMediaItemType = Helpers.parseInt(split[7]);
 
         return mediaItem;
     }
@@ -570,5 +586,21 @@ public class YouTubeMediaItem implements MediaItem {
     @Override
     public int hashCode() {
         return Helpers.hashCode(mVideoId, mPlaylistId, mChannelId, mReloadPageKey);
+    }
+
+    public static String serializeMediaItem(MediaItem mediaItem) {
+        if (mediaItem == null) {
+            return null;
+        }
+
+        return mediaItem.toString();
+    }
+
+    public static MediaItem deserializeMediaItem(String itemSpec) {
+        if (itemSpec == null) {
+            return null;
+        }
+
+        return fromString(itemSpec);
     }
 }

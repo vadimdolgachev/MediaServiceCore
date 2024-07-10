@@ -1,19 +1,47 @@
 package com.liskovsoft.youtubeapi.browse.v2.gen
 
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
-import com.liskovsoft.youtubeapi.common.models.gen.*
-import com.liskovsoft.youtubeapi.next.v2.gen.*
+import com.liskovsoft.youtubeapi.common.models.gen.ItemWrapper
+import com.liskovsoft.youtubeapi.common.models.gen.ThumbnailItem
+import com.liskovsoft.youtubeapi.common.models.gen.getBrowseId
+import com.liskovsoft.youtubeapi.common.models.gen.getBrowseParams
+import com.liskovsoft.youtubeapi.common.models.gen.getContinuationToken
+import com.liskovsoft.youtubeapi.common.models.gen.getFeedbackTokens
+import com.liskovsoft.youtubeapi.common.models.gen.getSubtitle
+import com.liskovsoft.youtubeapi.common.models.gen.getText
+import com.liskovsoft.youtubeapi.common.models.gen.getTitle
+import com.liskovsoft.youtubeapi.common.models.gen.isLive
+import com.liskovsoft.youtubeapi.common.models.gen.isUpcoming
+import com.liskovsoft.youtubeapi.next.v2.gen.EngagementPanel
+import com.liskovsoft.youtubeapi.next.v2.gen.getChannelName
+import com.liskovsoft.youtubeapi.next.v2.gen.getItemWrappers
+import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
+import com.liskovsoft.youtubeapi.next.v2.gen.getPublishDate
+import com.liskovsoft.youtubeapi.next.v2.gen.getTitle
+import com.liskovsoft.youtubeapi.next.v2.gen.getViews
 
+/**
+ *  Always renders first tab
+ */
 internal fun BrowseResult.getItems(): List<ItemWrapper?>? = getRootTab()?.getItems()
 internal fun BrowseResult.getLiveItems(): List<ItemWrapper?>? = getItems()?.filter { it?.isLive() == true || it?.isUpcoming() == true }?.sortedByDescending { it?.isLive() }
 internal fun BrowseResult.getPastLiveItems(maxItems: Int = -1): List<ItemWrapper?>? =
     getItems()?.filter { it?.isLive() == false && it.isUpcoming() == false }?.let { if (maxItems > 0) it.take(maxItems) else it }
 internal fun BrowseResult.getShortItems(): List<ItemWrapper?>? = getRootTab()?.getShortItems()
+internal fun BrowseResult.getShelves(): List<ItemSectionRenderer?>? = getRootTab()?.getShelves()
 internal fun BrowseResult.getContinuationToken(): String? = getRootTab()?.getContinuationToken()
-internal fun BrowseResult.getTabs(): List<TabRenderer?>? = contents?.twoColumnBrowseResultsRenderer?.tabs?.mapNotNull { it?.tabRenderer }
-internal fun BrowseResult.getSections(): List<RichSectionRenderer?>? = getRootTab()?.getGridContents()?.mapNotNull { it?.richSectionRenderer }
-internal fun BrowseResult.getChips(): List<ChipCloudChipRenderer?>? = getRootTab()?.getChipContents()?.mapNotNull { it?.chipCloudChipRenderer }
-internal fun BrowseResult.getTitle(): String? = getRootTab()?.title
+internal fun BrowseResult.getTabs(): List<TabRenderer?>? = contents?.twoColumnBrowseResultsRenderer?.tabs?.mapNotNull { it?.tabRenderer ?: it?.expandableTabRenderer }
+internal fun BrowseResult.getSections(): List<RichSectionRenderer?>? = getRootTab()?.getSections()
+internal fun BrowseResult.getChips(): List<ChipCloudChipRenderer?>? = getRootTab()?.getChips()
+/**
+ *  Always renders first tab
+ *  
+ *  First tab on HOME page has no title. Use first chip instead.
+ */
+internal fun BrowseResult.getTitle(): String? = getRootTab()?.title ?: header?.playlistHeaderRenderer?.getTitle() ?: getChips()?.getOrNull(0)?.getTitle()
+internal fun BrowseResult.isPlaylist(): Boolean = header?.playlistHeaderRenderer != null
+internal fun BrowseResult.isHome(): Boolean = getTabs()?.getOrNull(0)?.getItems() != null
+internal fun BrowseResult.getRedirectBrowseId(): String? = onResponseReceivedActions?.firstNotNullOfOrNull { it?.navigateAction?.endpoint?.getBrowseId() }
 private fun BrowseResult.getRootTab() = getTabs()?.firstNotNullOfOrNull { if (it?.content != null) it else null }
 
 /////
@@ -26,11 +54,18 @@ internal fun TabRenderer.getContinuationToken(): String? = getListContents()?.fi
     } ?:
     getGridContents()?.lastOrNull()?.getContinuationToken()
 internal fun TabRenderer.getTitle(): String? = title
+internal fun TabRenderer.getBrowseId(): String? = endpoint?.getBrowseId()
+internal fun TabRenderer.getBrowseParams(): String? = endpoint?.getBrowseParams()
 private fun TabRenderer.getListContents() = content?.sectionListRenderer?.contents
 private fun TabRenderer.getGridContents() = content?.richGridRenderer?.contents
 private fun TabRenderer.getChipContents() = content?.richGridRenderer?.header?.feedFilterChipBarRenderer?.contents
+internal fun TabRenderer.getShelves(): List<ItemSectionRenderer?>? = getListContents()?.mapNotNull { it?.itemSectionRenderer }
+internal fun TabRenderer.getSections(): List<RichSectionRenderer?>? = getGridContents()?.mapNotNull { it?.richSectionRenderer }
+internal fun TabRenderer.getChips(): List<ChipCloudChipRenderer?>? = getChipContents()?.mapNotNull { it?.chipCloudChipRenderer }
 
 /////
+
+private const val CONTINUATION_HEADER = "RELOAD_CONTINUATION_SLOT_HEADER" // channel sorting continuation header
 
 internal fun ContinuationResult.getItems(): List<ItemWrapper?>? = getContinuations()?.flatMap { it?.getItems() ?: listOfNotNull(it?.getItem()) }
 internal fun ContinuationResult.getContinuationToken(): String? = getContinuations()?.firstNotNullOfOrNull {
@@ -38,8 +73,8 @@ internal fun ContinuationResult.getContinuationToken(): String? = getContinuatio
     } ?:
     getContinuations()?.lastOrNull()?.getContinuationToken()
 internal fun ContinuationResult.getSections(): List<RichSectionRenderer?>? = getContinuations()?.mapNotNull { it?.richSectionRenderer }
-private fun ContinuationResult.getContinuations() = onResponseReceivedActions?.getOrNull(0)?.let {
-        it.appendContinuationItemsAction?.continuationItems ?: it.reloadContinuationItemsCommand?.continuationItems
+private fun ContinuationResult.getContinuations() = onResponseReceivedActions?.firstNotNullOfOrNull {
+        it?.appendContinuationItemsAction?.continuationItems ?: it?.reloadContinuationItemsCommand?.let { if (it.slot != CONTINUATION_HEADER) it.continuationItems else null }
     }
 
 
@@ -52,12 +87,18 @@ private fun RichSectionRenderer.getContents() = content?.richShelfRenderer?.cont
 
 /////
 
+internal fun ItemSectionRenderer.getTitle(): String? = getShelfRenderer()?.title?.getText()
 internal fun ItemSectionRenderer.getItems(): List<ItemWrapper?>? = getContents()?.let {
-    it.shelfRenderer?.content?.let { it.gridRenderer?.items ?: it.expandedShelfContentsRenderer?.items } ?:
-    it.playlistVideoListRenderer?.contents
+    it.shelfRenderer?.content?.let { it.gridRenderer?.items ?: it.expandedShelfContentsRenderer?.items ?: it.horizontalListRenderer?.items } ?:
+    it.playlistVideoListRenderer?.contents ?:
+    it.gridRenderer?.items ?:
+    it.videoRenderer?.let { listOf(ItemWrapper(videoRenderer = it)) }
 }
-internal fun ItemSectionRenderer.getContinuationToken() = getContents()?.playlistVideoListRenderer?.contents?.lastOrNull()?.getContinuationToken()
+internal fun ItemSectionRenderer.getContinuationToken() = getContents()?.let { it.playlistVideoListRenderer?.contents ?: it.gridRenderer?.items ?: it.shelfRenderer?.content?.gridRenderer?.items }?.lastOrNull()?.getContinuationToken()
+internal fun ItemSectionRenderer.getBrowseId() = getShelfRenderer()?.endpoint?.getBrowseId()
+internal fun ItemSectionRenderer.getBrowseParams() = getShelfRenderer()?.endpoint?.getBrowseParams()
 private fun ItemSectionRenderer.getContents() = contents?.getOrNull(0)
+private fun ItemSectionRenderer.getShelfRenderer() = contents?.firstOrNull()?.shelfRenderer
 
 /////
 
@@ -65,10 +106,11 @@ internal fun ChipCloudChipRenderer.getTitle(): String? = text?.getText()
 
 /////
 
-internal fun Section.getItem() = richItemRenderer?.content ?: playlistVideoRenderer?.let { ItemWrapper(playlistVideoRenderer = it) }
+internal fun SectionWrapper.getItem() = richItemRenderer?.content ?: playlistVideoRenderer?.let { ItemWrapper(playlistVideoRenderer = it) }
+    ?: gridPlaylistRenderer?.let { ItemWrapper(gridPlaylistRenderer = it) } ?: gridVideoRenderer?.let { ItemWrapper(gridVideoRenderer = it) }
 
-internal fun Section.getItems() = itemSectionRenderer?.getItems() ?: richSectionRenderer?.getItems()
-internal fun Section.getContinuationToken() = continuationItemRenderer?.getContinuationToken() ?: itemSectionRenderer?.getContinuationToken()
+internal fun SectionWrapper.getItems() = itemSectionRenderer?.getItems() ?: richSectionRenderer?.getItems()
+internal fun SectionWrapper.getContinuationToken() = continuationItemRenderer?.getContinuationToken() ?: itemSectionRenderer?.getContinuationToken()
 
 /////
 
@@ -127,4 +169,11 @@ internal fun ReelContinuationResult.getContinuationKey(): String? = continuation
 
 internal fun ReelWatchEndpoint.getVideoId(): String? = videoId
 internal fun ReelWatchEndpoint.getThumbnails(): ThumbnailItem? = thumbnail
+
+///////
+
+internal fun BrowseResultTV.getShelves(): List<Shelf?>? = contents?.tvBrowseRenderer?.content?.tvSurfaceContentRenderer?.content?.sectionListRenderer?.contents
+internal fun Shelf.getTitle(): String? = shelfRenderer?.getTitle()
+internal fun Shelf.getItems(): List<ItemWrapper?>? = shelfRenderer?.getItemWrappers()
+internal fun Shelf.getNextPageKey(): String? = shelfRenderer?.getNextPageKey()
 

@@ -43,7 +43,7 @@ public abstract class VideoInfoServiceBase {
         applyThrottleFixedStrings(throttleFixed, formats);
 
         // What this for? Could this fix throttling or maybe the source error?
-        //applyAdditionalStrings(formats);
+        applyAdditionalStrings(formats);
     }
 
     private static List<String> extractCipheredStrings(List<? extends VideoFormat> formats) {
@@ -96,10 +96,18 @@ public abstract class VideoInfoServiceBase {
      */
     private static void applyAdditionalStrings(List<? extends VideoFormat> formats) {
         String cpn = AppService.instance().getClientPlaybackNonce();
+        //String poTokenResult = AppService.instance().getPoTokenResult();
 
         for (VideoFormat format : formats) {
             format.setCpn(cpn);
-            //format.setClientVersion(AppConstants.CLIENT_VERSION_WEB);
+            format.setClientVersion(AppConstants.CLIENT_VERSION_WEB);
+
+            // Buffering fix? ptk=youtube_host&ptchn=youtube_host&pltype=adhost
+            //format.setParam("ptk", "youtube_host");
+            //format.setParam("ptchn", "youtube_host");
+            //format.setParam("pltype", "adhost");
+
+            //format.setParam("pot", poTokenResult);
         }
     }
 

@@ -1,16 +1,22 @@
 package com.liskovsoft.youtubeapi.common.models.impl.mediagroup
 
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
 import com.liskovsoft.youtubeapi.common.models.gen.ItemWrapper
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseId
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseParams
 import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.GuideMediaItem
 import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.NotificationMediaItem
+import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResultContinuation
+import com.liskovsoft.youtubeapi.next.v2.gen.getItems
+import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
 import com.liskovsoft.youtubeapi.notifications.gen.NotificationsResult
 import com.liskovsoft.youtubeapi.notifications.gen.getItems
 
+/**
+ *  Always renders first tab
+ */
 internal data class BrowseMediaGroup(
     private val browseResult: BrowseResult,
     private val options: MediaGroupOptions = MediaGroupOptions(),
@@ -40,13 +46,44 @@ internal data class ContinuationMediaGroup(
     override fun getTitleInt(): String? = null
 }
 
-internal data class SectionMediaGroup(
+internal data class WatchNexContinuationMediaGroup(
+    private val continuation: WatchNextResultContinuation,
+    private val options: MediaGroupOptions = MediaGroupOptions()
+): BaseMediaGroup(options) {
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = continuation.getItems()
+    override fun getNextPageKeyInt(): String? = continuation.getNextPageKey()
+    override fun getTitleInt(): String? = null
+}
+
+internal data class RichSectionMediaGroup(
     private val richSectionRenderer: RichSectionRenderer,
     private val options: MediaGroupOptions = MediaGroupOptions()
 ): BaseMediaGroup(options) {
     override fun getItemWrappersInt(): List<ItemWrapper?>? = richSectionRenderer.getItems()
     override fun getNextPageKeyInt(): String? = richSectionRenderer.getContinuationToken()
     override fun getTitleInt(): String? = richSectionRenderer.getTitle()
+}
+
+internal data class ShelfSectionMediaGroup(
+    private val shelf: Shelf,
+    private val options: MediaGroupOptions = MediaGroupOptions()
+): BaseMediaGroup(options) {
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = shelf.getItems()
+    override fun getNextPageKeyInt(): String? = shelf.getNextPageKey()
+    override fun getTitleInt(): String? = shelf.getTitle()
+}
+
+internal data class ItemSectionMediaGroup(
+    private val itemSectionRenderer: ItemSectionRenderer,
+    private val options: MediaGroupOptions = MediaGroupOptions()
+): BaseMediaGroup(options) {
+    // Fix row continuation (no next key but has channel) by reporting empty content (will be continued as a chip). Example https://www.youtube.com/@hdtvtest
+    private val fixContinuation = nextPageKey == null && channelId != null
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = if (fixContinuation) null else itemSectionRenderer.getItems()
+    override fun getNextPageKeyInt(): String? = if (fixContinuation) null else itemSectionRenderer.getContinuationToken()
+    override fun getTitleInt(): String? = itemSectionRenderer.getTitle()
+    override fun getChannelIdInt(): String? = itemSectionRenderer.getBrowseId()
+    override fun getParamsInt(): String? = itemSectionRenderer.getBrowseParams()
 }
 
 internal data class TabMediaGroup(

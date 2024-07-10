@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.service.data;
 
-import com.liskovsoft.mediaserviceinterfaces.data.Command;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.Command;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandItem;
@@ -117,6 +117,11 @@ public class YouTubeCommand implements Command {
                 command.mType = Command.TYPE_VOICE;
                 VoiceParams voiceParams = info.getVoiceParams();
                 command.mIsVoiceStarted = VoiceParams.STATUS_START.equals(voiceParams.getStatus());
+                break;
+            case CommandItem.TYPE_SUBTITLES:
+                command.mType = Command.TYPE_SUBTITLES;
+                PlaylistParams params = info.getPlaylistParams();
+                command.mVideoId = params.getVideoId();
                 break;
         }
 

@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.next.v2
 
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
@@ -33,7 +33,7 @@ class WatchNextApiTest {
         System.setProperty("javax.net.ssl.trustStoreType", "JKS")
         ShadowLog.stream = System.out // catch Log class output
         mApi = RetrofitHelper.withGson(WatchNextApi::class.java)
-        mService = WatchNextService.instance()
+        mService = WatchNextService
 
         mApiMock = MockUtils.mockWithGson(WatchNextApiMock::class.java)
         mApiMock2 = MockUtils.mockWithGson(WatchNextApiMock2::class.java)
@@ -124,7 +124,7 @@ class WatchNextApiTest {
         val dislikesResult = RetrofitHelper.get(dislikes)
 
         assertNotNull("Contains dislikes", dislikesResult?.dislikes)
-        assertTrue("Dislikes count bigger than zero", dislikesResult?.dislikes ?: 0 > 0)
+        assertTrue("Dislikes count bigger than zero", (dislikesResult?.dislikes ?: 0) > 0)
     }
 
     private fun testBaseFields(metadata: MediaItemMetadata?) {
@@ -135,6 +135,7 @@ class WatchNextApiTest {
         assertNotNull("Contains video id", metadata?.videoId)
         assertNotNull("Contains view count", metadata?.viewCount)
         assertNotNull("Contains date", metadata?.publishedDate)
+        assertNotNull("Contains subs count", metadata?.subscriberCount)
     }
 
     private fun getMediaItemMetadataUnsigned() = mService!!.getMetadata(TestHelpersV1.VIDEO_ID_CAPTIONS)

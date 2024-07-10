@@ -2,12 +2,14 @@ package com.liskovsoft.youtubeapi.common.models.gen
 
 import com.liskovsoft.youtubeapi.browse.v2.gen.ContinuationItemRenderer
 import com.liskovsoft.youtubeapi.next.v2.gen.ContinuationItem
+import com.liskovsoft.youtubeapi.next.v2.gen.EngagementPanel
 
 internal data class NavigationEndpointItem(
     val browseEndpoint: BrowseEndpoint?,
     val watchEndpoint: WatchEndpointItem?,
     val watchPlaylistEndpoint: WatchEndpointItem?,
-    val openPopupAction: PopupActionItem?
+    val openPopupAction: PopupActionItem?,
+    val showEngagementPanelEndpoint: ShowEngagementPanelEndpoint?
 ) {
     data class BrowseEndpoint(
         val browseId: String?,
@@ -74,6 +76,7 @@ internal data class WatchEndpointItem(
     val playlistId: String?,
     val index: Int,
     val params: String?,
+    val startTimeSeconds: Int?
 )
 
 internal data class ChannelsEndpoint(
@@ -97,6 +100,10 @@ internal data class ToggledServiceEndpoint(
     val unsubscribeEndpoint: ChannelsEndpoint?
 )
 
+internal data class ShowEngagementPanelEndpoint(
+    val engagementPanel: EngagementPanel?
+)
+
 internal data class ButtonRenderer(
     val isDisabled: Boolean?,
     val text: TextItem?
@@ -112,6 +119,9 @@ internal data class ToggleButtonRenderer(
 internal data class SubscribeButtonRenderer(
     val subscribed: Boolean?,
     val channelId: String?,
+    val subscriberCountText: TextItem?,
+    val shortSubscriberCountText: TextItem?,
+    val longSubscriberCountText: TextItem?,
     val serviceEndpoints: List<DefaultServiceEndpoint?>?,
     val notificationPreferenceButton: NotificationPreferenceButton?
 )
@@ -180,6 +190,7 @@ internal data class ItemWrapper(
     val gridPlaylistRenderer: PlaylistItem? = null,
     val pivotPlaylistRenderer: PlaylistItem? = null,
     val compactPlaylistRenderer: PlaylistItem? = null,
+    val playlistRenderer: PlaylistItem? = null,
     val playlistVideoRenderer: VideoItem? = null, // ChannelPlaylist
     val continuationItemRenderer: ContinuationItemRenderer? = null // ChannelPlaylist
 )
@@ -304,14 +315,10 @@ internal data class MusicItem(
     val primaryText: TextItem?,
     val secondaryText: TextItem?,
     val tertiaryText: TextItem?,
-    val navigationEndpoint: NavigationEndpoint?,
+    val navigationEndpoint: NavigationEndpointItem?,
     val lengthText: TextItem?,
     val menu: MenuWrapper?
-) {
-    data class NavigationEndpoint(
-        val watchEndpoint: WatchEndpointItem?
-    )
-}
+)
 
 internal data class RadioItem(
     val thumbnail: ThumbnailItem?,
@@ -350,8 +357,12 @@ internal data class ChannelItem(
 // Fully replace with VideoItem?
 internal data class PlaylistItem(
     val thumbnail: ThumbnailItem?,
+    val thumbnails: List<ThumbnailItem?>?,
     val thumbnailRenderer: ThumbnailRenderer?,
-    val title: TextItem?
+    val title: TextItem?,
+    val videoCountText: TextItem?,
+    val videoCountShortText: TextItem?,
+    val playlistId: String?
 ) {
     data class ThumbnailRenderer(
         val playlistVideoThumbnailRenderer: PlaylistVideoThumbnailRenderer?,

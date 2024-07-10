@@ -1,10 +1,10 @@
 package com.liskovsoft.youtubeapi.next.v2.impl
 
-import com.liskovsoft.mediaserviceinterfaces.data.*
-import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem
-import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
-import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo
-import com.liskovsoft.sharedutils.helpers.Helpers
+import com.liskovsoft.mediaserviceinterfaces.yt.data.*
+import com.liskovsoft.mediaserviceinterfaces.yt.data.ChapterItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState
+import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo
+import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
 import com.liskovsoft.youtubeapi.common.models.gen.*
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResult
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup
@@ -14,7 +14,6 @@ import com.liskovsoft.youtubeapi.common.models.impl.NotificationStateImpl
 import com.liskovsoft.youtubeapi.next.v2.gen.*
 
 internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
-                                 val dislikesResult: DislikesResult? = null,
                                  val suggestionsResult: WatchNextResult? = null) : MediaItemMetadata {
     private val channelIdItem by lazy {
         videoDetails?.getChannelId() ?: videoOwner?.getChannelId() ?: channelOwner?.getChannelId()
@@ -95,19 +94,25 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
     private val videoSecondTitle by lazy {
         YouTubeHelper.createInfo(
-                videoAuthor, viewCountText, publishedTime
+            videoAuthor, viewCountText, publishedTime
         )
     }
     private val videoSecondTitleAlt by lazy {
         YouTubeHelper.createInfo(
-                videoAuthor, viewCountText, publishedDate
+            videoAuthor, viewCountText, publishedDate
         )
     }
     private val videoAuthor by lazy { videoDetails?.getUserName() }
+    private val subscriberCountItem by lazy { videoOwner?.getSubscriberCount() }
     private val videoAuthorImageUrl by lazy { (videoOwner?.getThumbnails() ?: channelOwner?.getThumbnails())?.getOptimalResThumbnailUrl() }
     private val suggestionList by lazy {
-        val list = suggestedSections?.mapNotNull { if (it?.getItemWrappers() != null) SuggestionsGroup(it) else null }
-        if (list?.size ?: 0 > 0)
+        val list = suggestedSections?.mapIndexedNotNull { idx, it -> if (it.getItemWrappers() != null) SuggestionsGroup(it).apply {
+            // Replace "Up Next" with real playlist name
+            if (idx == 0 && playlistInfo?.title != null) {
+                title = playlistInfo?.title
+            }
+        } else null }
+        if ((list?.size ?: 0) > 0)
             list
         else
             // In rare cases first chip item contains all shelfs
@@ -118,7 +123,7 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
 
     private val viewCountText by lazy {
-        videoMetadata?.getViewCountText()
+        videoMetadata?.getViewCountText() ?: videoMetadata?.getLongViewCountText()
     }
 
     private val publishedTime by lazy {
@@ -134,7 +139,7 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
 
     private val isLiveStream by lazy {
-        videoMetadata?.isLive() ?: liveChatKeyItem != null
+        videoMetadata?.isLive() ?: (liveChatKeyItem != null)
     }
 
     private val playlistInfoItem by lazy {
@@ -162,7 +167,7 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     private val notificationStateList by lazy {
         val currentId = notificationPreference?.getCurrentStateId()
         val result = notificationPreference?.getItems()?.mapNotNull {
-            it?.let { NotificationStateImpl(it, currentId) }
+            it?.let { NotificationStateImpl(it, currentId, channelId, params, isSubscribed) }
         }
 
         result?.forEach { it.allStates = result }
@@ -171,11 +176,12 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
 
     private val likeCountItem by lazy {
-        dislikesResult?.getLikeCount()?.let { "$it ${Helpers.THUMB_UP}" }
+        videoMetadata?.getLikeCountInt()?.let { ServiceHelper.prettyCount(it) }
     }
 
     private val dislikeCountItem by lazy {
-        dislikesResult?.getDislikeCount()?.let { "$it ${Helpers.THUMB_DOWN}" }
+        // Fake count based on 'returnyoutubedislike' plugin algorithm
+        videoMetadata?.getLikeCountInt()?.let { if (it > 0) ServiceHelper.prettyCount(it * 0.032) else null }
     }
 
     override fun getTitle(): String? {
@@ -260,6 +266,10 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
 
     override fun getDislikeCount(): String? {
         return dislikeCountItem
+    }
+
+    override fun getSubscriberCount(): String? {
+        return subscriberCountItem
     }
 
     override fun getSuggestions(): List<MediaGroup?>? {

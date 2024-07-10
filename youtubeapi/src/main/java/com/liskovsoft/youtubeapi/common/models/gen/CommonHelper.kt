@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.gen
 
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
 import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.youtubeapi.browse.v2.gen.getContinuationToken
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
@@ -54,11 +54,16 @@ internal fun NavigationEndpointItem.getBrowseParams() = browseEndpoint?.params
 internal fun NavigationEndpointItem.getOverlayToggleButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.toggleButtonRenderer }
 internal fun NavigationEndpointItem.getOverlaySubscribeButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.subscribeButtonRenderer }
 internal fun NavigationEndpointItem.isSubscribed() = getOverlaySubscribeButton()?.subscribed
-internal fun NavigationEndpointItem.getContinuation() = getContent()?.itemSectionRenderer?.continuations?.getOrNull(0)
+internal fun NavigationEndpointItem.getContinuation() = getContent()?.itemSectionRenderer?.continuations?.firstOrNull() ?: getEngagementPanel()?.content?.sectionListRenderer?.contents?.firstOrNull()?.itemSectionRenderer?.continuations?.firstOrNull()
 internal fun NavigationEndpointItem.getTitle() = getHeader()?.overlayPanelHeaderRenderer?.title?.getText()
 internal fun NavigationEndpointItem.getSubtitle() = getHeader()?.overlayPanelHeaderRenderer?.subtitle?.getText()
+internal fun NavigationEndpointItem.getStartTimeSeconds() = watchEndpoint?.startTimeSeconds
+internal fun NavigationEndpointItem.getVideoId() = watchEndpoint?.videoId
+internal fun NavigationEndpointItem.getPlaylistId() = watchEndpoint?.playlistId ?: watchPlaylistEndpoint?.playlistId
+internal fun NavigationEndpointItem.getIndex() = watchEndpoint?.index
 private fun NavigationEndpointItem.getOverlayPanel() = openPopupAction?.popup?.overlaySectionRenderer?.overlay
     ?.overlayTwoPanelRenderer?.actionPanel?.overlayPanelRenderer
+private fun NavigationEndpointItem.getEngagementPanel() = showEngagementPanelEndpoint?.engagementPanel?.engagementPanelSectionListRenderer
 private fun NavigationEndpointItem.getContent() = getOverlayPanel()?.content
 private fun NavigationEndpointItem.getHeader() = getOverlayPanel()?.header
 
@@ -86,6 +91,7 @@ internal fun VideoItem.getMovingThumbnails() = richThumbnail?.movingThumbnailRen
 internal fun VideoItem.getDescBadgeText() = badges?.getOrNull(0)?.metadataBadgeRenderer?.label
 internal fun VideoItem.getLengthText() = lengthText?.getText()
 internal fun VideoItem.getPercentWatched() = thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayResumePlaybackRenderer?.percentDurationWatched }
+internal fun VideoItem.getStartTimeSeconds() = navigationEndpoint?.getStartTimeSeconds()
 internal fun VideoItem.getBadgeText() = thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayTimeStatusRenderer?.text?.getText() } ?:
     badges?.firstNotNullOfOrNull { it?.liveBadge?.label?.getText() ?: it?.upcomingEventBadge?.label?.getText() }
 internal fun VideoItem.getUserName() = shortBylineText?.getText() ?: longBylineText?.getText()
@@ -98,8 +104,8 @@ internal fun VideoItem.getChannelId() =
     shortBylineText?.runs?.firstNotNullOfOrNull { it?.navigationEndpoint?.getBrowseId() } ?:
     longBylineText?.runs?.firstNotNullOfOrNull { it?.navigationEndpoint?.getBrowseId() } ?:
     menu?.getBrowseId()
-internal fun VideoItem.getPlaylistId() = navigationEndpoint?.watchEndpoint?.playlistId
-internal fun VideoItem.getPlaylistIndex() = navigationEndpoint?.watchEndpoint?.index
+internal fun VideoItem.getPlaylistId() = navigationEndpoint?.getPlaylistId()
+internal fun VideoItem.getPlaylistIndex() = navigationEndpoint?.getIndex()
 internal fun VideoItem.isLive(): Boolean = OLD_BADGE_STYLE_LIVE == getOldBadgeStyle() || BADGE_STYLE_LIVE == getBadgeStyle()
 internal fun VideoItem.isUpcoming() = BADGE_STYLE_UPCOMING == getBadgeStyle()
 internal fun VideoItem.isShorts() = BADGE_STYLE_SHORTS == getBadgeStyle()
@@ -113,13 +119,13 @@ private fun VideoItem.getBadgeStyle() = thumbnailOverlays?.firstNotNullOfOrNull 
 internal fun MusicItem.getTitle() = primaryText?.getText()
 internal fun MusicItem.getUserName() = secondaryText?.getText()
 internal fun MusicItem.getThumbnails() = thumbnail
-internal fun MusicItem.getVideoId() = navigationEndpoint?.watchEndpoint?.videoId
-internal fun MusicItem.getPlaylistId() = navigationEndpoint?.watchEndpoint?.playlistId
+internal fun MusicItem.getVideoId() = navigationEndpoint?.getVideoId()
+internal fun MusicItem.getPlaylistId() = navigationEndpoint?.getPlaylistId()
 internal fun MusicItem.getBadgeText() = lengthText?.getText()
 internal fun MusicItem.getLengthText() = lengthText?.getText()
 internal fun MusicItem.getViewsAndPublished() = tertiaryText?.getText()
 internal fun MusicItem.getChannelId() = menu?.getBrowseId()
-internal fun MusicItem.getPlaylistIndex() = navigationEndpoint?.watchEndpoint?.index
+internal fun MusicItem.getPlaylistIndex() = navigationEndpoint?.getIndex()
 internal fun MusicItem.getDescBadgeText() = null
 internal fun MusicItem.getViewsCountText() = null
 internal fun MusicItem.getUpcomingEventText() = null
@@ -129,12 +135,13 @@ internal fun MusicItem.isUpcoming() = false
 ///////////
 
 internal fun TileItem.getTitle() = metadata?.tileMetadataRenderer?.title?.getText()
-internal fun TileItem.getVideoId() = onSelectCommand?.watchEndpoint?.videoId
-internal fun TileItem.getPlaylistId() = onSelectCommand?.watchEndpoint?.playlistId ?: onSelectCommand?.watchPlaylistEndpoint?.playlistId
+internal fun TileItem.getVideoId() = onSelectCommand?.getVideoId()
+internal fun TileItem.getPlaylistId() = onSelectCommand?.getPlaylistId()
 internal fun TileItem.getPlaylistIndex() = 0
 internal fun TileItem.getDescBadgeText() = metadata?.tileMetadataRenderer?.lines?.map { it?.lineRenderer?.items?.getOrNull(0)?.lineItemRenderer?.badge?.metadataBadgeRenderer?.label }?.firstOrNull()
 internal fun TileItem.getBadgeText() = header?.tileHeaderRenderer?.thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayTimeStatusRenderer?.text?.getText() }
 internal fun TileItem.getPercentWatched() = header?.tileHeaderRenderer?.thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayResumePlaybackRenderer?.percentDurationWatched }
+internal fun TileItem.getStartTimeSeconds() = onSelectCommand?.getStartTimeSeconds()
 internal fun TileItem.getUserName() = null
 internal fun TileItem.getPublishedTime() = null
 internal fun TileItem.getViewCountText() =
@@ -161,10 +168,25 @@ private fun TileItem.getBadgeStyle() = header?.getBadgeStyle() ?: metadata?.getB
 
 ////////////
 
+internal fun PlaylistItem.getTitle() = title?.getText()
+internal fun PlaylistItem.getPlaylistId() = playlistId
+internal fun PlaylistItem.getThumbnails() = thumbnail ?: thumbnails?.getOrNull(0)
+internal fun PlaylistItem.getBadgeText() = videoCountText?.getText()
+
+////////////
+
+internal fun ChannelItem.getTitle() = title?.getText()
+internal fun ChannelItem.getThumbnails() = thumbnail
+internal fun ChannelItem.getChannelId() = channelId
+internal fun ChannelItem.getBadgeText() = videoCountText?.getText()
+internal fun ChannelItem.getDescBadgeText() = subscriberCountText?.getText()
+
+////////////
+
 private fun ItemWrapper.getVideoItem() = gridVideoRenderer ?: videoRenderer ?: pivotVideoRenderer ?: compactVideoRenderer ?: reelItemRenderer ?: playlistVideoRenderer
 private fun ItemWrapper.getMusicItem() = tvMusicVideoRenderer
 private fun ItemWrapper.getChannelItem() = gridChannelRenderer ?: pivotChannelRenderer ?: compactChannelRenderer
-private fun ItemWrapper.getPlaylistItem() = gridPlaylistRenderer ?: pivotPlaylistRenderer ?: compactPlaylistRenderer
+private fun ItemWrapper.getPlaylistItem() = gridPlaylistRenderer ?: pivotPlaylistRenderer ?: compactPlaylistRenderer ?: playlistRenderer
 private fun ItemWrapper.getRadioItem() = gridRadioRenderer ?: pivotRadioRenderer ?: compactRadioRenderer
 private fun ItemWrapper.getTileItem() = tileRenderer
 private fun ItemWrapper.getContinuationItem() = continuationItemRenderer
@@ -192,19 +214,20 @@ internal fun ItemWrapper.getType(): Int {
 }
 
 internal fun ItemWrapper.getVideoId() = getVideoItem()?.getVideoId() ?: getMusicItem()?.getVideoId() ?: getTileItem()?.getVideoId()
-internal fun ItemWrapper.getTitle() = getVideoItem()?.getTitle() ?: getMusicItem()?.getTitle() ?: getTileItem()?.getTitle()
-internal fun ItemWrapper.getThumbnails() = getVideoItem()?.getThumbnails() ?: getMusicItem()?.getThumbnails() ?: getTileItem()?.getThumbnails()
+internal fun ItemWrapper.getTitle() = getVideoItem()?.getTitle() ?: getMusicItem()?.getTitle() ?: getTileItem()?.getTitle() ?: getPlaylistItem()?.getTitle() ?: getChannelItem()?.getTitle()
+internal fun ItemWrapper.getThumbnails() = getVideoItem()?.getThumbnails() ?: getMusicItem()?.getThumbnails() ?: getTileItem()?.getThumbnails() ?: getPlaylistItem()?.getThumbnails() ?: getChannelItem()?.getThumbnails()
 internal fun ItemWrapper.getMovingThumbnails() = getVideoItem()?.getMovingThumbnails() ?: getTileItem()?.getMovingThumbnails()
-internal fun ItemWrapper.getDescBadgeText() = getVideoItem()?.getDescBadgeText() ?: getMusicItem()?.getDescBadgeText() ?: getTileItem()?.getDescBadgeText()
+internal fun ItemWrapper.getDescBadgeText() = getVideoItem()?.getDescBadgeText() ?: getMusicItem()?.getDescBadgeText() ?: getTileItem()?.getDescBadgeText() ?: getChannelItem()?.getDescBadgeText()
 internal fun ItemWrapper.getLengthText() = getVideoItem()?.getLengthText() ?: getMusicItem()?.getLengthText() ?: getTileItem()?.getBadgeText()
 internal fun ItemWrapper.getPercentWatched() = getVideoItem()?.getPercentWatched() ?: getTileItem()?.getPercentWatched()
-internal fun ItemWrapper.getBadgeText() = getVideoItem()?.getBadgeText() ?: getMusicItem()?.getBadgeText() ?: getTileItem()?.getBadgeText()
+internal fun ItemWrapper.getStartTimeSeconds() = getVideoItem()?.getStartTimeSeconds() ?: getTileItem()?.getStartTimeSeconds()
+internal fun ItemWrapper.getBadgeText() = getVideoItem()?.getBadgeText() ?: getMusicItem()?.getBadgeText() ?: getTileItem()?.getBadgeText() ?: getPlaylistItem()?.getBadgeText() ?: getChannelItem()?.getBadgeText()
 internal fun ItemWrapper.getUserName() = getVideoItem()?.getUserName() ?: getMusicItem()?.getUserName() ?: getTileItem()?.getUserName()
 internal fun ItemWrapper.getPublishedTime() = getVideoItem()?.getPublishedTimeText() ?: getMusicItem()?.getViewsAndPublished() ?: getTileItem()?.getPublishedTime()
 internal fun ItemWrapper.getViewCountText() = getVideoItem()?.getViewCount() ?: getMusicItem()?.getViewsCountText() ?: getTileItem()?.getViewCountText()
 internal fun ItemWrapper.getUpcomingEventText() = getVideoItem()?.getUpcomingEventText() ?: getMusicItem()?.getUpcomingEventText() ?: getTileItem()?.getUpcomingEventText()
-internal fun ItemWrapper.getPlaylistId() = getVideoItem()?.getPlaylistId() ?: getMusicItem()?.getPlaylistId() ?: getTileItem()?.getPlaylistId()
-internal fun ItemWrapper.getChannelId() = getVideoItem()?.getChannelId() ?: getMusicItem()?.getChannelId() ?: getTileItem()?.getChannelId()
+internal fun ItemWrapper.getPlaylistId() = getVideoItem()?.getPlaylistId() ?: getMusicItem()?.getPlaylistId() ?: getTileItem()?.getPlaylistId() ?: getPlaylistItem()?.getPlaylistId()
+internal fun ItemWrapper.getChannelId() = getVideoItem()?.getChannelId() ?: getMusicItem()?.getChannelId() ?: getTileItem()?.getChannelId() ?: getChannelItem()?.getChannelId()
 internal fun ItemWrapper.getPlaylistIndex() = getVideoItem()?.getPlaylistIndex() ?: getMusicItem()?.getPlaylistIndex() ?: getTileItem()?.getPlaylistIndex()
 internal fun ItemWrapper.isLive() = getVideoItem()?.isLive() ?: getMusicItem()?.isLive() ?: getTileItem()?.isLive()
 internal fun ItemWrapper.isUpcoming() = getVideoItem()?.isUpcoming() ?: getMusicItem()?.isUpcoming() ?: getTileItem()?.isUpcoming()
@@ -249,7 +272,7 @@ internal fun MenuItem.getBrowseId() = menuNavigationItemRenderer?.navigationEndp
 
 //////
 
-internal fun NotificationPreferenceButton.getItems() = subscriptionNotificationToggleButtonRenderer?.states
+internal fun NotificationPreferenceButton.getItems() = subscriptionNotificationToggleButtonRenderer?.states?.filter { it?.getStateParams() != null }
 internal fun NotificationPreferenceButton.getCurrentStateId() = subscriptionNotificationToggleButtonRenderer?.currentStateId ?: -1
 internal fun NotificationStateItem.getTitle() = inlineMenuButton?.buttonRenderer?.text?.getText()
 internal fun NotificationStateItem.getStateId() = stateId
