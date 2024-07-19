@@ -10,7 +10,6 @@ import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
-import com.liskovsoft.youtubeapi.app.AppApiWrapper;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
@@ -103,8 +102,8 @@ public class YouTubeServiceManager implements ServiceManager {
     }
 
     @Override
-    public void invalidateVisitorData() {
-        AppService.instance().invalidateVisitorData();
-        VideoInfoService.instance().switchMethod();
+    public void applyVideoInfoFix() {
+        //AppService.instance().invalidateVisitorData();
+        VideoInfoService.instance().applyVideoInfoFix();
     }
 }

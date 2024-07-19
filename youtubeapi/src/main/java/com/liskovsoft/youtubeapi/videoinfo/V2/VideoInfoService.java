@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.videoinfo.V2;
 
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
@@ -12,9 +13,10 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private static final String TAG = VideoInfoService.class.getSimpleName();
     private static VideoInfoService sInstance;
     private final VideoInfoApi mVideoInfoApi;
-    private final static int METHOD_ANDROID = 0;
-    private final static int METHOD_IOS = 1;
-    private int mCurrentMethod;
+    private final static int VIDEO_INFO_WEB = 0;
+    private final static int VIDEO_INFO_ANDROID = 1;
+    private final static int VIDEO_INFO_IOS = 2;
+    private int mVideoInfoType;
 
     private VideoInfoService() {
         mVideoInfoApi = RetrofitHelper.withJsonPath(VideoInfoApi.class);
@@ -33,10 +35,16 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         VideoInfo result;
 
-        if (mCurrentMethod == METHOD_ANDROID) {
-            result = getVideoInfoAndroid(videoId, clickTrackingParams);
-        } else {
-            result = getVideoInfoIOS(videoId, clickTrackingParams);
+        switch (mVideoInfoType) {
+            case VIDEO_INFO_ANDROID:
+                result = getVideoInfoAndroid(videoId, clickTrackingParams);
+                break;
+            case VIDEO_INFO_IOS:
+                result = getVideoInfoIOS(videoId, clickTrackingParams);
+                break;
+            default:
+                result = getVideoInfoWeb(videoId, clickTrackingParams);
+                break;
         }
 
         // NOTE: Request below doesn't contain dashManifestUrl!!!
@@ -61,8 +69,8 @@ public class VideoInfoService extends VideoInfoServiceBase {
         return result;
     }
 
-    public void switchMethod() {
-        mCurrentMethod = mCurrentMethod == METHOD_ANDROID ? METHOD_IOS : METHOD_ANDROID;
+    public void applyVideoInfoFix() {
+        mVideoInfoType = Helpers.getNextValue(mVideoInfoType, new int[] {VIDEO_INFO_WEB, VIDEO_INFO_ANDROID, VIDEO_INFO_IOS});
     }
 
     /**
