@@ -85,6 +85,7 @@ public class YouTubeServiceManager implements ServiceManager {
         AppService.instance().invalidateCache();
         YouTubeMediaItemService.instance().invalidateCache();
         YouTubeSignInService.instance().invalidateCache(); // sections infinite loading fix (request timed out fix)
+        VideoInfoService.instance().invalidateCache();
         LocaleManager.unhold();
     }
 
@@ -102,8 +103,14 @@ public class YouTubeServiceManager implements ServiceManager {
     }
 
     @Override
-    public void applyVideoInfoFix() {
+    public void applyNoPlaybackFix() {
         //AppService.instance().invalidateVisitorData();
         VideoInfoService.instance().applyVideoInfoFix();
+    }
+
+    @Override
+    public void invalidatePlaybackCache() {
+        AppService.instance().invalidateCache();
+        YouTubeMediaItemService.instance().invalidateCache();
     }
 }
