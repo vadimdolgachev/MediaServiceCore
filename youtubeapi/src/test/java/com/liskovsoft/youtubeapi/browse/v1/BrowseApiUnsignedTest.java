@@ -33,14 +33,16 @@ public class BrowseApiUnsignedTest extends BrowseApiTestBase {
     private BrowseApi mService;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, InterruptedException {
         // fix issue: No password supplied for PKCS#12 KeyStore
         // https://github.com/robolectric/robolectric/issues/5115
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
         ShadowLog.stream = System.out; // catch Log class output
 
-        mService = RetrofitHelper.withJsonPath(BrowseApi.class);
+        mService = RetrofitHelper.create(BrowseApi.class);
+
+        Thread.sleep(2_000); // add delay between tests
     }
 
     @Test

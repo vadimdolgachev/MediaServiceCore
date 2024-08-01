@@ -83,6 +83,10 @@ public class VideoInfoApiHelper {
         return createCheckedQuery(AppConstants.JSON_POST_DATA_PLAYER_WEB, videoId, clickTrackingParams);
     }
 
+    public static String getVideoInfoQueryMWeb(String videoId, String clickTrackingParams) {
+        return createCheckedQuery(AppConstants.JSON_POST_DATA_PLAYER_MWEB, videoId, clickTrackingParams);
+    }
+
     /**
      * NOTE: Should use protobuf to bypass geo blocking.
      */

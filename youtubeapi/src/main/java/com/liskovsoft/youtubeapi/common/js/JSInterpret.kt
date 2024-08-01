@@ -1,6 +1,5 @@
-package com.liskovsoft.youtubeapi.app.nsig
+package com.liskovsoft.youtubeapi.common.js
 
-import com.liskovsoft.youtubeapi.common.js.V8Runtime
 import java.util.regex.Pattern
 
 internal object JSInterpret {
@@ -28,8 +27,8 @@ internal object JSInterpret {
                     [{;,]\s*$funcName\s*=\s*function|
                     (?:var|const|let)\s+$funcName\s*=\s*function
                 )\s*
-                \((?<args>[^)]*)\)\s*
-                (?<code>\{.+\})
+                \(([^)]*)\)\s*
+                (\{.+\})
             """.trimIndent()
         )
         val matcher = pattern.matcher(jsCode)
@@ -180,5 +179,17 @@ internal object JSInterpret {
         }
         result.add(expr.substring(start))
         return result
+    }
+
+    fun searchJson(startPattern: Pattern, content: String, endPattern: Pattern = Pattern.compile(";"),
+                   containsPattern: Pattern = Pattern.compile("""\{(?s:.+?)\}""")): String? {
+        val jsonRegex = Pattern.compile("""(?:$startPattern)\s*($containsPattern)\s*(?:$endPattern)""")
+        val matcher = jsonRegex.matcher(content)
+
+        if (matcher.find() && matcher.groupCount() == 1) {
+            return matcher.group(1)
+        }
+
+        return null
     }
 }

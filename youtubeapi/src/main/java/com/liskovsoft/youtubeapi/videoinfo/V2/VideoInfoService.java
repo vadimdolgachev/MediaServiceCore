@@ -1,9 +1,14 @@
 package com.liskovsoft.youtubeapi.videoinfo.V2;
 
+import android.content.Context;
+
+import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
+import com.liskovsoft.youtubeapi.videoinfo.InitialResponse;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceBase;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHls;
@@ -13,13 +18,17 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private static final String TAG = VideoInfoService.class.getSimpleName();
     private static VideoInfoService sInstance;
     private final VideoInfoApi mVideoInfoApi;
-    private final static int VIDEO_INFO_DEFAULT = 0;
-    private final static int VIDEO_INFO_ANDROID = 1;
-    private final static int VIDEO_INFO_IOS = 2;
+    private final static int VIDEO_INFO_TV = 0;
+    private final static int VIDEO_INFO_INITIAL = 1;
+    private final static int VIDEO_INFO_WEB = 2;
+    private final static int VIDEO_INFO_MWEB = 3;
+    private final static int VIDEO_INFO_ANDROID = 4;
+    private final static int VIDEO_INFO_IOS = 5;
     private int mVideoInfoType;
 
     private VideoInfoService() {
-        mVideoInfoApi = RetrofitHelper.withJsonPath(VideoInfoApi.class);
+        mVideoInfoApi = RetrofitHelper.create(VideoInfoApi.class);
+        restoreVideoInfoType();
     }
 
     public static VideoInfoService instance() {
@@ -33,17 +42,35 @@ public class VideoInfoService extends VideoInfoServiceBase {
     public VideoInfo getVideoInfo(String videoId, String clickTrackingParams) {
         //RetrofitOkHttpHelper.skipAuth();
 
-        VideoInfo result;
+        VideoInfo result = null;
 
         switch (mVideoInfoType) {
+            case VIDEO_INFO_INITIAL:
+                result = InitialResponse.getVideoInfo(videoId);
+                if (result != null) {
+                    VideoInfo syncInfo = getVideoInfoWeb(videoId, clickTrackingParams);
+                    result.sync(syncInfo);
+                    break;
+                }
+            case VIDEO_INFO_TV:
+                result = getVideoInfoTV(videoId, clickTrackingParams);
+                // TV has a limited number of subtitles
+                VideoInfo webInfo = getVideoInfoWeb(videoId, clickTrackingParams);
+                if (webInfo != null && result != null) {
+                    result.setCaptionTracks(webInfo.getCaptionTracks());
+                }
+                break;
+            case VIDEO_INFO_WEB:
+                result = getVideoInfoWeb(videoId, clickTrackingParams);
+                break;
+            case VIDEO_INFO_MWEB:
+                result = getVideoInfoMWeb(videoId, clickTrackingParams);
+                break;
             case VIDEO_INFO_ANDROID:
                 result = getVideoInfoAndroid(videoId, clickTrackingParams);
                 break;
             case VIDEO_INFO_IOS:
                 result = getVideoInfoIOS(videoId, clickTrackingParams);
-                break;
-            default:
-                result = getVideoInfoWeb(videoId, clickTrackingParams);
                 break;
         }
 
@@ -69,8 +96,11 @@ public class VideoInfoService extends VideoInfoServiceBase {
         return result;
     }
 
-    public void applyVideoInfoFix() {
-        mVideoInfoType = Helpers.getNextValue(mVideoInfoType, new int[] {VIDEO_INFO_DEFAULT, VIDEO_INFO_ANDROID, VIDEO_INFO_IOS});
+    public void fixVideoInfo() {
+        mVideoInfoType = Helpers.getNextValue(mVideoInfoType,
+                new int[] {VIDEO_INFO_TV, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_IOS});
+
+        persistVideoInfoType();
     }
 
     public void invalidateCache() {
@@ -118,11 +148,16 @@ public class VideoInfoService extends VideoInfoServiceBase {
         return getVideoInfo(videoInfoQuery);
     }
 
+    private VideoInfo getVideoInfoMWeb(String videoId, String clickTrackingParams) {
+        String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQueryMWeb(videoId, clickTrackingParams);
+        return getVideoInfo(videoInfoQuery);
+    }
+
     /**
      * NOTE: user history won't work with this method
      */
-    private VideoInfo getVideoInfoRestrictedWeb(String videoId, String clickTrackingParams) {
-        String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQueryWeb(videoId, clickTrackingParams);
+    private VideoInfo getVideoInfoRestrictedMWeb(String videoId, String clickTrackingParams) {
+        String videoInfoQuery = VideoInfoApiHelper.getVideoInfoQueryMWeb(videoId, clickTrackingParams);
 
         return getVideoInfoRestricted(videoInfoQuery);
     }
@@ -191,7 +226,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
             if (result == null || result.isUnplayable()) {
                 Log.e(TAG, "Found restricted video. Retrying with restricted query method...");
-                result = getVideoInfoRestrictedWeb(videoId, clickTrackingParams);
+                result = getVideoInfoRestrictedMWeb(videoId, clickTrackingParams);
 
                 if (result == null || result.isUnplayable()) {
                     Log.e(TAG, "Found video clip blocked in current location...");
@@ -205,5 +240,29 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
     private static boolean isExtendedHlsFormatsEnabled() {
         return GlobalPreferences.sInstance != null && GlobalPreferences.sInstance.isExtendedHlsFormatsEnabled();
+    }
+
+    private void restoreVideoInfoType() {
+        if (!GlobalPreferences.isInitialized()) {
+            return;
+        }
+
+        MediaServiceData data = MediaServiceData.instance();
+        Context context = GlobalPreferences.sInstance.getContext();
+
+        if (Helpers.equals(data.getVideoInfoVersion(), AppInfoHelpers.getAppVersionName(context))) {
+            mVideoInfoType = data.getVideoInfoType();
+        }
+    }
+
+    private void persistVideoInfoType() {
+        if (!GlobalPreferences.isInitialized()) {
+            return;
+        }
+
+        MediaServiceData data = MediaServiceData.instance();
+        Context context = GlobalPreferences.sInstance.getContext();
+        data.setVideoInfoVersion(AppInfoHelpers.getAppVersionName(context));
+        data.setVideoInfoType(mVideoInfoType);
     }
 }

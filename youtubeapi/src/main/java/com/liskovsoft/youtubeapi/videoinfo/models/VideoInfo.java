@@ -97,6 +97,10 @@ public class VideoInfo {
         return mAdaptiveFormats;
     }
 
+    public void setAdaptiveFormats(List<AdaptiveVideoFormat> formats) {
+        mAdaptiveFormats = formats;
+    }
+
     public List<RegularVideoFormat> getRegularFormats() {
         return mRegularFormats;
     }
@@ -115,6 +119,10 @@ public class VideoInfo {
 
     public List<CaptionTrack> getCaptionTracks() {
         return mergeCaptionTracks();
+    }
+
+    public void setCaptionTracks(List<CaptionTrack> tracks) {
+        mMergedCaptionTracks = tracks;
     }
 
     public String getDashManifestUrl() {
@@ -210,14 +218,20 @@ public class VideoInfo {
         return !isLive() && getHlsManifestUrl() == null && isAdaptiveFullHD();
     }
 
-    public boolean hasExtendedHlsFormats() {
-        if (!isLive() && getHlsManifestUrl() != null && isAdaptiveFullHD()) {
-            long uploadTimeMs = DateHelper.toUnixTimeMs(getUploadDate());
-            // Extended formats may not work during 3 days after publication
-            return uploadTimeMs > 0 && System.currentTimeMillis() - uploadTimeMs > 4*24*60*60*1_000;
-        }
+    //public boolean hasExtendedHlsFormats() {
+    //    if (!isLive() && getHlsManifestUrl() != null && isAdaptiveFullHD()) {
+    //        long uploadTimeMs = DateHelper.toUnixTimeMs(getUploadDate());
+    //        // Extended formats may not work during 3 days after publication
+    //        return uploadTimeMs > 0 && System.currentTimeMillis() - uploadTimeMs > 4*24*60*60*1_000;
+    //    }
+    //
+    //    return false;
+    //}
 
-        return false;
+    public boolean hasExtendedHlsFormats() {
+        // Need upload date check?
+        // Extended formats may not work up to 3 days after publication.
+        return !isLive() && getHlsManifestUrl() != null && isAdaptiveFullHD();
     }
 
     public boolean isStoryboardBroken() {
