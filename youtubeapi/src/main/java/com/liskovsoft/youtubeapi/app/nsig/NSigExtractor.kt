@@ -1,12 +1,12 @@
 package com.liskovsoft.youtubeapi.app.nsig
 
+import com.florianingerl.util.regex.Pattern
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.liskovsoft.youtubeapi.common.api.FileApi
 import com.liskovsoft.youtubeapi.common.helpers.ReflectionHelper
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.js.JSInterpret
-import java.util.regex.Pattern
 
 internal class NSigExtractor(private val playerUrl: String) {
     private val mFileApi = RetrofitHelper.create(FileApi::class.java)
@@ -17,10 +17,14 @@ internal class NSigExtractor(private val playerUrl: String) {
                 \.get\("n"\)\)&&\(b=|
                 (?:
                     b=String\.fromCharCode\(110\)|
-                    ([a-zA-Z0-9${'$'}.]+)&&\(b="nn"\[\+\1\]
-                ),c=a\.get\(b\)\)&&\(c=
-            )
-            ([a-zA-Z0-9$]+)(?:\[(\d+)\])?\([a-zA-Z0-9]\)""", Pattern.COMMENTS)
+                    ([a-zA-Z0-9_$.]+)&&\(b="nn"\[\+\1\]
+                ),c=a\.get\(b\)\)&&\(c=|
+                \b([a-zA-Z0-9_$]+)=
+            )([a-zA-Z0-9_$]+)(?:\[(\d+)\])?\([a-zA-Z]\)
+            (?(2),[a-zA-Z0-9_$]+\.set\("n"\,\2\),\3\.length)""", Pattern.COMMENTS)
+    private var mNFuncPattern2: Pattern? = Pattern.compile("""(?xs)
+                ;\s*([a-zA-Z0-9_$]+)\s*=\s*function\([a-zA-Z0-9_$]+\)
+                \s*\{(?:(?!\};).)+?["']enhanced_except_""", Pattern.COMMENTS)
 
     init {
         initNFuncCode()
@@ -52,7 +56,7 @@ internal class NSigExtractor(private val playerUrl: String) {
     private fun initNFuncCode() {
         val jsCode = loadPlayer() ?: return
 
-        val funcName = extractNFunctionName(jsCode) ?: return
+        val funcName = extractNFunctionName(jsCode) ?: extractNFunctionName2(jsCode) ?: return
 
         val funcCode = JSInterpret.extractFunctionCode(jsCode, funcName) ?: return
 
@@ -88,6 +92,17 @@ internal class NSigExtractor(private val playerUrl: String) {
 
                 return nameList[idx.toInt()]
             }
+        }
+
+        return null
+    }
+
+    private fun extractNFunctionName2(jsCode: String): String? {
+        val nFuncPattern = mNFuncPattern2 ?: return null
+        val nFuncMatcher = nFuncPattern.matcher(jsCode)
+
+        if (nFuncMatcher.find() && nFuncMatcher.groupCount() == 1) {
+            return nFuncMatcher.group(1)
         }
 
         return null
