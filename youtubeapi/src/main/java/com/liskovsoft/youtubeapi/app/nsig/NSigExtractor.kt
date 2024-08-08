@@ -7,10 +7,11 @@ import com.liskovsoft.youtubeapi.common.api.FileApi
 import com.liskovsoft.youtubeapi.common.helpers.ReflectionHelper
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.js.JSInterpret
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData
 
 internal class NSigExtractor(private val playerUrl: String) {
+    private var mNFuncCode: Pair<List<String>, String>? = null
     private val mFileApi = RetrofitHelper.create(FileApi::class.java)
-    private var mNFunc: ((List<String>) -> String?)? = null
     private val mNFuncPatternUrl: String = "https://github.com/yuliskov/SmartTube/releases/download/latest/nfunc_pattern.txt"
     private var mNFuncPattern: Pattern? = Pattern.compile("""(?x)
             (?:
@@ -18,7 +19,13 @@ internal class NSigExtractor(private val playerUrl: String) {
                 (?:
                     b=String\.fromCharCode\(110\)|
                     ([a-zA-Z0-9_$.]+)&&\(b="nn"\[\+\1\]
-                ),c=a\.get\(b\)\)&&\(c=|
+                                )
+                (?:
+                    ,[a-zA-Z0-9_$]+\(a\))?,c=a\.
+                    (?:
+                        get\(b\)|
+                        [a-zA-Z0-9_$]+\[b\]\|\|null
+                    )\)&&\(c=|
                 \b([a-zA-Z0-9_$]+)=
             )([a-zA-Z0-9_$]+)(?:\[(\d+)\])?\([a-zA-Z]\)
             (?(2),[a-zA-Z0-9_$]+\.set\("n"\,\2\),\3\.length)""", Pattern.COMMENTS)
@@ -27,9 +34,13 @@ internal class NSigExtractor(private val playerUrl: String) {
                 \s*\{(?:(?!\};).)+?["']enhanced_except_""", Pattern.COMMENTS)
 
     init {
-        initNFuncCode()
+        restoreNFuncCode()
 
-        if (mNFunc == null) {
+        if (mNFuncCode == null) {
+            initNFuncCode()
+        }
+
+        if (mNFuncCode == null) {
             val nFuncPattern = RetrofitHelper.get(mFileApi.getContent(mNFuncPatternUrl))?.content
             nFuncPattern?.let {
                 mNFuncPattern = Pattern.compile(nFuncPattern, Pattern.COMMENTS)
@@ -37,13 +48,15 @@ internal class NSigExtractor(private val playerUrl: String) {
             }
         }
 
-        if (mNFunc == null) {
+        if (mNFuncCode == null) {
             ReflectionHelper.dumpDebugInfo(javaClass, loadPlayer())
         }
     }
 
     fun extractNSig(nParam: String): String? {
-        val func = mNFunc ?: return null
+        val funcCode = mNFuncCode ?: return null
+
+        val func = JSInterpret.extractFunctionFromCode(funcCode.first, funcCode.second)
 
         return func(listOf(nParam))
     }
@@ -58,10 +71,9 @@ internal class NSigExtractor(private val playerUrl: String) {
 
         val funcName = extractNFunctionName(jsCode) ?: extractNFunctionName2(jsCode) ?: return
 
-        val funcCode = JSInterpret.extractFunctionCode(jsCode, funcName) ?: return
+        mNFuncCode = JSInterpret.extractFunctionCode(jsCode, funcName) ?: return
 
-        // store nFunc in cache
-        mNFunc = JSInterpret.extractFunctionFromCode(funcCode.first, funcCode.second)
+        persistNFuncCode()
     }
 
     /**
@@ -110,5 +122,20 @@ internal class NSigExtractor(private val playerUrl: String) {
 
     private fun loadPlayer(): String? {
         return RetrofitHelper.get(mFileApi.getContent(playerUrl))?.content
+    }
+
+    private fun persistNFuncCode() {
+        val data = MediaServiceData.instance()
+        data.playerUrl = playerUrl
+        data.nFuncParams = mNFuncCode?.first
+        data.nFuncCode = mNFuncCode?.second
+    }
+
+    private fun restoreNFuncCode() {
+        val data = MediaServiceData.instance()
+
+        if (data.playerUrl == playerUrl && data.nFuncParams != null && data.nFuncCode != null) {
+            mNFuncCode = Pair(data.nFuncParams, data.nFuncCode)
+        }
     }
 }

@@ -9,7 +9,9 @@ import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.formatbuilders.utils.MediaFormatUtils;
 import com.liskovsoft.youtubeapi.videoinfo.V2.DashInfoApi;
 import com.liskovsoft.youtubeapi.videoinfo.models.DashInfo;
+import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoContent;
 import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoHeaders;
+import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoUrl;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.VideoFormat;
@@ -42,7 +44,7 @@ public abstract class VideoInfoServiceBase {
         applyDecipheredStrings(deciphered, formats);
 
         List<String> throttled = extractThrottledStrings(formats);
-        List<String> throttleFixed = mAppService.throttleFix(throttled);
+        List<String> throttleFixed = mAppService.fixThrottling(throttled);
         applyThrottleFixedStrings(throttleFixed, formats);
 
         // What this for? Could this fix throttling or maybe the source error?
@@ -114,12 +116,20 @@ public abstract class VideoInfoServiceBase {
         }
     }
 
-    protected DashInfo getDashInfo(String url) {
+    private DashInfoUrl getDashInfoUrl(String url) {
         if (url == null) {
             return null;
         }
 
-        return RetrofitHelper.get(mDashInfoApi.getDashInfoUrl(url + SMALL_RANGE));
+        return RetrofitHelper.get(mDashInfoApi.getDashInfoUrl(url));
+    }
+
+    private DashInfoContent getDashInfoContent(String url) {
+        if (url == null) {
+            return null;
+        }
+
+        return RetrofitHelper.get(mDashInfoApi.getDashInfoContent(url));
     }
 
     private Headers getDashInfoHeaders(String url) {
@@ -127,39 +137,52 @@ public abstract class VideoInfoServiceBase {
             return null;
         }
 
-        return RetrofitHelper.getHeaders(mFileApi.getHeaders(url + SMALL_RANGE));
+        // Range doesn't work???
+        //return RetrofitHelper.getHeaders(mFileApi.getHeaders(url + SMALL_RANGE));
+        return RetrofitHelper.getHeaders(mFileApi.getHeaders(url));
     }
 
-    protected DashInfo getDashInfo2(VideoInfo videoInfo) {
+    protected DashInfo getDashInfo(VideoInfo videoInfo) {
         if (videoInfo == null || videoInfo.getAdaptiveFormats() == null || videoInfo.getAdaptiveFormats().isEmpty()) {
             return null;
         }
 
-        //AdaptiveVideoFormat format = getSmallestAudio(videoInfo);
-        //
-        //DashInfo dashInfo;
-        //
-        //try {
-        //    dashInfo = new DashInfoFormat2(mDashInfoApi.getDashInfoFormat2(format.getUrl()));
-        //} catch (ArithmeticException | NumberFormatException ex) {
-        //    // Empty results received. Url isn't available or something like that
-        //    dashInfo = RetrofitHelper.get(mDashInfoApi.getDashInfoFormat(format.getUrl()));
-        //}
-        
-        DashInfo dashInfo = null;
+        DashInfo dashInfo = getAudioDashInfo(videoInfo);
 
-        try {
-            AdaptiveVideoFormat format = getSmallestAudio(videoInfo);
-            dashInfo = new DashInfoHeaders(getDashInfoHeaders(format.getUrl()));
-        } catch (ArithmeticException | NumberFormatException | IllegalStateException ex) {
-            // Segment isn't available
-            //AdaptiveVideoFormat format = getSmallestVideo(videoInfo);
-            //dashInfo = new DashInfoHeaders(mDashInfoApi.getDashInfoHeaders(format.getUrl() + SMALL_RANGE));
-
-            // NOP. Revert to old stream format.
+        if (dashInfo == null) {
+            dashInfo = getVideoDashInfo(videoInfo);
         }
 
         return dashInfo;
+    }
+
+    private DashInfo getAudioDashInfo(VideoInfo videoInfo) {
+        try {
+            AdaptiveVideoFormat format = getSmallestAudio(videoInfo);
+            return new DashInfoHeaders(getDashInfoHeaders(format.getUrl()));
+        } catch (ArithmeticException | NumberFormatException | IllegalStateException ex) {
+            return null;
+        }
+    }
+
+    private DashInfo getAltAudioDashInfo(VideoInfo videoInfo) {
+        AdaptiveVideoFormat format = getSmallestAudio(videoInfo);
+
+        try {
+            return getDashInfoUrl(format.getUrl());
+        } catch (ArithmeticException | NumberFormatException ex) {
+            // Empty results received. Url isn't available or something like that
+            return getDashInfoContent(format.getUrl());
+        }
+    }
+
+    private DashInfo getVideoDashInfo(VideoInfo videoInfo) {
+        try {
+            AdaptiveVideoFormat format = getSmallestVideo(videoInfo);
+            return new DashInfoHeaders(getDashInfoHeaders(format.getUrl()));
+        } catch (ArithmeticException | NumberFormatException | IllegalStateException ex) {
+            return null;
+        }
     }
 
     @NonNull
@@ -168,7 +191,7 @@ public abstract class VideoInfoServiceBase {
                 item -> MediaFormatUtils.isAudio(item.getMimeType())); // smallest format
 
         format.setSignature(mAppService.decipher(format.getSignatureCipher()));
-        format.setThrottleCipher(mAppService.throttleFix(format.getThrottleCipher()));
+        format.setThrottleCipher(mAppService.fixThrottling(format.getThrottleCipher()));
         return format;
     }
 
@@ -178,7 +201,7 @@ public abstract class VideoInfoServiceBase {
                 item -> MediaFormatUtils.isVideo(item.getMimeType())); // smallest format
 
         format.setSignature(mAppService.decipher(format.getSignatureCipher()));
-        format.setThrottleCipher(mAppService.throttleFix(format.getThrottleCipher()));
+        format.setThrottleCipher(mAppService.fixThrottling(format.getThrottleCipher()));
         return format;
     }
 
@@ -188,7 +211,7 @@ public abstract class VideoInfoServiceBase {
                 item -> MediaFormatUtils.isVideo(item.getMimeType())); // first is largest
 
         format.setSignature(mAppService.decipher(format.getSignatureCipher()));
-        format.setThrottleCipher(mAppService.throttleFix(format.getThrottleCipher()));
+        format.setThrottleCipher(mAppService.fixThrottling(format.getThrottleCipher()));
         return format;
     }
 }

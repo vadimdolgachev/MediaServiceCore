@@ -29,7 +29,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
     private VideoInfoService() {
         mVideoInfoApi = RetrofitHelper.create(VideoInfoApi.class);
-        invalidateCache();
+        initVideoInfo();
     }
 
     public static VideoInfoService instance() {
@@ -55,11 +55,6 @@ public class VideoInfoService extends VideoInfoServiceBase {
                 }
             case VIDEO_INFO_TV:
                 result = getVideoInfoTV(videoId, clickTrackingParams);
-                // TV has a limited number of subtitles
-                VideoInfo webInfo = getVideoInfoWeb(videoId, clickTrackingParams);
-                if (webInfo != null && result != null) {
-                    result.setCaptionTracks(webInfo.getCaptionTracks());
-                }
                 break;
             case VIDEO_INFO_WEB:
                 result = getVideoInfoWeb(videoId, clickTrackingParams);
@@ -97,6 +92,12 @@ public class VideoInfoService extends VideoInfoServiceBase {
         return result;
     }
 
+    private void initVideoInfo() {
+        mVideoInfoType = -1;
+        nextVideoInfo();
+        restoreVideoInfoType();
+    }
+
     public void fixVideoInfo() {
         nextVideoInfo();
         persistVideoInfoType();
@@ -105,12 +106,12 @@ public class VideoInfoService extends VideoInfoServiceBase {
     public void invalidateCache() {
         mVideoInfoType = -1;
         nextVideoInfo();
-        restoreVideoInfoType();
+        persistVideoInfoType();
     }
 
     private void nextVideoInfo() {
         mVideoInfoType = Helpers.getNextValue(mVideoInfoType,
-                new int[] {VIDEO_INFO_TV, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_IOS});
+                new int[] {VIDEO_INFO_TV, VIDEO_INFO_IOS, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB});
     }
 
     /**
@@ -196,8 +197,8 @@ public class VideoInfoService extends VideoInfoServiceBase {
         }
 
         if (result.isLive()) {
-            Log.e(TAG, "Enable seeking support on live streams...");
-            result.sync(getDashInfo2(result));
+            Log.d(TAG, "Enable seeking support on live streams...");
+            result.sync(getDashInfo(result));
 
             // Add dash and hls manifests (for backward compatibility)
             //if (YouTubeMediaService.instance().isOldStreamsEnabled()) {
@@ -205,13 +206,25 @@ public class VideoInfoService extends VideoInfoServiceBase {
             //    result.setDashManifestUrl(result2.getDashManifestUrl());
             //    result.setHlsManifestUrl(result2.getHlsManifestUrl());
             //}
-        } else if (isExtendedHlsFormatsEnabled() && result.isExtendedHlsFormatsBroken() || result.isStoryboardBroken()) {
+        }
+
+        if (isExtendedHlsFormatsEnabled() && result.isExtendedHlsFormatsBroken() || result.isStoryboardBroken()) {
+            Log.d(TAG, "Enable high bitrate formats...");
             VideoInfoHls videoInfoHls = getVideoInfoIOSHls(videoId, clickTrackingParams);
             if (videoInfoHls != null && result.getHlsManifestUrl() == null) {
                 result.setHlsManifestUrl(videoInfoHls.getHlsManifestUrl());
             }
             if (videoInfoHls != null && result.getStoryboardSpec() == null) {
                 result.setStoryboardSpec(videoInfoHls.getStoryboardSpec());
+            }
+        }
+
+        // TV and others has a limited number of auto generated subtitles
+        if (result.getTranslationLanguages() != null && result.getTranslationLanguages().size() < 50) {
+            Log.d(TAG, "Enable full list of auto generated subtitles...");
+            VideoInfo webInfo = getVideoInfoWeb(videoId, clickTrackingParams);
+            if (webInfo != null) {
+                result.setTranslationLanguages(webInfo.getTranslationLanguages());
             }
         }
     }

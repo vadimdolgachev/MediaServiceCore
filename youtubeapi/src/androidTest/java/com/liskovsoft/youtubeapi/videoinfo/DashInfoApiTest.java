@@ -30,6 +30,8 @@ public class DashInfoApiTest {
     private VideoInfoApi mService2;
     private AppService mAppService;
     private FileApi mFileService;
+    // Make response smaller
+    private final String SMALL_RANGE = "&range=0-200";
 
     @Before
     public void setUp() throws Exception {
@@ -61,7 +63,7 @@ public class DashInfoApiTest {
     }
 
     @Test
-    public void testDashInfoFormatNotEmpty() throws IOException {
+    public void testDashInfoContentNotEmpty() throws IOException {
         VideoInfo videoInfo = getVideoInfo(TestHelpersV1.VIDEO_ID_LIVE);
         Call<DashInfoContent> dashInfoWrapper = mService.getDashInfoContent(getSmallestAudio(videoInfo).getUrl());
 
@@ -72,7 +74,7 @@ public class DashInfoApiTest {
     }
 
     @Test
-    public void testDashInfoFormat2NotEmpty() throws IOException {
+    public void testDashInfoHeadersNotEmpty() throws IOException {
         VideoInfo videoInfo = getVideoInfo(TestHelpersV1.VIDEO_ID_LIVE);
         Call<Void> headersWrapper = mFileService.getHeaders(getSmallestAudio(videoInfo).getUrl());
 
@@ -97,7 +99,7 @@ public class DashInfoApiTest {
                 item -> MediaFormatUtils.isAudio(item.getMimeType())); // smallest format
 
         format.setSignature(mAppService.decipher(format.getSignatureCipher()));
-        format.setThrottleCipher(mAppService.throttleFix(format.getThrottleCipher()));
+        format.setThrottleCipher(mAppService.fixThrottling(format.getThrottleCipher()));
 
         return format;
     }
