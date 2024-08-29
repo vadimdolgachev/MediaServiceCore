@@ -33,8 +33,8 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private boolean mIsLiveContent;
     private boolean mIsLowLatencyLiveStream;
     private boolean mIsStreamSeekable;
-    private List<MediaFormat> mAdaptiveFormats;
-    private List<MediaFormat> mRegularFormats;
+    private List<MediaFormat> mDashFormats;
+    private List<MediaFormat> mUrlFormats;
     private List<MediaSubtitle> mSubtitles;
     private String mDashManifestUrl;
     private String mHlsManifestUrl;
@@ -53,8 +53,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private int mSegmentDurationUs;
     private boolean mHasExtendedHlsFormats;
     private float mLoudnessDb;
+    private boolean mContainsDashInfo;
+    private boolean mContainsDashVideoInfo;
+    private boolean mContainsUrlListInfo;
 
-    public YouTubeMediaItemFormatInfo() {
+    private YouTubeMediaItemFormatInfo() {
         mCreatedTimeMs = System.currentTimeMillis();
     }
 
@@ -66,18 +69,23 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         YouTubeMediaItemFormatInfo formatInfo = new YouTubeMediaItemFormatInfo();
 
         if (videoInfo.getAdaptiveFormats() != null) {
-            formatInfo.mAdaptiveFormats = new ArrayList<>();
+            formatInfo.mContainsDashInfo = true;
+            formatInfo.mContainsDashVideoInfo = videoInfo.containsAdaptiveVideoInfo();
+
+            formatInfo.mDashFormats = new ArrayList<>();
 
             for (AdaptiveVideoFormat format : videoInfo.getAdaptiveFormats()) {
-                formatInfo.mAdaptiveFormats.add(YouTubeMediaFormat.from(format));
+                formatInfo.mDashFormats.add(YouTubeMediaFormat.from(format));
             }
         }
 
         if (videoInfo.getRegularFormats() != null) {
-            formatInfo.mRegularFormats = new ArrayList<>();
+            formatInfo.mContainsUrlListInfo = true;
+
+            formatInfo.mUrlFormats = new ArrayList<>();
 
             for (RegularVideoFormat format : videoInfo.getRegularFormats()) {
-                formatInfo.mRegularFormats.add(YouTubeMediaFormat.from(format));
+                formatInfo.mUrlFormats.add(YouTubeMediaFormat.from(format));
             }
         }
 
@@ -128,13 +136,13 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
-    public List<MediaFormat> getAdaptiveFormats() {
-        return mAdaptiveFormats;
+    public List<MediaFormat> getDashFormats() {
+        return mDashFormats;
     }
 
     @Override
-    public List<MediaFormat> getRegularFormats() {
-        return mRegularFormats;
+    public List<MediaFormat> getUrlFormats() {
+        return mUrlFormats;
     }
 
     @Override
@@ -233,23 +241,12 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public boolean containsDashInfo() {
-        return mAdaptiveFormats != null;
+        return mContainsDashInfo;
     }
 
     @Override
     public boolean containsDashVideoInfo() {
-        if (mAdaptiveFormats == null) {
-            return false;
-        }
-
-        for (MediaFormat format : mAdaptiveFormats) {
-            String mimeType = format.getMimeType();
-            if (mimeType != null && mimeType.startsWith("video/")) {
-                return true;
-            }
-        }
-
-        return false;
+        return mContainsDashVideoInfo;
     }
 
     @Override
@@ -264,7 +261,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public boolean containsUrlListInfo() {
-        return mRegularFormats != null;
+        return mContainsUrlListInfo;
     }
 
     @Override
@@ -389,10 +386,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         // Check app cipher first. It's not robust check (cipher may be updated not by us).
         // So, also check internal cache state.
         // Future translations (no media) should be polled constantly.
-        return containsMedia() && isCreatedRecently() && AppService.instance().isCacheActual();
+        //return containsMedia() && isCreatedRecently() && AppService.instance().isCacheActual();
+        return containsMedia() && AppService.instance().isPlayerCacheActual();
     }
 
     private boolean isCreatedRecently() {
-        return System.currentTimeMillis() - mCreatedTimeMs < 60 * 1_000;
+        return !isLive() || System.currentTimeMillis() - mCreatedTimeMs < 60 * 1_000;
     }
 }

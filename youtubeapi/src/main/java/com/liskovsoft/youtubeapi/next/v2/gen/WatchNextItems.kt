@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.next.v2.gen
 
+import com.liskovsoft.youtubeapi.browse.v2.gen.GridRenderer
 import com.liskovsoft.youtubeapi.browse.v2.gen.SectionWrapper
 import com.liskovsoft.youtubeapi.common.models.gen.*
 
@@ -25,10 +26,6 @@ internal data class ShelfRenderer(
         val expandedShelfContentsRenderer: ExpandedShelfContentsRenderer?,
         val horizontalListRenderer: HorizontalListRenderer?
     ) {
-        data class GridRenderer(
-            val items: List<ItemWrapper?>?
-        )
-
         data class ExpandedShelfContentsRenderer(
             val items: List<ItemWrapper?>?
         )
@@ -205,14 +202,8 @@ internal data class ButtonStateItem(
 
     data class GenericButton(
             val type: String?,
-            val button: ButtonContent?
-    ) {
-        data class ButtonContent(
-            val videoOwnerRenderer: VideoOwnerItem?,
-            val toggleButtonRenderer: ToggleButtonRenderer?,
-            val buttonRenderer: ButtonRenderer?
-        )
-    }
+            val button: ButtonContentWrapper?
+    )
 }
 
 internal data class PlaylistInfo(
@@ -269,8 +260,19 @@ internal data class VideoDescriptionHeaderRenderer(
     val channel: TextItem?,
     val views: TextItem?,
     val publishDate: TextItem,
-    val channelNavigationEndpoint: NavigationEndpointItem?
+    val channelNavigationEndpoint: NavigationEndpointItem?,
+    val factoid: List<Factoid?>?
 )
+
+internal data class Factoid(
+    val factoidRenderer: FactoidRenderer?
+) {
+    data class FactoidRenderer(
+        val value: TextItem?,
+        val label: TextItem?,
+        val accessibilityText: String?
+    )
+}
 
 internal data class Menu(
     val sortFilterSubMenuRenderer: SortFilterSubMenuRenderer?

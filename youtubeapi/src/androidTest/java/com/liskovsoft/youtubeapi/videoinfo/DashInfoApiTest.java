@@ -7,6 +7,7 @@ import com.liskovsoft.youtubeapi.common.api.FileApi;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV1;
 import com.liskovsoft.youtubeapi.formatbuilders.utils.MediaFormatUtils;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 import com.liskovsoft.youtubeapi.videoinfo.V2.DashInfoApi;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoApi;
 import com.liskovsoft.youtubeapi.videoinfo.models.DashInfoUrl;
@@ -47,9 +48,8 @@ public class DashInfoApiTest {
         mService2 = RetrofitHelper.create(VideoInfoApi.class);
 
         mFileService = RetrofitHelper.create(FileApi.class);
-
+        
         mAppService = AppService.instance();
-        mAppService.invalidateVisitorData();
     }
 
     @Test
@@ -60,6 +60,8 @@ public class DashInfoApiTest {
         DashInfoUrl dashInfo = dashInfoWrapper.execute().body();
 
         assertTrue("start segment not null", dashInfo.getStartSegmentNum() > 0);
+        assertTrue("segment duration not null", dashInfo.getSegmentDurationUs() > 0);
+        assertTrue("start time not null", dashInfo.getStartTimeMs() > 0);
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.liskovsoft.youtubeapi.app.nsig
 
-import com.florianingerl.util.regex.Pattern
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.liskovsoft.youtubeapi.common.api.FileApi
@@ -8,18 +7,20 @@ import com.liskovsoft.youtubeapi.common.helpers.ReflectionHelper
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.js.JSInterpret
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData
+import java.util.regex.Pattern
 
 internal class NSigExtractor(private val playerUrl: String) {
     private var mNFuncCode: Pair<List<String>, String>? = null
+    private var mNSig: Pair<String, String?>? = null
     private val mFileApi = RetrofitHelper.create(FileApi::class.java)
     private val mNFuncPatternUrl: String = "https://github.com/yuliskov/SmartTube/releases/download/latest/nfunc_pattern.txt"
-    private var mNFuncPattern: Pattern? = Pattern.compile("""(?x)
+    private var mNFuncPattern: com.florianingerl.util.regex.Pattern? = com.florianingerl.util.regex.Pattern.compile("""(?x)
             (?:
                 \.get\("n"\)\)&&\(b=|
                 (?:
                     b=String\.fromCharCode\(110\)|
                     ([a-zA-Z0-9_$.]+)&&\(b="nn"\[\+\1\]
-                                )
+                )
                 (?:
                     ,[a-zA-Z0-9_$]+\(a\))?,c=a\.
                     (?:
@@ -43,17 +44,28 @@ internal class NSigExtractor(private val playerUrl: String) {
         if (mNFuncCode == null) {
             val nFuncPattern = RetrofitHelper.get(mFileApi.getContent(mNFuncPatternUrl))?.content
             nFuncPattern?.let {
-                mNFuncPattern = Pattern.compile(nFuncPattern, Pattern.COMMENTS)
+                mNFuncPattern = com.florianingerl.util.regex.Pattern.compile(nFuncPattern, Pattern.COMMENTS)
                 initNFuncCode()
             }
         }
 
         if (mNFuncCode == null) {
             ReflectionHelper.dumpDebugInfo(javaClass, loadPlayer())
+            throw IllegalStateException("NSigExtractor: Can't obtain NSig code...")
         }
     }
 
     fun extractNSig(nParam: String): String? {
+        if (mNSig?.first == nParam) return mNSig?.second
+
+        val nSig = extractNSigReal(nParam)
+
+        mNSig = Pair(nParam, nSig)
+
+        return nSig
+    }
+
+    private fun extractNSigReal(nParam: String): String? {
         val funcCode = mNFuncCode ?: return null
 
         val func = JSInterpret.extractFunctionFromCode(funcCode.first, funcCode.second)
@@ -126,7 +138,7 @@ internal class NSigExtractor(private val playerUrl: String) {
 
     private fun persistNFuncCode() {
         val data = MediaServiceData.instance()
-        data.playerUrl = playerUrl
+        data.nFuncPlayerUrl = playerUrl
         data.nFuncParams = mNFuncCode?.first
         data.nFuncCode = mNFuncCode?.second
     }
@@ -134,7 +146,7 @@ internal class NSigExtractor(private val playerUrl: String) {
     private fun restoreNFuncCode() {
         val data = MediaServiceData.instance()
 
-        if (data.playerUrl == playerUrl && data.nFuncParams != null && data.nFuncCode != null) {
+        if (data.nFuncPlayerUrl == playerUrl && data.nFuncParams != null && data.nFuncCode != null) {
             mNFuncCode = Pair(data.nFuncParams, data.nFuncCode)
         }
     }

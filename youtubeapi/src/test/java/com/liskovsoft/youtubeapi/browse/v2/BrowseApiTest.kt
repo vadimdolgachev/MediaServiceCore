@@ -226,6 +226,14 @@ class BrowseApiTest {
     }
 
     @Test
+    fun testNewMusicNotEmpty() {
+        val newMusic = getNewMusicAlbums()
+
+        assertNotNull("List not empty", newMusic?.getItems())
+        assertNotNull("List has title", newMusic?.getTitle())
+    }
+
+    @Test
     fun testThatChannelTabsNotEmpty() {
         val home = getChannelHome(TestHelpersV2.CHANNEL_ID_3)
 
@@ -335,7 +343,8 @@ class BrowseApiTest {
 
     @Test
     fun testChannelTopicContinuation() {
-        val browse = mService?.getBrowseResult(BrowseApiHelper.getChannelQueryWeb("UC1dGjtlDiiDM0gc_ghB1nTQ", "EgRsaXZl"))
+        // World of tanks recently uploaded
+        val browse = mService?.getBrowseResult(BrowseApiHelper.getChannelQueryWeb("UC1dGjtlDiiDM0gc_ghB1nTQ", "EgZyZWNlbnQ%3D"))
 
         val result = RetrofitHelper.get(browse)
 
@@ -491,6 +500,12 @@ class BrowseApiTest {
 
     private fun getLikedMusic(): BrowseResult? {
         val result = mService?.getBrowseResult(BrowseApiHelper.getLikedMusicQuery())
+
+        return RetrofitHelper.get(result)
+    }
+
+    private fun getNewMusicAlbums(): BrowseResult? {
+        val result = mService?.getBrowseResult(BrowseApiHelper.getNewMusicAlbumsQuery())
 
         return RetrofitHelper.get(result)
     }
