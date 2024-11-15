@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.playlist;
 
 import com.liskovsoft.youtubeapi.actions.models.ActionResult;
-import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPathClass;
+import com.liskovsoft.youtubeapi.common.converters.jsonpath.WithJsonPath;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -11,7 +11,7 @@ import retrofit2.http.POST;
 /**
  * For signed users!
  */
-@JsonPathClass
+@WithJsonPath
 public interface PlaylistApi {
     @Headers("Content-Type: application/json")
     @POST("https://www.youtube.com/youtubei/v1/playlist/get_add_to_playlist")
@@ -26,14 +26,14 @@ public interface PlaylistApi {
      */
     @Headers("Content-Type: application/json")
     @POST("https://www.youtube.com/youtubei/v1/like/like")
-    Call<ActionResult> savePlaylist(@Body String saveRemovePlaylistQuery);
+    Call<ActionResult> saveForeignPlaylist(@Body String saveRemoveForeignPlaylistQuery);
 
     /**
      * Works with foreign playlists
      */
     @Headers("Content-Type: application/json")
     @POST("https://www.youtube.com/youtubei/v1/like/removelike")
-    Call<ActionResult> removePlaylist(@Body String saveRemovePlaylistQuery);
+    Call<ActionResult> removeForeignPlaylist(@Body String saveRemoveForeignPlaylistQuery);
 
     @Headers("Content-Type: application/json")
     @POST("https://www.youtube.com/youtubei/v1/playlist/create")
@@ -44,5 +44,5 @@ public interface PlaylistApi {
      */
     @Headers("Content-Type: application/json")
     @POST("https://www.youtube.com/youtubei/v1/playlist/delete")
-    Call<ActionResult> deletePlaylist(@Body String deletePlaylistQuery);
+    Call<ActionResult> removePlaylist(@Body String removePlaylistQuery);
 }

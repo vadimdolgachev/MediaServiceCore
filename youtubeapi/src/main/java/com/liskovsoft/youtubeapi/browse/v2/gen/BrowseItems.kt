@@ -1,7 +1,6 @@
 package com.liskovsoft.youtubeapi.browse.v2.gen
 
 import com.liskovsoft.youtubeapi.common.models.gen.*
-import com.liskovsoft.youtubeapi.next.v2.gen.ChipItem
 import com.liskovsoft.youtubeapi.next.v2.gen.ContinuationItem
 import com.liskovsoft.youtubeapi.next.v2.gen.ShelfRenderer
 
@@ -20,11 +19,14 @@ internal data class SectionWrapper(
 internal data class TabRenderer(
     val title: String?,
     val content: Content?,
-    val endpoint: NavigationEndpointItem?
+    val endpoint: NavigationEndpointItem?,
+    val thumbnail: ThumbnailItem?,
+    val presentationStyle: PresentationStyle?
 ) {
     data class Content(
         val sectionListRenderer: SectionListRenderer?,
-        val richGridRenderer: RichGridRenderer?
+        val richGridRenderer: RichGridRenderer?,
+        val tvSurfaceContentRenderer: TvSurfaceContentRenderer?
     ) {
         data class SectionListRenderer(
             val contents: List<SectionWrapper?>?
@@ -46,6 +48,9 @@ internal data class TabRenderer(
             }
         }
     }
+    data class PresentationStyle(
+        val style: String?
+    )
 }
 
 // WhatToWatch only
@@ -64,6 +69,45 @@ internal data class RichSectionRenderer(
                 val continuationItemRenderer: ContinuationItemRenderer?
             )
         }
+    }
+}
+
+internal data class TvSurfaceContentRenderer(
+    val content: Content?,
+    val continuation: ContinuationItem?
+) {
+    data class Content(
+        val sectionListRenderer: ItemSectionRenderer?,
+        val gridRenderer: GridRenderer?, // TV
+        val twoColumnRenderer: TwoColumnRenderer? // TV
+    )
+}
+
+internal data class TwoColumnRenderer(
+    val leftColumn: LeftColumn?,
+    val rightColumn: RightColumn?
+) {
+    data class LeftColumn(
+        val entityMetadataRenderer: EntityMetadataRenderer?
+    ) {
+        data class EntityMetadataRenderer(
+            val title: TextItem?
+        )
+    }
+    data class RightColumn(
+        val playlistVideoListRenderer: PlaylistVideoListRenderer?
+    )
+}
+
+internal data class TvSecondaryNavRenderer(
+    val sections: List<Section?>?
+) {
+    data class Section(
+        val tvSecondaryNavSectionRenderer: TvSecondaryNavSectionRenderer?
+    ) {
+        data class TvSecondaryNavSectionRenderer(
+            val tabs: List<Tab>
+        )
     }
 }
 
@@ -157,12 +201,14 @@ internal data class Shelf(
     val playlistVideoListRenderer: PlaylistVideoListRenderer?,
     val gridRenderer: GridRenderer?,
     val videoRenderer: VideoItem?
-) {
-    data class PlaylistVideoListRenderer(
-        val contents: List<ItemWrapper?>?
-    )
-}
+)
+
+internal data class PlaylistVideoListRenderer(
+    val contents: List<ItemWrapper?>?,
+    val continuations: List<ContinuationItem?>?
+)
 
 internal data class GridRenderer(
-    val items: List<ItemWrapper?>?
+    val items: List<ItemWrapper?>?,
+    val continuations: List<ContinuationItem?>?
 )

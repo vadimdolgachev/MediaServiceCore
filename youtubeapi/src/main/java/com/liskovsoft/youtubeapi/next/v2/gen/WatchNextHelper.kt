@@ -8,12 +8,16 @@ internal fun VideoOwnerItem.isSubscribed() = subscriptionButton?.subscribed ?: s
     navigationEndpoint?.getOverlayToggleButton()?.isToggled ?: navigationEndpoint?.getOverlaySubscribeButton()?.subscribed
 internal fun VideoOwnerItem.getChannelId() = navigationEndpoint?.getBrowseId() ?: subscribeButton?.subscribeButtonRenderer?.channelId
 internal fun VideoOwnerItem.getThumbnails() = thumbnail
-internal fun VideoOwnerItem.getParams() = navigationEndpoint?.getOverlayToggleButton()?.getSubscribeParams() ?: navigationEndpoint?.getOverlaySubscribeButton()?.getParams()
+internal fun VideoOwnerItem.getParams() =
+    navigationEndpoint?.getOverlayToggleButton()?.getParams() ?: navigationEndpoint?.getOverlaySubscribeButton()?.getParams() ?: subscribeButton?.subscribeButtonRenderer?.getParams()
 internal fun VideoOwnerItem.getNotificationPreference() = subscribeButton?.subscribeButtonRenderer?.notificationPreferenceButton
 internal fun VideoOwnerItem.getSubscriberCount() = subscriberCountText?.getText() ?: subscribeButton?.subscribeButtonRenderer?.longSubscriberCountText?.getText()
 internal fun VideoOwnerItem.getShortSubscriberCount() = subscribeButton?.subscribeButtonRenderer?.shortSubscriberCountText?.getText()
 
 /////
+
+private const val MARKER_TYPE_HEATMAP = "MARKER_TYPE_HEATMAP"
+private const val MARKER_TYPE_CHAPTERS = "MARKER_TYPE_CHAPTERS"
 
 private fun WatchNextResult.getWatchNextResults() = contents?.singleColumnWatchNextResults
 private fun WatchNextResult.getPlayerOverlays() = playerOverlays?.playerOverlayRenderer
@@ -31,16 +35,19 @@ internal fun WatchNextResult.getLiveChatToken() = getWatchNextResults()?.convers
 internal fun WatchNextResult.getPlaylistInfo() = getWatchNextResults()?.playlist?.playlist
 internal fun WatchNextResult.getChapters() = getPlayerOverlays()?.decoratedPlayerBarRenderer?.decoratedPlayerBarRenderer?.
     playerBar?.multiMarkersPlayerBarRenderer?.markersMap?.firstOrNull()?.value?.chapters ?:
-    engagementPanels?.firstNotNullOfOrNull { it?.engagementPanelSectionListRenderer?.content?.macroMarkersListRenderer?.contents }
+    engagementPanels?.firstNotNullOfOrNull { it?.engagementPanelSectionListRenderer?.content?.macroMarkersListRenderer?.contents } ?:
+    frameworkUpdates?.entityBatchUpdate?.mutations?.firstNotNullOfOrNull { it?.payload?.macroMarkersListEntity?.markersList?.takeIf { it.markerType == MARKER_TYPE_CHAPTERS }?.markers }
 internal fun WatchNextResult.getCommentPanel() = engagementPanels?.firstOrNull { it?.isCommentsSection() == true }
 internal fun WatchNextResult.getDescriptionPanel() = engagementPanels?.firstOrNull { it?.isDescriptionSection() == true }
 // One of the suggested rows is too short or empty
 internal fun WatchNextResult.isEmpty(): Boolean = getSuggestedSections()?.isEmpty() ?: true || (getSuggestedSections()?.filter { (it.getItemWrappers()?.size ?: 0) <= 3 }?.size ?: 0) >= 3
 
-internal fun WatchNextResultContinuation.isEmpty(): Boolean = continuationContents?.horizontalListContinuation?.items == null
-internal fun WatchNextResultContinuation.getItems(): List<ItemWrapper?>? = continuationContents?.horizontalListContinuation?.items
-internal fun WatchNextResultContinuation.getNextPageKey(): String? = continuationContents?.horizontalListContinuation?.continuations
-    ?.firstNotNullOfOrNull { it?.getContinuationKey() }
+internal fun WatchNextResultContinuation.isEmpty(): Boolean = getItems() == null
+internal fun WatchNextResultContinuation.getItems(): List<ItemWrapper?>? = getContinuation()?.let { it.items ?: it.contents }
+internal fun WatchNextResultContinuation.getNextPageKey(): String? = getContinuation()?.continuations?.getContinuationKey()
+private fun WatchNextResultContinuation.getContinuation() = continuationContents?.horizontalListContinuation
+    ?: continuationContents?.gridContinuation ?: continuationContents?.playlistVideoListContinuation
+    ?: continuationContents?.tvSurfaceContentContinuation?.content?.gridRenderer
 
 ///////
 
@@ -81,7 +88,7 @@ private fun ButtonStateItem.getButton(type: String) = buttons?.firstOrNull { it?
 
 internal fun ShelfRenderer.getTitle() = title?.getText() ?: getShelf()?.title?.getText() ?: getShelf()?.avatarLockup?.avatarLockupRenderer?.title?.getText()
 internal fun ShelfRenderer.getItemWrappers() = content?.horizontalListRenderer?.items
-internal fun ShelfRenderer.getNextPageKey() = content?.horizontalListRenderer?.continuations?.firstNotNullOfOrNull { it?.getContinuationKey() }
+internal fun ShelfRenderer.getNextPageKey() = content?.horizontalListRenderer?.continuations?.getContinuationKey()
 internal fun ShelfRenderer.getChipItems() = headerRenderer?.chipCloudRenderer?.chips
 private fun ShelfRenderer.getShelf() = headerRenderer?.shelfHeaderRenderer
 
@@ -106,9 +113,9 @@ internal fun NextVideoItem.getParams() = endpoint?.watchEndpoint?.params
 
 /////// Chapters wrapper
 
-internal fun ChapterItemWrapper.getTitle() = chapterRenderer?.getTitle() ?: macroMarkersListItemRenderer?.getTitle()
-internal fun ChapterItemWrapper.getStartTimeMs() = chapterRenderer?.getStartTimeMs() ?: macroMarkersListItemRenderer?.getStartTimeMs()
-internal fun ChapterItemWrapper.getThumbnailUrl() = chapterRenderer?.getThumbnailUrl() ?: macroMarkersListItemRenderer?.getThumbnailUrl()
+internal fun ChapterItemWrapper.getTitle() = chapterRenderer?.getTitle() ?: macroMarkersListItemRenderer?.getTitle() ?: title?.toString()
+internal fun ChapterItemWrapper.getStartTimeMs() = chapterRenderer?.getStartTimeMs() ?: macroMarkersListItemRenderer?.getStartTimeMs() ?: startMillis?.toLong()
+internal fun ChapterItemWrapper.getThumbnailUrl() = chapterRenderer?.getThumbnailUrl() ?: macroMarkersListItemRenderer?.getThumbnailUrl() ?: thumbnailDetails?.getOptimalResThumbnailUrl()
 
 /////// Chapters V1
 
@@ -122,17 +129,27 @@ internal fun MacroMarkersListItemRenderer.getTitle() = title?.toString()
 internal fun MacroMarkersListItemRenderer.getStartTimeMs(): Long? = onTap?.watchEndpoint?.startTimeSeconds?.let { it.toLong() * 1_000 }
 internal fun MacroMarkersListItemRenderer.getThumbnailUrl() = thumbnail?.getOptimalResThumbnailUrl()
 
+/////// Chapters V3 (replaced with ChapterItemWrapper)
+
+internal fun Marker.getTitle(): String? = title?.toString()
+internal fun Marker.getStartTimeMs(): Long? = startMillis?.toLong()
+internal fun Marker.getDurationTimeMs(): Long? = durationMillis?.toLong()
+internal fun Marker.getThumbnailUrl(): String? = thumbnailDetails?.getOptimalResThumbnailUrl()
+
 ///////
 
 internal fun ContinuationItem.getContinuationKey(): String? =
     nextContinuationData?.continuation ?: nextRadioContinuationData?.continuation ?: reloadContinuationData?.continuation
 internal fun ContinuationItem.getLabel(): String? = nextContinuationData?.label?.getText()
 
+//internal fun List<ContinuationItem?>.getContinuationKey(): String? = firstOrNull()?.getContinuationKey()
+internal fun List<ContinuationItem?>.getContinuationKey(): String? = firstNotNullOfOrNull { it?.getContinuationKey() }
+
 ///////
 
-internal fun EngagementPanel.getMenu() = engagementPanelSectionListRenderer?.header?.engagementPanelTitleHeaderRenderer?.menu
-internal fun EngagementPanel.getTopCommentsToken(): String? = getMenu()?.getSubMenuItems()?.getOrNull(0)?.continuation?.getContinuationKey()
-internal fun EngagementPanel.getNewCommentsToken(): String? = getMenu()?.getSubMenuItems()?.getOrNull(1)?.continuation?.getContinuationKey()
+internal fun EngagementPanel.getTopCommentsToken(): String? = getSubMenuItems()?.getOrNull(0)?.continuation?.getContinuationKey() ?:
+    getSections()?.firstNotNullOfOrNull { it?.itemSectionRenderer?.continuations?.getContinuationKey() }
+internal fun EngagementPanel.getNewCommentsToken(): String? = getSubMenuItems()?.getOrNull(1)?.continuation?.getContinuationKey()
 internal fun EngagementPanel.isCommentsSection(): Boolean = engagementPanelSectionListRenderer?.panelIdentifier == "comment-item-section"
 internal fun EngagementPanel.isDescriptionSection(): Boolean = engagementPanelSectionListRenderer?.panelIdentifier == "video-description-ep-identifier"
 internal fun EngagementPanel.getTitle(): String? = getVideoDescription()?.title?.getText()
@@ -143,7 +160,9 @@ internal fun EngagementPanel.getBrowseId(): String? = getVideoDescription()?.cha
 internal fun EngagementPanel.getLikeCount(): String? = getVideoDescription()?.factoid?.firstOrNull()?.getValue()
 private fun EngagementPanel.getVideoDescription(): VideoDescriptionHeaderRenderer? =
     engagementPanelSectionListRenderer?.content?.structuredDescriptionContentRenderer?.items?.firstNotNullOfOrNull { it?.videoDescriptionHeaderRenderer }
-internal fun Menu.getSubMenuItems() = sortFilterSubMenuRenderer?.subMenuItems
+private fun EngagementPanel.getSections() = engagementPanelSectionListRenderer?.content?.sectionListRenderer?.contents
+private fun EngagementPanel.getSubMenuItems() =
+    engagementPanelSectionListRenderer?.header?.engagementPanelTitleHeaderRenderer?.menu?.sortFilterSubMenuRenderer?.subMenuItems
 
 ///////
 

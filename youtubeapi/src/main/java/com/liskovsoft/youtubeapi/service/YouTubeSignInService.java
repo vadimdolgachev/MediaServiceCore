@@ -24,7 +24,7 @@ public class YouTubeSignInService implements SignInService {
     private final YouTubeAccountManager mAccountManager;
     private String mCachedAuthorizationHeader;
     private String mCachedAuthorizationHeader2;
-    private long mLastUpdateTime;
+    private long mCacheUpdateTime;
 
     private YouTubeSignInService() {
         mAuthService = AuthService.instance();
@@ -71,15 +71,17 @@ public class YouTubeSignInService implements SignInService {
         updateAuthHeadersIfNeeded();
     }
 
-    private void updateAuthHeadersIfNeeded() {
-        if (mCachedAuthorizationHeader != null && System.currentTimeMillis() - mLastUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
+    private synchronized void updateAuthHeadersIfNeeded() {
+        if (mCachedAuthorizationHeader != null && System.currentTimeMillis() - mCacheUpdateTime < TOKEN_REFRESH_PERIOD_MS) {
             return;
         }
 
         updateAuthHeaders();
+
+        mCacheUpdateTime = System.currentTimeMillis();
     }
 
-    private synchronized void updateAuthHeaders() {
+    private void updateAuthHeaders() {
         Account account = mAccountManager.getSelectedAccount();
         String refreshToken = account != null ? ((YouTubeAccount) account).getRefreshToken() : null;
         String refreshToken2 = account != null ? ((YouTubeAccount) account).getRefreshToken2() : null;
@@ -87,8 +89,6 @@ public class YouTubeSignInService implements SignInService {
         mCachedAuthorizationHeader = createAuthorizationHeader(refreshToken);
         mCachedAuthorizationHeader2 = createAuthorizationHeader(refreshToken2);
         syncWithRetrofit();
-
-        mLastUpdateTime = System.currentTimeMillis();
     }
 
     @Override
@@ -124,13 +124,14 @@ public class YouTubeSignInService implements SignInService {
     public void setAuthorizationHeader(String authorizationHeader) {
         mCachedAuthorizationHeader = authorizationHeader;
         mCachedAuthorizationHeader2 = null;
-        mLastUpdateTime = System.currentTimeMillis();
+        mCacheUpdateTime = System.currentTimeMillis();
 
         syncWithRetrofit();
     }
 
     public void invalidateCache() {
         mCachedAuthorizationHeader = null;
+        mCacheUpdateTime = 0;
     }
 
     @Override
@@ -199,7 +200,7 @@ public class YouTubeSignInService implements SignInService {
     }
 
     @Override
-    public void setOnChange(Runnable onChange) {
-        mAccountManager.setOnChange(onChange);
+    public void addOnAccountChange(OnAccountChange listener) {
+        mAccountManager.addOnAccountChange(listener);
     }
 }

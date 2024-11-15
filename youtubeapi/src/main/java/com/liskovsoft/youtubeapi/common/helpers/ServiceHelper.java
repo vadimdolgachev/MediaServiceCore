@@ -1,5 +1,7 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
+import androidx.core.text.BidiFormatter;
+
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.app.AppConstants;
@@ -41,7 +43,7 @@ public class ServiceHelper {
      * @param lengthText video length
      * @return length in milliseconds
      */
-    public static int timeTextToMillis(String lengthText) {
+    public static long timeTextToMillis(String lengthText) {
         if (lengthText == null || lengthText.contains(",")) {
             return -1;
         }
@@ -54,7 +56,7 @@ public class ServiceHelper {
         int minutes = Helpers.parseInt(timeParts, length - 2, 0);
         int seconds = Helpers.parseInt(timeParts, length - 1, 0);
 
-        return (int) (TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes) + TimeUnit.SECONDS.toMillis(seconds));
+        return TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes) + TimeUnit.SECONDS.toMillis(seconds);
     }
 
     public static String millisToTimeText(long millis) {
@@ -112,7 +114,7 @@ public class ServiceHelper {
             country = localeManager.getCountry();
         }
         return String.format(postTemplate, language, country,
-                localeManager.getUtcOffsetMinutes(), appService.getVisitorId(), data1 != null ? data1 : "", data2);
+                localeManager.getUtcOffsetMinutes(), appService.getVisitorData(), data1 != null ? data1 : "", data2);
     }
 
     /**
@@ -140,6 +142,9 @@ public class ServiceHelper {
                 if (strItem == null || strItem.isEmpty()) {
                     continue;
                 }
+
+                // Fix mixed RTL and LTR content
+                strItem = BidiFormatter.getInstance().unicodeWrap(strItem);
 
                 if (divider == null || result.length() == 0) {
                     result.append(strItem);

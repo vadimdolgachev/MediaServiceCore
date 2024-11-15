@@ -28,9 +28,12 @@ internal object NotificationsServiceInt {
         if (notificationState is NotificationStateImpl) {
             notificationState.setSelected()
 
-            if (!notificationState.isSubscribed) {
-                ActionsService.instance().subscribe(notificationState.channelId, notificationState.params)
-            }
+            //if (!notificationState.isSubscribed) {
+            //    ActionsService.instance().subscribe(notificationState.channelId, notificationState.params)
+            //}
+
+            // Fix bug when notification cannot be modified
+            ActionsService.instance().subscribe(notificationState.channelId, notificationState.params)
 
             modifyNotification(notificationState.stateParams)
         }
@@ -53,6 +56,6 @@ internal object NotificationsServiceInt {
 
         val result = mService.getModifyNotification(NotificationsApiHelper.getModifyNotificationQuery(modifyNotificationParams))
 
-        RetrofitHelper.get(result)
+        RetrofitHelper.getWithErrors(result)
     }
 }

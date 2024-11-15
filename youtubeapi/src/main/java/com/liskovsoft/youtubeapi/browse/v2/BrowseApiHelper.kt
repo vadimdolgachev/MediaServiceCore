@@ -23,8 +23,10 @@ internal object BrowseApiHelper {
     private const val SPORTS = "\"browseId\":\"FEtopics_sports\""
     private const val MOVIES = "\"browseId\":\"FEtopics_movies\""
     private const val LIKED_MUSIC = "\"browseId\":\"VLLM\""
+    private const val LIKED_MUSIC_CONTINUATION = "4qmFsgIWEhRGRW11c2ljX2xpa2VkX3ZpZGVvcw%3D%3D"
     private const val NEW_MUSIC_VIDEOS = "\"browseId\":\"FEmusic_new_releases_videos\""
     private const val NEW_MUSIC_ALBUMS = "\"browseId\":\"FEmusic_new_releases_albums\""
+    private const val MY_PLAYLISTS = "\"browseId\":\"FEplaylist_aggregation\""
     private const val REEL = "\"disablePlayerResponse\":true,\"inputType\":\"REEL_WATCH_INPUT_TYPE_SEEDLESS\",\"params\":\"CA8%3D\""
     private const val REEL_DETAILS = "\"disablePlayerResponse\":true,\"params\":\"%s\",\"playerRequest\":{\"videoId\":\"%s\"}"
     private const val REEL_CONTINUATION = "\"sequenceParams\":\"%s\""
@@ -102,8 +104,12 @@ internal object BrowseApiHelper {
         return ServiceHelper.createQueryWeb(REEL)
     }
 
-    fun getLikedMusicQuery(): String {
-        return ServiceHelper.createQueryWeb(LIKED_MUSIC)
+    fun getLikedMusicQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, LIKED_MUSIC)
+    }
+
+    fun getLikedMusicContinuationTV(): String {
+        return getContinuationQueryTV(LIKED_MUSIC_CONTINUATION)
     }
 
     fun getNewMusicAlbumsQuery(): String {
@@ -127,6 +133,10 @@ internal object BrowseApiHelper {
     fun getReelContinuation2Query(nextPageKey: String): String {
         val continuation = String.format(CONTINUATION, nextPageKey)
         return ServiceHelper.createQueryWeb(continuation)
+    }
+
+    fun getSubscriptionsQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, SUBSCRIPTIONS)
     }
 
     fun getSubscriptionsQueryWeb(): String {
@@ -158,5 +168,9 @@ internal object BrowseApiHelper {
     fun getContinuationQueryTV(nextPageKey: String): String {
         val continuation = String.format(CONTINUATION, nextPageKey)
         return ServiceHelper.createQueryTV(continuation)
+    }
+
+    fun getMyPlaylistQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, MY_PLAYLISTS)
     }
 }

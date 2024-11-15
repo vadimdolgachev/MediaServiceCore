@@ -29,11 +29,11 @@ public interface MediaItemFormatInfo {
     boolean isLive();
     boolean isLiveContent();
     boolean containsMedia();
-    boolean containsDashInfo();
-    boolean containsDashVideoInfo();
+    boolean containsDashFormats();
+    boolean containsDashVideoFormats();
     boolean containsHlsUrl();
     boolean containsDashUrl();
-    boolean containsUrlListInfo();
+    boolean containsUrlFormats();
     boolean hasExtendedHlsFormats();
     float getVolumeLevel();
     InputStream createMpdStream();
@@ -41,6 +41,7 @@ public interface MediaItemFormatInfo {
     List<String> createUrlList();
     MediaItemStoryboard createStoryboard();
     boolean isUnplayable();
+    boolean isHistoryBroken();
     String getPlayabilityStatus();
     boolean isStreamSeekable();
     /**

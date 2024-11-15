@@ -18,7 +18,7 @@ import com.liskovsoft.youtubeapi.common.models.V2.TileItem;
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper;
 
 public class YouTubeMediaItem implements MediaItem {
-    private static int sId;
+    //private static int sId;
     private int mId;
     private String mTitle;
     private String mSecondTitle;
@@ -44,7 +44,7 @@ public class YouTubeMediaItem implements MediaItem {
     private int mRatingStyle;
     private double mRatingScore;
     private int mMediaItemType;
-    private int mPercentWatched;
+    private int mPercentWatched = -1;
     private int mStartTimeSeconds;
     private String mAuthor;
     private String mVideoPreviewUrl;
@@ -55,6 +55,10 @@ public class YouTubeMediaItem implements MediaItem {
     private String mParams;
     private String mClickTrackingParams;
     private boolean mIsMovie;
+    private long mPublishedDate;
+    private long mUpdatedDate;
+    private String mDescription;
+    private int mViewCount;
 
     public static YouTubeMediaItem from(ItemWrapper item, int position) {
         YouTubeMediaItem mediaItem = from(item);
@@ -254,7 +258,7 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     private static void addCommonProps(YouTubeMediaItem video) {
-        video.mId = createId(video);
+        //video.mId = createId(video);
         video.mContentType = "video/mp4";
         video.mWidth = 1280;
         video.mHeight = 720;
@@ -302,22 +306,26 @@ public class YouTubeMediaItem implements MediaItem {
         return item;
     }
 
-    private static int createId(YouTubeMediaItem item) {
-        int id;
-
-        if (item.mVideoId != null) {
-            id = item.mVideoId.hashCode();
-        } else if (item.mChannelId != null) {
-            id = item.mChannelId.hashCode();
-        } else {
-            id = sId++;
-        }
-
-        return id;
-    }
+    //private static int createId(YouTubeMediaItem item) {
+    //    int id;
+    //
+    //    if (item.mVideoId != null) {
+    //        id = item.mVideoId.hashCode();
+    //    } else if (item.mChannelId != null) {
+    //        id = item.mChannelId.hashCode();
+    //    } else {
+    //        id = sId++;
+    //    }
+    //
+    //    return id;
+    //}
 
     @Override
     public int getId() {
+        if (mId == 0) {
+            mId = hashCode();
+        }
+
         return mId;
     }
 
@@ -326,9 +334,17 @@ public class YouTubeMediaItem implements MediaItem {
         return mTitle;
     }
 
+    public void setTitle(String title) {
+        mTitle = title;
+    }
+
     @Override
     public String getSecondTitle() {
         return mSecondTitle;
+    }
+
+    public void setSecondTitle(String secondTitle) {
+        mSecondTitle = secondTitle;
     }
 
     @Override
@@ -339,6 +355,10 @@ public class YouTubeMediaItem implements MediaItem {
     @Override
     public String getCardImageUrl() {
         return mCardImageUrl;
+    }
+
+    public void setCardImageUrl(String cardImageUrl) {
+        mCardImageUrl = cardImageUrl;
     }
 
     @Override
@@ -356,6 +376,10 @@ public class YouTubeMediaItem implements MediaItem {
         return mVideoId;
     }
 
+    public void setVideoId(String videoId) {
+        mVideoId = videoId;
+    }
+
     @Override
     public String getContentType() {
         return mContentType;
@@ -366,9 +390,17 @@ public class YouTubeMediaItem implements MediaItem {
         return mIsLive;
     }
 
+    public void setLive(boolean isLive) {
+        mIsLive = isLive;
+    }
+
     @Override
     public boolean isUpcoming() {
         return mIsUpcoming;
+    }
+
+    public void setUpcoming(boolean isUpcoming) {
+        mIsUpcoming = isUpcoming;
     }
 
     @Override
@@ -422,13 +454,17 @@ public class YouTubeMediaItem implements MediaItem {
     }
 
     @Override
-    public int getDurationMs() {
+    public long getDurationMs() {
         return ServiceHelper.timeTextToMillis(mLengthText);
     }
 
     @Override
     public String getChannelId() {
         return mChannelId;
+    }
+
+    public void setChannelId(String channelId) {
+        mChannelId = channelId;
     }
 
     @Override
@@ -457,6 +493,10 @@ public class YouTubeMediaItem implements MediaItem {
         return mPercentWatched;
     }
 
+    public void setPercentWatched(int percentWatched) {
+        mPercentWatched = percentWatched;
+    }
+
     @Override
     public int getStartTimeSeconds() {
         return mStartTimeSeconds;
@@ -467,9 +507,17 @@ public class YouTubeMediaItem implements MediaItem {
         return mAuthor;
     }
 
+    public void setAuthor(String author) {
+        mAuthor = author;
+    }
+
     @Override
     public String getBadgeText() {
         return mBadgeText;
+    }
+
+    public void setBadgeText(String badgeText) {
+        mBadgeText = badgeText;
     }
 
     @Override
@@ -480,6 +528,10 @@ public class YouTubeMediaItem implements MediaItem {
     @Override
     public String getVideoPreviewUrl() {
         return mVideoPreviewUrl;
+    }
+
+    public void setVideoPreviewUrl(String videoPreviewUrl) {
+        mVideoPreviewUrl = videoPreviewUrl;
     }
 
     @Override
@@ -585,7 +637,9 @@ public class YouTubeMediaItem implements MediaItem {
 
     @Override
     public int hashCode() {
-        return Helpers.hashCode(mVideoId, mPlaylistId, mChannelId, mReloadPageKey);
+        //return Helpers.hashCode(mVideoId, mPlaylistId, mChannelId, mReloadPageKey);
+        int hashCodeAny = YouTubeHelper.hashCodeAny(this);
+        return hashCodeAny != -1 ? hashCodeAny : super.hashCode();
     }
 
     public static String serializeMediaItem(MediaItem mediaItem) {
@@ -602,5 +656,38 @@ public class YouTubeMediaItem implements MediaItem {
         }
 
         return fromString(itemSpec);
+    }
+
+    @Override
+    public long getPublishedDate() {
+        return mPublishedDate;
+    }
+
+    public void setPublishedDate(long publishedDate) {
+        mPublishedDate = publishedDate;
+    }
+
+    public long getUpdatedDate() {
+        return mUpdatedDate;
+    }
+
+    public void setUpdatedDate(long updatedDate) {
+        mUpdatedDate = updatedDate;
+    }
+
+    public String getDescription() {
+        return mDescription;
+    }
+
+    public void setDescription(String description) {
+        mDescription = description;
+    }
+
+    public int getViewCount() {
+        return mViewCount;
+    }
+
+    public void setViewCount(int views) {
+        mViewCount = views;
     }
 }

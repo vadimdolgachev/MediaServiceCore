@@ -10,10 +10,12 @@ import com.liskovsoft.youtubeapi.service.internal.MediaServiceData
 import java.util.regex.Pattern
 
 internal class NSigExtractor(private val playerUrl: String) {
+    private val mFileApi = RetrofitHelper.create(FileApi::class.java)
+    private val data = MediaServiceData.instance()
+    private val mNFuncPatternUrl: String = "https://github.com/yuliskov/SmartTube/releases/download/latest/nfunc_pattern.txt"
+    private var mNFuncPlayerUrl: String? = null
     private var mNFuncCode: Pair<List<String>, String>? = null
     private var mNSig: Pair<String, String?>? = null
-    private val mFileApi = RetrofitHelper.create(FileApi::class.java)
-    private val mNFuncPatternUrl: String = "https://github.com/yuliskov/SmartTube/releases/download/latest/nfunc_pattern.txt"
     private var mNFuncPattern: com.florianingerl.util.regex.Pattern? = com.florianingerl.util.regex.Pattern.compile("""(?x)
             (?:
                 \.get\("n"\)\)&&\(b=|
@@ -49,9 +51,16 @@ internal class NSigExtractor(private val playerUrl: String) {
             }
         }
 
+        // Restore previous success code
+        if (mNFuncCode == null && data.nFuncPlayerUrl != null) {
+            mNFuncPlayerUrl = data.nFuncPlayerUrl
+            initNFuncCode()
+            mNFuncPlayerUrl = null
+        }
+
         if (mNFuncCode == null) {
             ReflectionHelper.dumpDebugInfo(javaClass, loadPlayer())
-            throw IllegalStateException("NSigExtractor: Can't obtain NSig code...")
+            throw IllegalStateException("NSigExtractor: Can't obtain NSig code for $playerUrl...")
         }
     }
 
@@ -103,7 +112,7 @@ internal class NSigExtractor(private val playerUrl: String) {
 
             val escapedFuncName = Pattern.quote(funcName)
 
-            val nameArrPattern = Pattern.compile("""var $escapedFuncName\s*=\s*(\[.+?\])\s*[,;]""")
+            val nameArrPattern = Pattern.compile("""$escapedFuncName\s*=\s*(\[.+?\])\s*[,;]""")
 
             val nameArrMatcher = nameArrPattern.matcher(jsCode)
 
@@ -133,19 +142,16 @@ internal class NSigExtractor(private val playerUrl: String) {
     }
 
     private fun loadPlayer(): String? {
-        return RetrofitHelper.get(mFileApi.getContent(playerUrl))?.content
+        return RetrofitHelper.get(mFileApi.getContent(mNFuncPlayerUrl ?: playerUrl))?.content
     }
 
-    private fun persistNFuncCode() {
-        val data = MediaServiceData.instance()
+    private fun persistNFuncCode() { // save on success
         data.nFuncPlayerUrl = playerUrl
         data.nFuncParams = mNFuncCode?.first
         data.nFuncCode = mNFuncCode?.second
     }
 
     private fun restoreNFuncCode() {
-        val data = MediaServiceData.instance()
-
         if (data.nFuncPlayerUrl == playerUrl && data.nFuncParams != null && data.nFuncCode != null) {
             mNFuncCode = Pair(data.nFuncParams, data.nFuncCode)
         }

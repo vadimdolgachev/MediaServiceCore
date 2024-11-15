@@ -10,6 +10,8 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.actions.ActionsService;
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
+import com.liskovsoft.youtubeapi.rss.RssService;
+import com.liskovsoft.youtubeapi.search.SearchServiceWrapper;
 import com.liskovsoft.youtubeapi.utils.UtilsService;
 import com.liskovsoft.youtubeapi.browse.v1.BrowseApiHelper;
 import com.liskovsoft.youtubeapi.browse.v1.BrowseService;
@@ -45,7 +47,7 @@ public class YouTubeContentService implements ContentService {
 
         mSignInService = YouTubeSignInService.instance();
         mActionsService = ActionsService.instance();
-        mSearchService = SearchService.instance();
+        mSearchService = SearchServiceWrapper.instance();
         mBrowseService = BrowseService.instance();
     }
 
@@ -145,6 +147,18 @@ public class YouTubeContentService implements ContentService {
     @Override
     public Observable<MediaGroup> getSubscriptionsObserve() {
         return RxHelper.fromNullable(this::getSubscriptions);
+    }
+
+    @Override
+    public MediaGroup getSubscriptions(String... channelIds) {
+        checkSigned();
+
+        return RssService.getFeed(channelIds);
+    }
+
+    @Override
+    public Observable<MediaGroup> getSubscriptionsObserve(String... channelIds) {
+        return RxHelper.fromNullable(() -> getSubscriptions(channelIds));
     }
 
     @Override
@@ -275,14 +289,14 @@ public class YouTubeContentService implements ContentService {
 
     @Override
     public MediaGroup getGroup(MediaItem mediaItem) {
-        return getGroup(mediaItem.getReloadPageKey(), mediaItem.getTitle(), mediaItem.getType());
+        return mediaItem.getReloadPageKey() != null ?
+                getGroup(mediaItem.getReloadPageKey(), mediaItem.getTitle(), mediaItem.getType()) :
+                BrowseService2.getChannelVideosFull(mediaItem.getChannelId());
     }
 
     @Override
     public Observable<MediaGroup> getGroupObserve(MediaItem mediaItem) {
-        return mediaItem.getReloadPageKey() != null ?
-                RxHelper.fromNullable(() -> getGroup(mediaItem)) :
-                RxHelper.fromNullable(() -> BrowseService2.getChannelVideosFull(mediaItem.getChannelId()));
+        return RxHelper.fromNullable(() -> getGroup(mediaItem));
     }
 
     @Override
@@ -765,47 +779,80 @@ public class YouTubeContentService implements ContentService {
     }
 
     @Override
-    public Observable<List<MediaGroup>> getPlaylistsObserve() {
+    public Observable<List<MediaGroup>> getPlaylistRowsObserve() {
         return RxHelper.create(emitter -> {
             checkSigned();
 
-            List<GridTab> tabs = mBrowseService.getPlaylists();
+            MediaGroup playlists = getPlaylists();
 
-            if (tabs != null && tabs.size() > 0) {
-                for (GridTab tab : tabs) {
-                    GridTabContinuation tabContinuation = mBrowseService.continueGridTab(tab.getReloadPageKey());
-
-                    if (tabContinuation != null) {
-                        ArrayList<MediaGroup> list = new ArrayList<>();
-                        YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_USER_PLAYLISTS);
-                        mediaGroup.setTitle(tab.getTitle()); // id calculated by title hashcode
-                        list.add(YouTubeMediaGroup.from(tabContinuation, mediaGroup));
-                        emitter.onNext(list);
+            if (playlists != null && playlists.getMediaItems() != null) {
+                for (MediaItem playlist : playlists.getMediaItems()) {
+                    List<MediaGroup> content = BrowseService2.getChannel(playlist.getChannelId(), playlist.getParams());
+                    if (content != null) {
+                        ((BaseMediaGroup) content.get(0)).setTitle(playlist.getTitle());
+                        emitter.onNext(content);
                     }
                 }
-
                 emitter.onComplete();
             } else {
-                RxHelper.onError(emitter, "getPlaylistsObserve: tab is null");
+                RxHelper.onError(emitter, "getPlaylistsRowObserve: the content is null");
             }
         });
     }
+
+    //@Override
+    //public Observable<List<MediaGroup>> getPlaylistRowsObserve() {
+    //    return RxHelper.create(emitter -> {
+    //        checkSigned();
+    //
+    //        List<GridTab> tabs = mBrowseService.getPlaylists();
+    //
+    //        if (tabs != null && tabs.size() > 0) {
+    //            for (GridTab tab : tabs) {
+    //                GridTabContinuation tabContinuation = mBrowseService.continueGridTab(tab.getReloadPageKey());
+    //
+    //                if (tabContinuation != null) {
+    //                    ArrayList<MediaGroup> list = new ArrayList<>();
+    //                    YouTubeMediaGroup mediaGroup = new YouTubeMediaGroup(MediaGroup.TYPE_USER_PLAYLISTS);
+    //                    mediaGroup.setTitle(tab.getTitle()); // id calculated by title hashcode
+    //                    list.add(YouTubeMediaGroup.from(tabContinuation, mediaGroup));
+    //                    emitter.onNext(list);
+    //                }
+    //            }
+    //
+    //            emitter.onComplete();
+    //        } else {
+    //            RxHelper.onError(emitter, "getPlaylistsObserve: tab is null");
+    //        }
+    //    });
+    //}
 
     @Override
-    public Observable<MediaGroup> getEmptyPlaylistsObserve() {
-        return RxHelper.create(emitter -> {
-            checkSigned();
-
-            List<GridTab> tabs = mBrowseService.getPlaylists();
-
-            if (tabs != null && tabs.size() > 0) {
-                emitter.onNext(YouTubeMediaGroup.fromTabs(tabs, MediaGroup.TYPE_USER_PLAYLISTS));
-                emitter.onComplete();
-            } else {
-                RxHelper.onError(emitter, "getEmptyPlaylistsObserve: tab is null");
-            }
-        });
+    public Observable<MediaGroup> getPlaylistsObserve() {
+        return RxHelper.fromNullable(this::getPlaylists);
     }
+
+    private MediaGroup getPlaylists() {
+        checkSigned();
+
+        return BrowseService2.getMyPlaylists();
+    }
+
+    //@Override
+    //public Observable<MediaGroup> getEmptyPlaylistsObserve() {
+    //    return RxHelper.create(emitter -> {
+    //        checkSigned();
+    //
+    //        List<GridTab> tabs = mBrowseService.getPlaylists();
+    //
+    //        if (tabs != null && tabs.size() > 0) {
+    //            emitter.onNext(YouTubeMediaGroup.fromTabs(tabs, MediaGroup.TYPE_USER_PLAYLISTS));
+    //            emitter.onComplete();
+    //        } else {
+    //            RxHelper.onError(emitter, "getEmptyPlaylistsObserve: tab is null");
+    //        }
+    //    });
+    //}
 
     @Override
     public void enableHistory(boolean enable) {
@@ -824,5 +871,6 @@ public class YouTubeContentService implements ContentService {
     @Override
     public void clearSearchHistory() {
         mActionsService.clearSearchHistory();
+        mSearchService.clearSearchHistory();
     }
 }

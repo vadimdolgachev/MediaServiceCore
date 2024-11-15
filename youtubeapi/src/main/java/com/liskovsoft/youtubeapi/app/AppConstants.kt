@@ -3,6 +3,8 @@ package com.liskovsoft.youtubeapi.app
 internal object AppConstants {
     @JvmField
     val playerUrls = listOf(
+        "https://www.youtube.com/s/player/baafab19/tv-player-es6.vflset/tv-player-es6.js",
+        "https://www.youtube.com/s/player/fb725ac8/tv-player-ias.vflset/tv-player-ias.js",
         "https://www.youtube.com/s/player/1f8742dc/tv-player-ias.vflset/tv-player-ias.js",
         "https://www.youtube.com/s/player/20dfca59/player_ias.vflset/en_US/base.js",
         "https://www.youtube.com/s/player/b12cc44b/tv-player-ias.vflset/tv-player-ias.js")
@@ -24,4 +26,6 @@ internal object AppConstants {
 
     const val GET_VIDEO_INFO_OLD2 =
         "https://www.youtube.com/get_video_info?html5=1&c=TVHTML5&ps=default&eurl=https%3A%2F%2Fwww.youtube.com%2Ftv"
+
+    const val WATCH_LATER_CHANNEL_ID = "VLWL"
 }

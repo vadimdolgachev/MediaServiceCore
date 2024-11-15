@@ -3,13 +3,13 @@ package com.liskovsoft.youtubeapi.service;
 import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.DeArrowData;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.DislikeData;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemStoryboard;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.SponsorSegment;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.actions.ActionsService;
@@ -18,7 +18,6 @@ import com.liskovsoft.youtubeapi.block.data.SegmentList;
 import com.liskovsoft.youtubeapi.dearrow.DeArrowService;
 import com.liskovsoft.youtubeapi.feedback.FeedbackService;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
-import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup;
 import com.liskovsoft.youtubeapi.playlist.PlaylistService;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
@@ -35,7 +34,7 @@ import java.util.Set;
 public class YouTubeMediaItemService implements MediaItemService {
     private static final String TAG = YouTubeMediaItemService.class.getSimpleName();
     private static YouTubeMediaItemService sInstance;
-    private final YouTubeSignInService mSignInManager;
+    private final YouTubeSignInService mSignInService;
     private final SponsorBlockService mSponsorBlockService;
     private final TrackingService mTrackingService;
     private final VideoInfoService mVideoInfoService;
@@ -45,7 +44,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     private YouTubeMediaItemFormatInfo mCachedFormatInfo;
 
     private YouTubeMediaItemService() {
-        mSignInManager = YouTubeSignInService.instance();
+        mSignInService = YouTubeSignInService.instance();
         mSponsorBlockService = SponsorBlockService.instance();
         mTrackingService = TrackingService.instance();
         mVideoInfoService = VideoInfoService.instance();
@@ -230,7 +229,7 @@ public class YouTubeMediaItemService implements MediaItemService {
         }
 
         mTrackingService.updateWatchTime(
-                formatInfo.getVideoId(), positionSec, Float.parseFloat(formatInfo.getLengthSeconds()), formatInfo.getEventId(),
+                formatInfo.getVideoId(), positionSec, Helpers.parseFloat(formatInfo.getLengthSeconds()), formatInfo.getEventId(),
                 formatInfo.getVisitorMonitoringData(), formatInfo.getOfParam());
     }
 
@@ -517,6 +516,6 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private void checkSigned() {
-        mSignInManager.checkAuth();
+        mSignInService.checkAuth();
     }
 }

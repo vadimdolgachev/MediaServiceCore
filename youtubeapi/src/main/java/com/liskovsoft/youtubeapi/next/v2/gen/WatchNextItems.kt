@@ -302,7 +302,13 @@ internal data class ChapterRenderer(
 
 internal data class ChapterItemWrapper(
     val chapterRenderer: ChapterRenderer?,
-    val macroMarkersListItemRenderer: MacroMarkersListItemRenderer?
+    val macroMarkersListItemRenderer: MacroMarkersListItemRenderer?,
+
+    // Chapters V3
+    val title: TextItem?,
+    val startMillis: String?,
+    val durationMillis: String?,
+    val thumbnailDetails: ThumbnailItem?
 )
 
 internal data class MacroMarkersListItemRenderer(
@@ -313,13 +319,16 @@ internal data class MacroMarkersListItemRenderer(
 )
 
 internal data class TapItem(
-    val watchEndpoint: WatchEndpoint?
-) {
-    data class WatchEndpoint(
-        val videoId: String?,
-        val playlistId: String?,
-        val startTimeSeconds: Float?
-    )
-}
+    val watchEndpoint: WatchEndpointItem?
+)
+
+///////// Chapters V3
+
+internal data class Marker(
+    val title: TextItem?,
+    val startMillis: String?,
+    val durationMillis: String?,
+    val thumbnailDetails: ThumbnailItem?
+)
 
 //////////

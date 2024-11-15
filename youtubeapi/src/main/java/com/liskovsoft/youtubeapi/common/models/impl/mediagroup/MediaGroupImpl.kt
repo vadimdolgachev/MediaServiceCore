@@ -8,6 +8,7 @@ import com.liskovsoft.youtubeapi.common.models.gen.getBrowseId
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseParams
 import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.GuideMediaItem
 import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.NotificationMediaItem
+import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.TabMediaItem
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResultContinuation
 import com.liskovsoft.youtubeapi.next.v2.gen.getItems
 import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
@@ -26,6 +27,17 @@ internal data class BrowseMediaGroup(
         listOfNotNull(liveResult?.getLiveItems(), browseResult.getItems()).flatten()
     override fun getNextPageKeyInt(): String? = browseResult.getContinuationToken()
     override fun getTitleInt(): String? = browseResult.getTitle()
+}
+
+internal data class BrowseMediaGroupTV(
+    private val browseResult: BrowseResultTV,
+    private val options: MediaGroupOptions = MediaGroupOptions(),
+    private val liveResult: BrowseResult? = null
+): BaseMediaGroup(options) {
+    override fun getItemWrappersInt(): List<ItemWrapper?> =
+        listOfNotNull(liveResult?.getLiveItems(), browseResult.getItems()).flatten()
+    override fun getNextPageKeyInt(): String? = browseResult.getContinuationToken()
+    override fun getTitleInt(): String? = null
 }
 
 internal data class LiveMediaGroup(
@@ -132,6 +144,27 @@ internal data class GuideMediaGroup(
 
         guideResult.getCollapsibleSubs()?.forEach {
             it?.let { if (it.thumbnail != null) result.add(GuideMediaItem(it)) } // exclude 'special' items
+        }
+
+        if (sort) result.sortBy { it.title?.lowercase() }
+
+        result
+    }
+}
+
+internal data class TabListMediaGroup(
+    private val tabs: List<TabRenderer>,
+    private val options: MediaGroupOptions = MediaGroupOptions(),
+    private val sort: Boolean = false
+): BaseMediaGroup(options) {
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = null
+    override fun getNextPageKeyInt(): String? = null
+    override fun getTitleInt(): String? = null
+    override val mediaItemList by lazy {
+        val result = mutableListOf<MediaItem>()
+
+        tabs.forEach {
+            result.add(TabMediaItem(it, options.groupType))
         }
 
         if (sort) result.sortBy { it.title?.lowercase() }

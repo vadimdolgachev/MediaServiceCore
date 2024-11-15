@@ -98,7 +98,7 @@ public final class YouTubeHelper {
             boolean isHideUpcomingEnabled = (prefs.isHideUpcomingFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS) ||
                     (prefs.isHideUpcomingFromChannelEnabled() && mediaGroup.getType() == MediaGroup.TYPE_CHANNEL_UPLOADS);
             boolean isHideStreamsEnabled = (prefs.isHideStreamsFromSubscriptionsEnabled() && mediaGroup.getType() == MediaGroup.TYPE_SUBSCRIPTIONS);
-            boolean isHideMixesEnabled = !MediaServiceData.instance().isContentEnabled(MediaServiceData.CONTENT_MIXES);
+            boolean isHideMixesEnabled = MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_MIXES);
 
             if (isHideShortsEnabled || isHideUpcomingEnabled || isHideStreamsEnabled || isHideMixesEnabled) {
                 // NOTE: The group could be empty after filtering! Fix for that.
@@ -124,7 +124,7 @@ public final class YouTubeHelper {
 
         String title = mediaItem.getTitle().toLowerCase();
 
-        int lengthMs = mediaItem.getDurationMs();
+        long lengthMs = mediaItem.getDurationMs();
         boolean isShortLength = lengthMs > 0 && lengthMs <= SHORTS_LEN_MS;
         return isShortLength || mediaItem.isShorts() || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
     }
@@ -159,5 +159,13 @@ public final class YouTubeHelper {
         }
 
         return Helpers.allNulls(item.getVideoId(), item.getPlaylistId(), item.getReloadPageKey(), item.getParams(), item.getChannelId());
+    }
+
+    public static int hashCodeAny(MediaItem item) {
+        if (item == null) {
+            return -1;
+        }
+
+        return Helpers.hashCodeAny(item.getVideoId(), item.getPlaylistId(), item.getReloadPageKey(), item.getParams(), item.getChannelId());
     }
 }

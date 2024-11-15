@@ -1,7 +1,9 @@
 package com.liskovsoft.youtubeapi.service.internal;
 
+import com.liskovsoft.mediaserviceinterfaces.yt.SignInService.OnAccountChange;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.misc.WeakHashSet;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.auth.V2.AuthService;
@@ -21,7 +23,7 @@ public class YouTubeAccountManager {
     private static YouTubeAccountManager sInstance;
     private final AuthService mAuthService;
     private final YouTubeSignInService mSignInService;
-    private Runnable mOnChange;
+    private final WeakHashSet<OnAccountChange> mListeners = new WeakHashSet<>();
     /**
      * Fix ConcurrentModificationException when using {@link #getSelectedAccount()}
      */
@@ -107,10 +109,12 @@ public class YouTubeAccountManager {
         addAccount(tempAccount);
 
         // Use initial account to create auth header
+        mSignInService.invalidateCache();
         mSignInService.checkAuth();
 
         // Remove initial account (with only refresh key)
-        removeAccount(tempAccount);
+        //removeAccount(tempAccount);
+        mAccounts.remove(tempAccount); // multi thread fix
 
         List<AccountInt> accountsInt = mAuthService.getAccounts(); // runs under auth header from above
 
@@ -127,6 +131,9 @@ public class YouTubeAccountManager {
         // Apply merged tokens
         mSignInService.checkAuth();
 
+        persistAccounts();
+        onAccountChanged();
+
         Log.d(TAG, "Success. Refresh token stored successfully in registry: " + refreshToken);
     }
 
@@ -138,8 +145,6 @@ public class YouTubeAccountManager {
         }
 
         mAccounts.add(newAccount);
-
-        persistAccounts();
     }
 
     public void selectAccount(Account newAccount) {
@@ -152,12 +157,16 @@ public class YouTubeAccountManager {
         }
 
         persistAccounts();
+
+        onAccountChanged();
     }
 
     public void removeAccount(Account account) {
         if (account != null && mAccounts.contains(account)) {
             mAccounts.remove(account);
             persistAccounts();
+
+            onAccountChanged();
         }
     }
 
@@ -173,13 +182,6 @@ public class YouTubeAccountManager {
 
     private void persistAccounts() {
         setAccountManagerData(Helpers.mergeArray(mAccounts.toArray()));
-
-        mSignInService.invalidateCache();
-
-        if (mOnChange != null) {
-            // Fix sign in bug
-            RxHelper.runUser(mOnChange);
-        }
     }
 
     private void restoreAccounts() {
@@ -194,9 +196,7 @@ public class YouTubeAccountManager {
             }
         }
 
-        if (mOnChange != null) {
-            mOnChange.run();
-        }
+        mListeners.forEach(listener -> listener.onAccountChanged(getSelectedAccount()));
     }
 
     private void setAccountManagerData(String data) {
@@ -225,8 +225,10 @@ public class YouTubeAccountManager {
         restoreAccounts();
     }
 
-    public void setOnChange(Runnable onChange) {
-        mOnChange = onChange;
+    public void addOnAccountChange(OnAccountChange listener) {
+        if (!mListeners.contains(listener)) {
+            mListeners.add(listener);
+        }
     }
 
     /**
@@ -241,5 +243,12 @@ public class YouTubeAccountManager {
         if (getSelectedAccount() == null) {
             selectAccount(mAccounts.get(0));
         }
+    }
+
+    private void onAccountChanged() {
+        mSignInService.invalidateCache();
+
+        // Fix sign in bug
+        mListeners.forEach(listener -> RxHelper.runUser(() -> listener.onAccountChanged(getSelectedAccount())));
     }
 }

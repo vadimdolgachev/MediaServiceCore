@@ -2,23 +2,26 @@ package com.liskovsoft.youtubeapi.common.helpers;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
-import com.liskovsoft.youtubeapi.common.converters.gson.GsonClass;
+import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.common.converters.gson.WithGson;
 import com.liskovsoft.youtubeapi.common.converters.gson.GsonConverterFactory;
-import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPathClass;
-import com.liskovsoft.youtubeapi.common.converters.jsonpath.JsonPathSkipClass;
+import com.liskovsoft.youtubeapi.common.converters.jsonpath.WithJsonPath;
+import com.liskovsoft.youtubeapi.common.converters.jsonpath.WithJsonPathSkip;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.converter.JsonPathConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.converter.JsonPathSkipConverterFactory;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathSkipTypeAdapter;
 import com.liskovsoft.youtubeapi.common.converters.jsonpath.typeadapter.JsonPathTypeAdapter;
-import com.liskovsoft.youtubeapi.common.converters.querystring.QueryStringClass;
+import com.liskovsoft.youtubeapi.common.converters.querystring.WithQueryString;
 import com.liskovsoft.youtubeapi.common.converters.querystring.converter.QueryStringConverterFactory;
-import com.liskovsoft.youtubeapi.common.converters.regexp.RegExpClass;
+import com.liskovsoft.youtubeapi.common.converters.regexp.WithRegExp;
 import com.liskovsoft.youtubeapi.common.converters.regexp.converter.RegExpConverterFactory;
+import com.liskovsoft.youtubeapi.common.models.gen.AuthErrorResponse;
 import com.liskovsoft.youtubeapi.common.models.gen.ErrorResponse;
 
 import java.io.IOException;
@@ -28,12 +31,14 @@ import java.net.SocketException;
 import java.util.List;
 
 import okhttp3.Headers;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Converter;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
 public class RetrofitHelper {
+    private static final String TAG = RetrofitHelper.class.getSimpleName();
     // Ignored when specified url is absolute
     private static final String DEFAULT_BASE_URL = "https://www.youtube.com";
 
@@ -60,10 +65,42 @@ public class RetrofitHelper {
         return buildRetrofit(RegExpConverterFactory.create()).create(clazz);
     }
 
+    //public static <T> T get(Call<T> wrapper) {
+    //    Response<T> response = getResponse(wrapper);
+    //
+    //    //handleResponseErrors(response);
+    //
+    //    return response != null ? response.body() : null;
+    //}
+
     public static <T> T get(Call<T> wrapper) {
+        return get(wrapper, false);
+    }
+
+    public static <T> T get(Call<T> wrapper, boolean skipAuth) {
+        return get(wrapper, skipAuth, false);
+    }
+
+    public static <T> T getWithErrors(Call<T> wrapper) {
+        return getWithErrors(wrapper, false);
+    }
+
+    public static <T> T getWithErrors(Call<T> wrapper, boolean skipAuth) {
+        return get(wrapper, skipAuth, true);
+    }
+
+    private static <T> T get(Call<T> wrapper, boolean skipAuth, boolean withErrors) {
+        if (skipAuth) {
+            RetrofitOkHttpHelper.addAuthSkip(wrapper.request());
+        }
+
         Response<T> response = getResponse(wrapper);
 
-        handleErrors(response);
+        if (withErrors) {
+            // NOTE: Be careful. Best suited for transaction like methods (e.g. authentication).
+            // Don't use it with BrowseService (invalid response) and others.
+            handleResponseErrors(response);
+        }
 
         return response != null ? response.body() : null;
     }
@@ -149,15 +186,15 @@ public class RetrofitHelper {
         Annotation[] annotations = clazz.getAnnotations();
 
         for (Annotation annotation : annotations) {
-            if (annotation instanceof RegExpClass) {
+            if (annotation instanceof WithRegExp) {
                 return withRegExp(clazz);
-            } else if (annotation instanceof JsonPathClass) {
+            } else if (annotation instanceof WithJsonPath) {
                 return withJsonPath(clazz);
-            } else if (annotation instanceof JsonPathSkipClass) {
+            } else if (annotation instanceof WithJsonPathSkip) {
                 return withJsonPathSkip(clazz);
-            } else if (annotation instanceof QueryStringClass) {
+            } else if (annotation instanceof WithQueryString) {
                 return withQueryString(clazz);
-            } else if (annotation instanceof GsonClass) {
+            } else if (annotation instanceof WithGson) {
                 return withGson(clazz);
             }
         }
@@ -165,16 +202,29 @@ public class RetrofitHelper {
         throw new IllegalStateException("RetrofitHelper: unknown class: " + clazz.getName());
     }
 
-    private static <T> void handleErrors(Response<T> response) {
+    private static <T> void handleResponseErrors(Response<T> response) {
         if (response == null || response.body() != null) {
             return;
         }
 
         if (response.code() == 400) {
             Gson gson = new GsonBuilder().create();
-            try {
-                ErrorResponse error = response.errorBody() != null ? gson.fromJson(response.errorBody().string(), ErrorResponse.class) : null;
-                throw new IllegalStateException(error != null && error.getError() != null ? error.getError().getMessage() : "Unknown 400 error");
+            try (ResponseBody body = response.errorBody()) {
+                String errorMsg;
+                String errorData = body != null ? body.string() : null;
+
+                try {
+                    ErrorResponse error = errorData != null ? gson.fromJson(errorData, ErrorResponse.class) : null;
+                    errorMsg = error != null && error.getError() != null ? ErrorResponse.class.getSimpleName() + ": " + error.getError().getMessage() : null;
+                } catch (JsonSyntaxException e) {
+                    AuthErrorResponse authError = gson.fromJson(errorData, AuthErrorResponse.class);
+                    errorMsg = AuthErrorResponse.class.getSimpleName() + ": " + authError.getError();
+                }
+
+                errorMsg = errorMsg != null ? errorMsg : "Unknown 400 error";
+
+                Log.e(TAG, errorMsg);
+                throw new IllegalStateException(errorMsg);
             } catch (IOException e) {
                 // handle failure to read error
             }

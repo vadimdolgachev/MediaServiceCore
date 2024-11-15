@@ -158,6 +158,10 @@ public class YouTubeAccount implements Account {
         return mRefreshToken2;
     }
 
+    public boolean isSearchBroken() {
+        return mRefreshToken2 == null && mEmail == null;
+    }
+
     public void merge(Account account) {
         YouTubeAccount youTubeAccount = (YouTubeAccount) account;
 

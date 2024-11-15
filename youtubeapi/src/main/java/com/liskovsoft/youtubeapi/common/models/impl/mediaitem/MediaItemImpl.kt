@@ -1,5 +1,6 @@
 package com.liskovsoft.youtubeapi.common.models.impl.mediaitem
 
+import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
 import com.liskovsoft.youtubeapi.common.models.gen.*
@@ -11,11 +12,11 @@ internal data class WrapperMediaItem(var itemWrapper: ItemWrapper): BaseMediaIte
     override val typeItem by lazy { itemWrapper.getType() }
     override val videoIdItem by lazy { itemWrapper.getVideoId() }
     override val titleItem by lazy { itemWrapper.getTitle() }
-    // Don't tag live streams. However tagging 4K videos is useful.
     override val secondTitleItem by lazy {
-        YouTubeHelper.createInfo(if (isLiveItem == true) null else descBadgeText, userName, viewCountText, publishedTime, upcomingEventText)
+        YouTubeHelper.createInfo(if (isLiveItem == true && !Helpers.allNulls(userName, viewCountText, publishedTime, upcomingEventText)) null else
+            subTitle, userName, viewCountText, publishedTime, upcomingEventText)
     }
-    override val descBadgeText by lazy { itemWrapper.getDescBadgeText() }
+    override val subTitle by lazy { itemWrapper.getSubTitle() } // quality tag (e.g. 4K, LIVE) or full second title
     override val userName by lazy { itemWrapper.getUserName() }
     override val publishedTime by lazy { itemWrapper.getPublishedTime() }
     override val viewCountText by lazy { itemWrapper.getViewCountText() }
@@ -61,6 +62,18 @@ internal data class GuideMediaItem(val guideItem: GuideItem): BaseMediaItem() {
     override val backgroundThumbImageUrl by lazy { guideItem.getThumbnails()?.getHighResThumbnailUrl() }
     override val hasNewContentItem by lazy { guideItem.hasNewContent() }
     override val hasUploadsItem = true
+}
+
+internal data class TabMediaItem(val tabItem: TabRenderer, val groupType: Int): BaseMediaItem() {
+    override val titleItem by lazy { tabItem.getTitle() }
+    override val reloadPageKeyItem by lazy { tabItem.getContinuationKey() }
+    //override val channelIdItem by lazy { tabItem.getBrowseId() }
+    //override val playlistParamsItem by lazy { tabItem.getBrowseParams() }
+    override val cardThumbImageUrl by lazy { tabItem.getThumbnails()?.getOptimalResThumbnailUrl() }
+    override val backgroundThumbImageUrl by lazy { tabItem.getThumbnails()?.getHighResThumbnailUrl() }
+    override val hasNewContentItem by lazy { tabItem.hasNewContent() }
+    override val hasUploadsItem = true
+    override val typeItem = groupType
 }
 
 internal data class ShortsMediaItem(val reel: ReelWatchEndpoint?, val reelDetails: ReelResult): BaseMediaItem() {

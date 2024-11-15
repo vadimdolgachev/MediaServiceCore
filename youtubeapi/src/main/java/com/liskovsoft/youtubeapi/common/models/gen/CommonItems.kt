@@ -1,6 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.gen
 
 import com.liskovsoft.youtubeapi.browse.v2.gen.ContinuationItemRenderer
+import com.liskovsoft.youtubeapi.browse.v2.gen.ReelWatchEndpoint
 import com.liskovsoft.youtubeapi.next.v2.gen.ContinuationItem
 import com.liskovsoft.youtubeapi.next.v2.gen.EngagementPanel
 import com.liskovsoft.youtubeapi.next.v2.gen.VideoOwnerItem
@@ -89,15 +90,12 @@ internal data class DefaultServiceEndpoint(
     val authDeterminedCommand: AuthDeterminedCommand?
 ) {
     data class AuthDeterminedCommand(
-        val authenticatedCommand: AuthenticatedCommand?
-    ) {
-        data class AuthenticatedCommand(
-            val subscribeEndpoint: ChannelsEndpoint?
-        )
-    }
+        val authenticatedCommand: ToggledServiceEndpoint?
+    )
 }
 
 internal data class ToggledServiceEndpoint(
+    val subscribeEndpoint: ChannelsEndpoint?,
     val unsubscribeEndpoint: ChannelsEndpoint?
 )
 
@@ -131,7 +129,8 @@ internal data class SubscribeButtonRenderer(
     val shortSubscriberCountText: TextItem?,
     val longSubscriberCountText: TextItem?,
     val serviceEndpoints: List<DefaultServiceEndpoint?>?,
-    val notificationPreferenceButton: NotificationPreferenceButton?
+    val notificationPreferenceButton: NotificationPreferenceButton?,
+    val onSubscribeEndpoints: List<ToggledServiceEndpoint?>?
 )
 
 internal data class MusicPlayButtonRenderer(
@@ -141,6 +140,7 @@ internal data class MusicPlayButtonRenderer(
 internal data class TextItem(
     val runs: List<Run?>?,
     val simpleText: String?,
+    val content: String?,
     val accessibility: AccessibilityItem?
 ) {
     data class Run(
@@ -168,7 +168,8 @@ internal data class LiveChatEmoji(
 )
 
 internal data class ThumbnailItem(
-    val thumbnails: List<Thumbnail?>?
+    val thumbnails: List<Thumbnail?>?,
+    val sources: List<Thumbnail?>?
 ) {
     data class Thumbnail(
         val url: String?,
@@ -205,7 +206,9 @@ internal data class ItemWrapper(
     val playlistRenderer: PlaylistItem? = null,
     val playlistVideoRenderer: VideoItem? = null, // ChannelPlaylist
     val musicTwoRowItemRenderer: RadioItem? = null, // YouTube Music
-    val continuationItemRenderer: ContinuationItemRenderer? = null // ChannelPlaylist
+    val continuationItemRenderer: ContinuationItemRenderer? = null, // ChannelPlaylist
+    val shortsLockupViewModel: ShortsItem? = null, // Shorts v2
+    val lockupViewModel: LockupItem? = null, // Home video items v2
 )
 
 internal data class TileItem(
@@ -362,12 +365,159 @@ internal data class PlaylistItem(
     val playlistId: String?
 )
 
-internal data class ThumbnailRenderer(
-    val playlistVideoThumbnailRenderer: ThumbnailItemWrapper?,
-    val playlistCustomThumbnailRenderer: ThumbnailItemWrapper?,
-    val musicThumbnailRenderer: ThumbnailItemWrapper?
+internal data class ShortsItem(
+    val accessibilityText: String?,
+    val thumbnail: ThumbnailItem?,
+    val onTap: OnTap?,
+    val overlayMetadata: OverlayMetadata?
 ) {
-    data class ThumbnailItemWrapper(
+    data class OverlayMetadata(
+        val primaryText: TextItem?,
+        val secondaryText: TextItem?
+    )
+}
+
+internal data class OnTap(
+    val innertubeCommand: InnertubeCommand?
+) {
+    data class InnertubeCommand(
+        val reelWatchEndpoint: ReelWatchEndpoint?,
+        val watchEndpoint: WatchEndpointItem?,
+        val showSheetCommand: ShowSheetCommand?,
+        val feedbackEndpoint: FeedbackEndpoint?
+    ) {
+        data class ShowSheetCommand(
+            val panelLoadingStrategy: PanelLoadingStrategy?
+        ) {
+            data class PanelLoadingStrategy(
+                val inlineContent: InlineContent?
+            ) {
+                data class InlineContent(
+                    val sheetViewModel: SheetViewModel?
+                ) {
+                    data class SheetViewModel(
+                        val content: Content?
+                    ) {
+                        data class Content(
+                            val listViewModel: ListViewModel?
+                        ) {
+                            data class ListViewModel(
+                                val listItems: List<ListItem?>?
+                            ) {
+                                data class ListItem(
+                                    val listItemViewModel: ListItemViewModel?
+                                ) {
+                                    data class ListItemViewModel(
+                                        val rendererContext: RendererContext?
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal data class LockupItem(
+    val contentImage: ContentImage?, // thumbnail
+    val metadata: MetadataItem?, // title, subtitle, channelId
+    val rendererContext: RendererContext? // videoId
+) {
+    data class ContentImage(
+        val thumbnailViewModel: ThumbnailViewModel?,
+        val collectionThumbnailViewModel: CollectionThumbnailViewModel?
+    ) {
+        data class ThumbnailViewModel(
+            val image: ThumbnailItem?,
+            val overlays: List<Overlay?>
+        ) {
+            data class Overlay(
+                val thumbnailOverlayBadgeViewModel: ThumbnailOverlayBadgeViewModel?,
+                val thumbnailBottomOverlayViewModel: ThumbnailBottomOverlayViewModel?
+            ) {
+                data class ThumbnailOverlayBadgeViewModel(
+                    val thumbnailBadges: List<ThumbnailBadge?>?
+                ) {
+                    data class ThumbnailBadge(
+                        val thumbnailBadgeViewModel: ThumbnailBadgeViewModel?
+                    ) {
+                        data class ThumbnailBadgeViewModel(
+                            val text: String?,
+                            val badgeStyle: String?
+                        )
+                    }
+                }
+                data class ThumbnailBottomOverlayViewModel(
+                    val progressBar: ProgressBar?
+                ) {
+                    data class ProgressBar(
+                        val thumbnailOverlayProgressBarViewModel: ThumbnailOverlayProgressBarViewModel?
+                    ) {
+                        data class ThumbnailOverlayProgressBarViewModel(
+                            val startPercent: Int?
+                        )
+                    }
+                }
+            }
+        }
+        data class CollectionThumbnailViewModel(
+            val primaryThumbnail: PrimaryThumbnail?
+        ) {
+            data class PrimaryThumbnail(
+                val thumbnailViewModel: ThumbnailViewModel?
+            )
+        }
+    }
+    data class MetadataItem(
+        val lockupMetadataViewModel: LockupMetadataViewModel?
+    ) {
+        data class LockupMetadataViewModel(
+            val title: TextItem?, // title
+            val metadata: NestedMetadataItem?, // subtitle, channelId
+            val menuButton: MenuButton?
+        ) {
+            data class NestedMetadataItem(
+                val contentMetadataViewModel: ContentMetadataViewModel?
+            ) {
+                data class ContentMetadataViewModel(
+                    val metadataRows: List<MetadataRow?>?
+                ) {
+                    data class MetadataRow(
+                        val metadataParts: List<MetadataPart?>?
+                    ) {
+                        data class MetadataPart(
+                            val text: TextItem?
+                        )
+                    }
+                }
+            }
+            data class MenuButton(
+                val buttonViewModel: ButtonViewModel?
+            ) {
+                data class ButtonViewModel(
+                    val onTap: OnTap?
+                )
+            }
+        }
+    }
+}
+
+internal data class RendererContext(
+    val commandContext: CommandContext?
+) {
+    data class CommandContext(
+        val onTap: OnTap?
+    )
+}
+
+internal data class ThumbnailRenderer(
+    val playlistVideoThumbnailRenderer: ThumbnailRenderer?,
+    val playlistCustomThumbnailRenderer: ThumbnailRenderer?,
+    val musicThumbnailRenderer: ThumbnailRenderer?
+) {
+    data class ThumbnailRenderer(
         val thumbnail: ThumbnailItem?
     )
 }
@@ -393,9 +543,6 @@ internal data class MenuItem(
             val feedbackEndpoint: FeedbackEndpoint?,
             val recordNotificationInteractionsEndpoint: RecordNotificationInteractionsEndpoint?
         ) {
-            data class FeedbackEndpoint(
-                val feedbackToken: String?
-            )
             data class RecordNotificationInteractionsEndpoint(
                 val serializedInteractionsRequest: String?
             )
@@ -406,6 +553,10 @@ internal data class MenuItem(
         val navigationEndpoint: NavigationEndpointItem?
     )
 }
+
+internal data class FeedbackEndpoint(
+    val feedbackToken: String?
+)
 
 internal data class RichThumbnailItem(
     val movingThumbnailRenderer: MovingThumbnailRenderer?
@@ -477,3 +628,8 @@ internal data class ErrorResponse(
         )
     }
 }
+
+internal data class AuthErrorResponse(
+    val error: String?,
+    val error_description: String?
+)

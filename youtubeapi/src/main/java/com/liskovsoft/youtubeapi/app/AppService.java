@@ -9,6 +9,7 @@ import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.app.models.ClientData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthApi;
 import com.liskovsoft.youtubeapi.common.js.V8Runtime;
+import com.liskovsoft.youtubeapi.app.potokencloud.PoTokenCloudService;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
@@ -157,13 +158,7 @@ public class AppService {
     }
 
     public String getPoTokenResult() {
-        String function = getPoTokenResultFunction();
-
-        if (function == null) {
-            return null;
-        }
-
-        return V8Runtime.instance().evaluate(function);
+        return PoTokenCloudService.getPoToken();
     }
 
     /**
@@ -211,7 +206,7 @@ public class AppService {
     /**
      * Used with get_video_info, anonymous search and suggestions
      */
-    public String getVisitorId() {
+    public String getVisitorData() {
         updateAppInfoData();
 
         // TODO: NPE 300!!!
@@ -306,19 +301,13 @@ public class AppService {
         return mCachedPlayerData != null ? mCachedPlayerData.getClientPlaybackNonceFunction() : null;
     }
 
-    private String getPoTokenResultFunction() {
-        updatePlayerData();
-
-        // NOTE: NPE
-        return mCachedPlayerData != null ? mCachedPlayerData.getPoTokenResultFunction() : null;
-    }
-
     private String getPlayerUrl() {
         updateAppInfoData();
 
         // NOTE: NPE 2.5K
-        MediaServiceData data = MediaServiceData.instance();
-        return data.getBackupPlayerUrl() != null ? data.getBackupPlayerUrl() : mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
+        //MediaServiceData data = MediaServiceData.instance();
+        //return data.getPlayerUrl() != null ? data.getPlayerUrl() : mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
+        return mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
     }
 
     private String getClientUrl() {
@@ -361,9 +350,10 @@ public class AppService {
             try {
                 mNSigExtractor = new NSigExtractor(getPlayerUrl());
             } catch (Throwable e) { // StackOverflowError | IllegalStateException
+                e.printStackTrace();
                 mCachedPlayerData = null;
-                MediaServiceData data = MediaServiceData.instance();
-                data.setBackupPlayerUrl(data.getNFuncPlayerUrl());
+                //MediaServiceData data = MediaServiceData.instance();
+                //data.setPlayerUrl(data.getNFuncPlayerUrl());
             }
         }
     }
@@ -382,16 +372,24 @@ public class AppService {
         }
     }
 
+    private synchronized void updatePoTokenData() {
+        PoTokenCloudService.updatePoToken();
+    }
+
     public void invalidateCache() {
         mCachedAppInfo = null;
         mCachedPlayerData = null;
         mCachedClientData = null;
     }
 
-    public void refreshCacheIfNeeded() {
+    public void refreshCoreDataIfNeeded() {
         updateAppInfoData();
         updatePlayerData();
         updateClientData();
+    }
+
+    public void refreshPoTokenIfNeeded() {
+        updatePoTokenData();
     }
 
     public boolean isPlayerCacheActual() {

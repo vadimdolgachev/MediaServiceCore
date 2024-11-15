@@ -1,6 +1,7 @@
 package com.liskovsoft.youtubeapi.browse.v2
 
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
+import com.liskovsoft.youtubeapi.common.helpers.AppClient
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.KidsSectionMediaGroup
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper
@@ -358,6 +359,16 @@ class BrowseApiTest {
         assertTrue("Topic can be continued", continuationResult?.getItems() != null)
     }
 
+    @Test
+    fun testMyPlaylists() {
+        val client = AppClient.TV
+        val browse = mService?.getBrowseResultTV(browseQuery = BrowseApiHelper.getMyPlaylistQuery(client))
+
+        val result = RetrofitHelper.get(browse)
+
+        assertNotNull("Has playlist", result?.getItems())
+    }
+
     private fun testReelContinuation(continuation: ReelContinuationResult?) {
         val firstEntry = continuation?.getItems()?.getOrNull(0)
         val details = getReelDetails(firstEntry?.videoId, firstEntry?.params)
@@ -499,7 +510,7 @@ class BrowseApiTest {
     }
 
     private fun getLikedMusic(): BrowseResult? {
-        val result = mService?.getBrowseResult(BrowseApiHelper.getLikedMusicQuery())
+        val result = mService?.getBrowseResult(BrowseApiHelper.getLikedMusicQuery(AppClient.WEB))
 
         return RetrofitHelper.get(result)
     }

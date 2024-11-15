@@ -41,8 +41,6 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
     private val commentsKeyItem: String? by lazy {
         commentsPanel?.getTopCommentsToken()
-        // Old val
-        //suggestedSections?.lastOrNull()?.getItemWrappers()?.getOrNull(1)?.getContinuationKey()
     }
     private val videoOwner by lazy {
         videoMetadata?.getVideoOwner()
@@ -104,14 +102,22 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     private val subscriberCountItem by lazy { videoOwner?.getSubscriberCount() }
     private val videoAuthorImageUrl by lazy { (videoOwner?.getThumbnails() ?: channelOwner?.getThumbnails())?.getOptimalResThumbnailUrl() }
     private val suggestionList by lazy {
-        val list = suggestedSections?.mapIndexedNotNull { idx, it -> if (it.getItemWrappers() != null) SuggestionsGroup(it).apply {
+        val list = suggestedSections
+                ?.filter { it.getTitle()?.trim() != "" && it.getItemWrappers() != null } // remove unnamed sections (new suggestions type)
+                ?.mapIndexed { idx, it -> SuggestionsGroup(it).apply {
             // Replace "Up Next" with real playlist name
             if (idx == 0 && playlistInfo?.title != null) {
                 title = playlistInfo?.title
             }
-        } else null }
-        if ((list?.size ?: 0) > 0)
-            list
+        }}
+        // Merge unnamed section together
+        val groups = suggestedSections?.filter { it.getTitle()?.trim() == ""  }
+        var mergedSection: SuggestionsGroup? = null
+        if (groups?.isNotEmpty() == true) {
+            mergedSection = SuggestionsGroup(groups)
+        }
+        if (list?.isNotEmpty() == true || mergedSection != null)
+            listOfNotNull(list, listOfNotNull(mergedSection)).flatten()
         else
             // In rare cases first chip item contains all shelfs
             suggestedSections?.firstOrNull()?.getChipItems()?.firstOrNull()?.run {
@@ -183,6 +189,8 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
         // Fake count based on 'returnyoutubedislike' plugin algorithm
         videoMetadata?.getLikeCountInt()?.let { if (it > 0) ServiceHelper.prettyCount(it * 0.032) else null }
     }
+
+    private val durationMsItem by lazy { ServiceHelper.timeTextToMillis(videoDetails?.getLengthText()) }
 
     override fun getTitle(): String? {
         return videoTitle
@@ -282,5 +290,9 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
 
     override fun getNotificationStates(): List<NotificationState?>? {
         return notificationStateList
+    }
+
+    override fun getDurationMs(): Long {
+        return durationMsItem
     }
 }

@@ -63,6 +63,9 @@ public class VideoInfo {
     @JsonPath("$.playabilityStatus.reason")
     private String mPlayabilityReason;
 
+    @JsonPath("$.playabilityStatus.playableInEmbed")
+    private boolean mIsPlayableInEmbed;
+
     @JsonPath("$.playabilityStatus.errorScreen.playerErrorMessageRenderer.subreason")
     private TextItem mPlayabilityDescription;
 
@@ -91,6 +94,7 @@ public class VideoInfo {
     private int mSegmentDurationUs;
     private boolean mIsStreamSeekable;
     private List<CaptionTrack> mMergedCaptionTracks;
+    private boolean mIsHistoryBroken;
 
     public List<AdaptiveVideoFormat> getAdaptiveFormats() {
         return mAdaptiveFormats;
@@ -208,14 +212,28 @@ public class VideoInfo {
     }
 
     public boolean isUnplayable() {
-        return isEmbedRestricted() || isAgeRestricted();
+        return isUnknownRestricted() || isVisibilityRestricted() || isAgeRestricted();
     }
 
     /**
      * Video cannot be embedded
      */
     public boolean isEmbedRestricted() {
-        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_UNPLAYABLE, STATUS_ERROR);
+        return !mIsPlayableInEmbed;
+    }
+
+    /**
+     * Reason of unavailability unknown or we received a temporal ban
+     */
+    public boolean isUnknownRestricted() {
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_UNPLAYABLE);
+    }
+
+    /**
+     * Removed or hidden by the user
+     */
+    public boolean isVisibilityRestricted() {
+        return ServiceHelper.atLeastOneEquals(mPlayabilityStatus, STATUS_ERROR);
     }
 
     /**
@@ -324,6 +342,9 @@ public class VideoInfo {
         return getEventId() != null && getVisitorMonitoringData() != null;
     }
 
+    /**
+     * Sync live data
+     */
     public void sync(DashInfo dashInfo) {
         if (dashInfo == null) {
             return;
@@ -335,14 +356,26 @@ public class VideoInfo {
         mIsStreamSeekable = dashInfo.isSeekable();
     }
 
+    /**
+     * Sync history data
+     */
     public void sync(VideoInfo videoInfo) {
-        if (videoInfo == null) {
+        if (videoInfo == null || Helpers.anyNull(videoInfo.getEventId(), videoInfo.getVisitorMonitoringData(), videoInfo.getOfParam())) {
             return;
         }
 
         setEventId(videoInfo.getEventId());
         setVisitorMonitoringData(videoInfo.getVisitorMonitoringData());
         setOfParam(videoInfo.getOfParam());
+        setHistoryBroken(false);
+    }
+
+    public void setHistoryBroken(boolean isBroken) {
+        mIsHistoryBroken = isBroken;
+    }
+
+    public boolean isHistoryBroken() {
+        return mIsHistoryBroken || isUnknownRestricted();
     }
 
     private void parseTrackingParams() {

@@ -25,7 +25,8 @@ public class YouTubeServiceManager implements ServiceManager {
     private final MediaItemService mMediaItemManager;
     private final YouTubeLiveChatService mLiveChatService;
     private final YouTubeCommentsService mCommentsService;
-    private Disposable mRefreshCacheAction;
+    private Disposable mRefreshCoreDataAction;
+    private Disposable mRefreshPoTokenAction;
 
     private YouTubeServiceManager() {
         Log.d(TAG, "Starting...");
@@ -83,35 +84,51 @@ public class YouTubeServiceManager implements ServiceManager {
     @Override
     public void invalidateCache() {
         invalidatePlaybackCache();
-        YouTubeSignInService.instance().invalidateCache(); // sections infinite loading fix (request timed out fix)
-        VideoInfoService.instance().invalidateCache();
-        AppService.instance().invalidateVisitorData();
-        LocaleManager.unhold();
+        VideoInfoService.instance().resetInfoType();
     }
 
     @Override
     public void refreshCacheIfNeeded() {
-        if (RxHelper.isAnyActionRunning(mRefreshCacheAction)) {
+        refreshCoreDataIfNeeded();
+        //refreshPoTokenIfNeeded();
+    }
+
+    private void refreshCoreDataIfNeeded() {
+        if (RxHelper.isAnyActionRunning(mRefreshCoreDataAction)) {
             return;
         }
 
-        mRefreshCacheAction = RxHelper.execute(refreshCacheIfNeededObserve());
+        mRefreshCoreDataAction = RxHelper.execute(refreshCoreDataIfNeededObserve());
     }
 
-    private Observable<Void> refreshCacheIfNeededObserve() {
-        return RxHelper.fromVoidable(AppService.instance()::refreshCacheIfNeeded);
+    private void refreshPoTokenIfNeeded() {
+        if (RxHelper.isAnyActionRunning(mRefreshPoTokenAction)) {
+            return;
+        }
+
+        mRefreshPoTokenAction = RxHelper.execute(refreshPoTokenIfNeededObserve());
+    }
+
+    private Observable<Void> refreshCoreDataIfNeededObserve() {
+        return RxHelper.fromVoidable(AppService.instance()::refreshCoreDataIfNeeded);
+    }
+
+    private Observable<Void> refreshPoTokenIfNeededObserve() {
+        return RxHelper.fromVoidable(AppService.instance()::refreshPoTokenIfNeeded);
     }
 
     @Override
     public void applyNoPlaybackFix() {
         invalidatePlaybackCache();
-        AppService.instance().invalidateVisitorData();
-        VideoInfoService.instance().fixVideoInfo();
+        VideoInfoService.instance().fixPlaybackErrors();
     }
 
     @Override
     public void invalidatePlaybackCache() {
+        LocaleManager.unhold();
+        YouTubeSignInService.instance().invalidateCache(); // sections infinite loading fix (request timed out fix)
         AppService.instance().invalidateCache();
+        AppService.instance().invalidateVisitorData();
         YouTubeMediaItemService.instance().invalidateCache();
     }
 }
