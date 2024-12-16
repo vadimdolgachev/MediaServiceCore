@@ -6,7 +6,7 @@ import com.liskovsoft.youtubeapi.common.models.gen.getStateId
 import com.liskovsoft.youtubeapi.common.models.gen.getStateParams
 import com.liskovsoft.youtubeapi.common.models.gen.getTitle
 
-internal data class NotificationStateImpl(
+internal open class NotificationStateImpl(
     val notificationStateItem: NotificationStateItem,
     val selectedSateId: Int?,
     val channelId: String?,
@@ -25,6 +25,8 @@ internal data class NotificationStateImpl(
     }
 
     val stateParams = notificationStateItem.getStateParams()
+
+    val index by lazy { allStates.indexOf(this) }
 
     fun setSelected() {
         allStates.forEach { it._selected = it == this }

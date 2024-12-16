@@ -9,6 +9,7 @@ import com.liskovsoft.youtubeapi.next.v2.gen.VideoOwnerItem
 internal data class NavigationEndpointItem(
     val browseEndpoint: BrowseEndpoint?,
     val watchEndpoint: WatchEndpointItem?,
+    val reelWatchEndpoint: ReelWatchEndpoint?,
     val watchPlaylistEndpoint: WatchEndpointItem?,
     val openPopupAction: PopupActionItem?,
     val showEngagementPanelEndpoint: ShowEngagementPanelEndpoint?
@@ -212,6 +213,7 @@ internal data class ItemWrapper(
 )
 
 internal data class TileItem(
+    val style: String?,
     val metadata: Metadata?,
     val header: Header?,
     val onSelectCommand: NavigationEndpointItem?,
@@ -259,7 +261,7 @@ internal data class TileItem(
         val richTextTileHeaderRenderer: RichTextTileHeaderRenderer? // Video description (last row in the suggestions)
     ) {
         data class TileHeaderRenderer(
-            val thumbnail: ThumbnailItem,
+            val thumbnail: ThumbnailItem?,
             val thumbnailOverlays: List<ThumbnailOverlayItem?>?,
             val movingThumbnail: ThumbnailItem?, // v1
             val onFocusThumbnail: ThumbnailItem? // v2
@@ -269,7 +271,7 @@ internal data class TileItem(
          * Video description (last row in the suggestions)
          */
         data class RichTextTileHeaderRenderer(
-            val textContent: List<TextItem>
+            val textContent: List<TextItem?>?
         )
     }
 
@@ -431,7 +433,7 @@ internal data class LockupItem(
     ) {
         data class ThumbnailViewModel(
             val image: ThumbnailItem?,
-            val overlays: List<Overlay?>
+            val overlays: List<Overlay?>?
         ) {
             data class Overlay(
                 val thumbnailOverlayBadgeViewModel: ThumbnailOverlayBadgeViewModel?,
@@ -568,7 +570,8 @@ internal data class RichThumbnailItem(
 
 internal data class ThumbnailOverlayItem(
     val thumbnailOverlayTimeStatusRenderer: ThumbnailOverlayTimeStatusRenderer?,
-    val thumbnailOverlayResumePlaybackRenderer: ThumbnailOverlayResumePlaybackRenderer?
+    val thumbnailOverlayResumePlaybackRenderer: ThumbnailOverlayResumePlaybackRenderer?,
+    val tileMetadataRenderer: TileItem.Metadata.TileMetadataRenderer?,
 ) {
     data class ThumbnailOverlayTimeStatusRenderer(
         val text: TextItem?,

@@ -3,16 +3,17 @@ package com.liskovsoft.youtubeapi.app;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.ClientData;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
+import com.liskovsoft.youtubeapi.app.nsig.NSigExtractor;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import retrofit2.Call;
 import retrofit2.Response;
 
-public class AppApiWrapper {
+public class AppServiceInt {
     private final AppApi mAppApi;
 
-    public AppApiWrapper() {
+    public AppServiceInt() {
         mAppApi = RetrofitHelper.create(AppApi.class);
     }
 
@@ -46,7 +47,11 @@ public class AppApiWrapper {
         Call<PlayerData> wrapper = mAppApi.getPlayerData(playerUrl);
         return RetrofitHelper.get(wrapper);
     }
-    
+
+    public NSigExtractor getNSigExtractor(String playerUrl) {
+        return new NSigExtractor(playerUrl);
+    }
+
     public ClientData getClientData(String clientUrl) {
         if (clientUrl == null) {
             return null;
@@ -75,5 +80,14 @@ public class AppApiWrapper {
 
     public void invalidateVisitorData() {
         MediaServiceData.instance().setVisitorCookie(null);
+    }
+
+    public void invalidateCache() {
+        // NOP
+    }
+
+    public boolean isPlayerCacheActual() {
+        // NOP
+        return false;
     }
 }

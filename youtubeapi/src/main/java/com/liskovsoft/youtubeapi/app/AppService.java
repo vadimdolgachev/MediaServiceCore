@@ -2,16 +2,14 @@ package com.liskovsoft.youtubeapi.app;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.youtubeapi.app.models.AppInfo;
+import com.liskovsoft.youtubeapi.app.models.ClientData;
+import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.app.nsig.NSigExtractor;
 import com.liskovsoft.youtubeapi.common.helpers.DefaultHeaders;
-import com.liskovsoft.youtubeapi.app.models.AppInfo;
-import com.liskovsoft.youtubeapi.app.models.PlayerData;
-import com.liskovsoft.youtubeapi.app.models.ClientData;
 import com.liskovsoft.youtubeapi.auth.V1.AuthApi;
 import com.liskovsoft.youtubeapi.common.js.V8Runtime;
 import com.liskovsoft.youtubeapi.app.potokencloud.PoTokenCloudService;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
-import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,20 +18,12 @@ import java.util.List;
 
 public class AppService {
     private static final String TAG = AppService.class.getSimpleName();
-    private static final long CACHE_REFRESH_PERIOD_MS = 10 * 60 * 60 * 1_000; // check updated core files every 10 hours
     private static AppService sInstance;
-    private final AppApiWrapper mAppApiWrapper;
+    private final AppServiceInt mAppServiceInt;
     //private Duktape mDuktape;
-    private AppInfo mCachedAppInfo;
-    private PlayerData mCachedPlayerData;
-    private ClientData mCachedClientData;
-    private long mAppInfoUpdateTimeMs;
-    private long mPlayerDataUpdateTimeMs;
-    private long mClientDataUpdateTimeMs;
-    private NSigExtractor mNSigExtractor;
 
     private AppService() {
-        mAppApiWrapper = new AppApiWrapper();
+        mAppServiceInt = new AppServiceIntCached();
     }
 
     public static AppService instance() {
@@ -110,38 +100,13 @@ public class AppService {
     }
 
     public String fixThrottling(String throttled) {
-        updatePlayerData();
+        getPlayerData();
 
-        if (throttled == null || mNSigExtractor == null) {
+        if (throttled == null || getNSigExtractor() == null) {
             return null;
         }
 
-        return mNSigExtractor.extractNSig(throttled);
-    }
-
-    /**
-     * Throttle strings using js code
-     */
-    private List<String> fixThrottlingOld(List<String> throttled) {
-        if (isAllNulls(throttled)) {
-            return throttled;
-        }
-
-        String throttleCode = createThrottleCode(throttled);
-
-        if (throttleCode == null) {
-            return throttled;
-        }
-
-        return runCode(throttleCode);
-    }
-
-    private String fixThrottlingOld(String throttled) {
-        if (throttled == null) {
-            return null;
-        }
-
-        return fixThrottlingOld(Collections.singletonList(throttled)).get(0);
+        return getNSigExtractor().extractNSig(throttled);
     }
 
     /**
@@ -178,39 +143,31 @@ public class AppService {
      * Constant used in {@link AuthApi}
      */
     public String getClientId() {
-        updateClientData();
-
         // TODO: NPE 1.6K!!!
-        return mCachedClientData != null ? mCachedClientData.getClientId() : null;
+        return getClientData() != null ? getClientData().getClientId() : null;
     }
 
     /**
      * Constant used in {@link AuthApi}
      */
     public String getClientSecret() {
-        updateClientData();
-
-        return mCachedClientData != null ? mCachedClientData.getClientSecret() : null;
+        return getClientData() != null ? getClientData().getClientSecret() : null;
     }
 
     /**
      * Used in get_video_info
      */
     public String getSignatureTimestamp() {
-        updatePlayerData();
-
         // TODO: NPE 300!!!
-        return mCachedPlayerData != null ? mCachedPlayerData.getSignatureTimestamp() : null;
+        return getPlayerData() != null ? getPlayerData().getSignatureTimestamp() : null;
     }
 
     /**
      * Used with get_video_info, anonymous search and suggestions
      */
     public String getVisitorData() {
-        updateAppInfoData();
-
         // TODO: NPE 300!!!
-        return mCachedAppInfo != null ? mCachedAppInfo.getVisitorData() : null;
+        return getAppInfoData() != null ? getAppInfoData().getVisitorData() : null;
     }
 
     private static boolean isAllNulls(List<String> ciphered) {
@@ -244,27 +201,6 @@ public class AppService {
         return result.toString();
     }
 
-    private String createThrottleCode(List<String> throttled) {
-        String throttleFunction = getThrottleFunction();
-
-        if (throttleFunction == null) {
-            Log.e(TAG, "Oops. ThrottleFunction is null...");
-            return null;
-        }
-
-        StringBuilder result = new StringBuilder();
-        result.append(throttleFunction);
-        result.append("var result = [];");
-
-        for (String cipher : throttled) {
-            result.append(String.format("result.push(throttleSignature('%s'));", cipher));
-        }
-
-        result.append("result.toString();");
-
-        return result.toString();
-    }
-
     private List<String> runCode(String code) {
         String result = V8Runtime.instance().evaluate(code);
 
@@ -282,118 +218,62 @@ public class AppService {
     //}
 
     private String getDecipherFunction() {
-        updatePlayerData();
-
-        return mCachedPlayerData != null ? mCachedPlayerData.getDecipherFunction() : null;
-    }
-
-    private String getThrottleFunction() {
-        updatePlayerData();
-
-        // NOTE: NPE 24 events
-        return mCachedPlayerData != null ? mCachedPlayerData.getThrottleFunction() : null;
+        return getPlayerData() != null ? getPlayerData().getDecipherFunction() : null;
     }
 
     private String getClientPlaybackNonceFunction() {
-        updatePlayerData();
-
         // NOTE: NPE 10K!!!
-        return mCachedPlayerData != null ? mCachedPlayerData.getClientPlaybackNonceFunction() : null;
+        return getPlayerData() != null ? getPlayerData().getClientPlaybackNonceFunction() : null;
     }
 
     private String getPlayerUrl() {
-        updateAppInfoData();
-
         // NOTE: NPE 2.5K
         //MediaServiceData data = MediaServiceData.instance();
         //return data.getPlayerUrl() != null ? data.getPlayerUrl() : mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
-        return mCachedAppInfo != null ? mCachedAppInfo.getPlayerUrl() : null;
+        return getAppInfoData() != null ? getAppInfoData().getPlayerUrl() : null;
     }
 
     private String getClientUrl() {
-        updateAppInfoData();
-
         // NOTE: NPE 143K!!!
-        return mCachedAppInfo != null ? mCachedAppInfo.getClientUrl() : null;
+        return getAppInfoData() != null ? getAppInfoData().getClientUrl() : null;
     }
 
-    private synchronized void updateAppInfoData() {
-        if (mCachedAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
-            return;
-        }
-
-        Log.d(TAG, "updateAppInfoData");
-
-        mCachedAppInfo = mAppApiWrapper.getAppInfo(DefaultHeaders.APP_USER_AGENT);
-
-        if (mCachedAppInfo != null) {
-            mAppInfoUpdateTimeMs = System.currentTimeMillis();
-        }
+    private AppInfo getAppInfoData() {
+        return mAppServiceInt.getAppInfo(DefaultHeaders.APP_USER_AGENT);
     }
 
-    private synchronized void updatePlayerData() {
-        if (isPlayerCacheActual()) {
-            return;
-        }
-
-        if (getPlayerUrl() == null) {
-            return;
-        }
-
-        Log.d(TAG, "updatePlayerData");
-
-        mCachedPlayerData = mAppApiWrapper.getPlayerData(getPlayerUrl());
-
-        if (mCachedPlayerData != null) {
-            mPlayerDataUpdateTimeMs = System.currentTimeMillis();
-            YouTubeMediaItemService.instance().invalidateCache();
-            try {
-                mNSigExtractor = new NSigExtractor(getPlayerUrl());
-            } catch (Throwable e) { // StackOverflowError | IllegalStateException
-                e.printStackTrace();
-                mCachedPlayerData = null;
-                //MediaServiceData data = MediaServiceData.instance();
-                //data.setPlayerUrl(data.getNFuncPlayerUrl());
-            }
-        }
+    private ClientData getClientData() {
+        return mAppServiceInt.getClientData(getClientUrl());
     }
 
-    private synchronized void updateClientData() {
-        if (mCachedClientData != null && System.currentTimeMillis() - mClientDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
-            return;
-        }
-
-        Log.d(TAG, "updateClientData");
-
-        mCachedClientData = mAppApiWrapper.getClientData(getClientUrl());
-
-        if (mCachedClientData != null) {
-            mClientDataUpdateTimeMs = System.currentTimeMillis();
-        }
+    private PlayerData getPlayerData() {
+        return mAppServiceInt.getPlayerData(getPlayerUrl());
     }
 
-    private synchronized void updatePoTokenData() {
+    private NSigExtractor getNSigExtractor() {
+        if (getPlayerData() == null) {
+            return null;
+        }
+
+        return mAppServiceInt.getNSigExtractor(getPlayerUrl());
+    }
+
+    private void updatePoTokenData() {
         PoTokenCloudService.updatePoToken();
     }
 
     public void invalidateCache() {
-        mCachedAppInfo = null;
-        mCachedPlayerData = null;
-        mCachedClientData = null;
+        mAppServiceInt.invalidateCache();
     }
 
-    public void refreshCoreDataIfNeeded() {
-        updateAppInfoData();
-        updatePlayerData();
-        updateClientData();
+    public void refreshCacheIfNeeded() {
+        getAppInfoData();
+        getPlayerData();
+        getClientData();
     }
 
     public void refreshPoTokenIfNeeded() {
         updatePoTokenData();
-    }
-
-    public boolean isPlayerCacheActual() {
-        return mCachedPlayerData != null && System.currentTimeMillis() - mPlayerDataUpdateTimeMs < CACHE_REFRESH_PERIOD_MS;
     }
 
     /**
@@ -401,6 +281,10 @@ public class AppService {
      * After reset user will get the latest js file versions.
      */
     public void invalidateVisitorData() {
-        mAppApiWrapper.invalidateVisitorData();
+        mAppServiceInt.invalidateVisitorData();
+    }
+
+    public boolean isPlayerCacheActual() {
+        return mAppServiceInt.isPlayerCacheActual();
     }
 }

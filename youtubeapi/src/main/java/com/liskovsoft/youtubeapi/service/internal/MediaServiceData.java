@@ -3,6 +3,8 @@ package com.liskovsoft.youtubeapi.service.internal;
 import android.content.Context;
 import android.util.Pair;
 
+import androidx.annotation.Nullable;
+
 import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -10,6 +12,13 @@ import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.sharedutils.prefs.SharedPreferencesBase;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.app.AppConstants;
+import com.liskovsoft.youtubeapi.app.models.AppInfo;
+import com.liskovsoft.youtubeapi.app.models.ClientData;
+import com.liskovsoft.youtubeapi.app.models.PlayerData;
+import com.liskovsoft.youtubeapi.app.models.cached.AppInfoCached;
+import com.liskovsoft.youtubeapi.app.models.cached.ClientDataCached;
+import com.liskovsoft.youtubeapi.app.models.cached.PlayerDataCached;
+import com.liskovsoft.youtubeapi.app.nsig.NSigData;
 import com.liskovsoft.youtubeapi.app.potokencloud.PoTokenResponse;
 
 import java.util.List;
@@ -19,6 +28,7 @@ import io.reactivex.disposables.Disposable;
 
 public class MediaServiceData {
     private static final String TAG = MediaServiceData.class.getSimpleName();
+    public static final int FORMATS_NONE = 0;
     public static final int FORMATS_ALL = Integer.MAX_VALUE;
     public static final int FORMATS_DASH = 1;
     public static final int FORMATS_URL = 1 << 1;
@@ -28,6 +38,7 @@ public class MediaServiceData {
     public static final int CONTENT_WATCHED_HOME = 1 << 1;
     public static final int CONTENT_WATCHED_SUBS = 1 << 2;
     public static final int CONTENT_SHORTS_HOME = 1 << 3;
+    public static final int CONTENT_SHORTS_SEARCH = 1 << 4;
     public static final int CONTENT_WATCHED_WATCH_LATER = 1 << 4;
     private static MediaServiceData sInstance;
     private String mAppVersion;
@@ -35,19 +46,20 @@ public class MediaServiceData {
     private String mDeviceId;
     private String mVideoInfoVersion;
     private int mVideoInfoType;
-    private String mNFuncPlayerUrl;
-    private List<String> mNFuncParams;
-    private String mNFuncCode;
     private String mPlayerUrl;
     private String mPlayerVersion;
     private String mVisitorCookie;
-    private int mEnabledFormats = FORMATS_ALL;
-    private int mHiddenContent = CONTENT_NONE;
+    private int mEnabledFormats = FORMATS_ALL; // Debug
+    private int mHiddenContent;
     private Disposable mPersistAction;
     private boolean mSkipAuth;
     private MediaServiceCache mCachedPrefs;
     private GlobalPreferences mGlobalPrefs;
     private PoTokenResponse mPoToken;
+    private AppInfoCached mAppInfo;
+    private PlayerDataCached mPlayerData;
+    private ClientDataCached mClientData;
+    private NSigData mNSigData;
 
     private static class MediaServiceCache extends SharedPreferencesBase {
         private static final String PREF_NAME = MediaServiceCache.class.getSimpleName();
@@ -147,30 +159,13 @@ public class MediaServiceData {
     //    persistData();
     //}
 
-    public String getNFuncPlayerUrl() {
-        return mNFuncPlayerUrl;
+    @Nullable
+    public NSigData getNSigData() {
+        return mNSigData;
     }
 
-    public void setNFuncPlayerUrl(String playerUrl) {
-        mNFuncPlayerUrl = playerUrl;
-        persistData();
-    }
-
-    public List<String> getNFuncParams() {
-        return mNFuncParams;
-    }
-
-    public void setNFuncParams(List<String> nFuncParams) {
-        mNFuncParams = nFuncParams;
-        persistData();
-    }
-    
-    public String getNFuncCode() {
-        return mNFuncCode;
-    }
-
-    public void setNFuncCode(String nFuncCode) {
-        mNFuncCode = nFuncCode;
+    public void setNSigData(NSigData nSigData) {
+        mNSigData = nSigData;
         persistData();
     }
 
@@ -194,6 +189,10 @@ public class MediaServiceData {
     }
 
     public boolean isFormatEnabled(int formats) {
+        if (mEnabledFormats == FORMATS_NONE) {
+            enableFormat(FORMATS_DASH, true);
+        }
+
         return (mEnabledFormats & formats) == formats;
     }
 
@@ -221,6 +220,36 @@ public class MediaServiceData {
         persistData();
     }
 
+    public AppInfoCached getAppInfo() {
+        return mAppInfo;
+    }
+
+    public void setAppInfo(AppInfoCached appInfo) {
+        mAppInfo = appInfo;
+
+        persistData();
+    }
+
+    public PlayerDataCached getPlayerData() {
+        return mPlayerData;
+    }
+
+    public void setPlayerData(PlayerDataCached playerData) {
+        mPlayerData = playerData;
+
+        persistData();
+    }
+
+    public ClientDataCached getClientData() {
+        return mClientData;
+    }
+
+    public void setClientData(ClientDataCached clientData) {
+        mClientData = clientData;
+
+        persistData();
+    }
+
     private void restoreData() {
         String data = mGlobalPrefs.getMediaServiceData();
 
@@ -234,9 +263,12 @@ public class MediaServiceData {
         // entries here moved to the cache
         mVisitorCookie = Helpers.parseStr(split, 10);
         mEnabledFormats = Helpers.parseInt(split, 11, FORMATS_DASH);
-        mHiddenContent = Helpers.parseInt(split, 12, CONTENT_MIXES);
+        mHiddenContent = Helpers.parseInt(split, 12, CONTENT_NONE);
         mSkipAuth = Helpers.parseBoolean(split, 13);
         mPoToken = Helpers.parseItem(split, 14, PoTokenResponse::fromString);
+        mAppInfo = Helpers.parseItem(split, 15, AppInfoCached::fromString);
+        mPlayerData = Helpers.parseItem(split, 16, PlayerDataCached::fromString);
+        mClientData = Helpers.parseItem(split, 17, ClientDataCached::fromString);
     }
 
     private void restoreCachedData() {
@@ -249,11 +281,12 @@ public class MediaServiceData {
         String lastPlayerUrl = AppConstants.playerUrls.get(0); // fallback url for nfunc extractor
         mVideoInfoVersion = Helpers.parseStr(split, 0);
         mVideoInfoType = Helpers.parseInt(split, 1);
-        mNFuncPlayerUrl = Helpers.parseStr(split, 2, lastPlayerUrl);
-        mNFuncParams = Helpers.parseStrList(split, 3);
-        mNFuncCode = Helpers.parseStr(split, 4);
+        //mNFuncPlayerUrl = Helpers.parseStr(split, 2, lastPlayerUrl);
+        //mNFuncParams = Helpers.parseStrList(split, 3);
+        //mNFuncCode = Helpers.parseStr(split, 4);
         mPlayerUrl = Helpers.parseStr(split, 5);
         mPlayerVersion = Helpers.parseStr(split, 6);
+        mNSigData = Helpers.parseItem(split, 7, NSigData::fromString);
     }
 
     private void persistData() {
@@ -271,7 +304,7 @@ public class MediaServiceData {
         mGlobalPrefs.setMediaServiceData(
                 Helpers.mergeData(null, mScreenId, mDeviceId, null, null,
                         null, null, null, null, null,
-                        mVisitorCookie, mEnabledFormats, mHiddenContent, mSkipAuth, mPoToken));
+                        mVisitorCookie, mEnabledFormats, mHiddenContent, mSkipAuth, mPoToken, mAppInfo, mPlayerData, mClientData));
     }
 
     private void persistCachedDataReal() {
@@ -281,6 +314,6 @@ public class MediaServiceData {
 
         mCachedPrefs.setMediaServiceCache(
                 Helpers.mergeData(mVideoInfoVersion, mVideoInfoType,
-                        mNFuncPlayerUrl, mNFuncParams, mNFuncCode, mPlayerUrl, mPlayerVersion));
+                        null, null, null, mPlayerUrl, mPlayerVersion, mNSigData));
     }
 }

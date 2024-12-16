@@ -14,7 +14,6 @@ import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
 
-import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
 public class YouTubeServiceManager implements ServiceManager {
@@ -89,38 +88,20 @@ public class YouTubeServiceManager implements ServiceManager {
 
     @Override
     public void refreshCacheIfNeeded() {
-        refreshCoreDataIfNeeded();
-        //refreshPoTokenIfNeeded();
-    }
-
-    private void refreshCoreDataIfNeeded() {
-        if (RxHelper.isAnyActionRunning(mRefreshCoreDataAction)) {
-            return;
-        }
-
-        mRefreshCoreDataAction = RxHelper.execute(refreshCoreDataIfNeededObserve());
-    }
-
-    private void refreshPoTokenIfNeeded() {
-        if (RxHelper.isAnyActionRunning(mRefreshPoTokenAction)) {
-            return;
-        }
-
-        mRefreshPoTokenAction = RxHelper.execute(refreshPoTokenIfNeededObserve());
-    }
-
-    private Observable<Void> refreshCoreDataIfNeededObserve() {
-        return RxHelper.fromVoidable(AppService.instance()::refreshCoreDataIfNeeded);
-    }
-
-    private Observable<Void> refreshPoTokenIfNeededObserve() {
-        return RxHelper.fromVoidable(AppService.instance()::refreshPoTokenIfNeeded);
+        refreshCacheIfNeededInt();
     }
 
     @Override
     public void applyNoPlaybackFix() {
-        invalidatePlaybackCache();
-        VideoInfoService.instance().fixPlaybackErrors();
+        //invalidatePlaybackCache();
+        YouTubeMediaItemService.instance().invalidateCache();
+        VideoInfoService.instance().switchNextFormat();
+    }
+
+    @Override
+    public void applyAntiBotFix() {
+        YouTubeMediaItemService.instance().invalidateCache();
+        refreshPoTokenIfNeeded();
     }
 
     @Override
@@ -130,5 +111,24 @@ public class YouTubeServiceManager implements ServiceManager {
         AppService.instance().invalidateCache();
         AppService.instance().invalidateVisitorData();
         YouTubeMediaItemService.instance().invalidateCache();
+    }
+
+    private void refreshCacheIfNeededInt() {
+        if (RxHelper.isAnyActionRunning(mRefreshCoreDataAction)) {
+            return;
+        }
+
+        mRefreshCoreDataAction = RxHelper.execute(RxHelper.fromVoidable(AppService.instance()::refreshCacheIfNeeded));
+    }
+
+    private void refreshPoTokenIfNeeded() {
+        if (RxHelper.isAnyActionRunning(mRefreshPoTokenAction)) {
+            return;
+        }
+
+        mRefreshPoTokenAction = RxHelper.execute(RxHelper.createLong(emitter -> {
+            AppService.instance().refreshPoTokenIfNeeded();
+            emitter.onComplete();
+        }));
     }
 }

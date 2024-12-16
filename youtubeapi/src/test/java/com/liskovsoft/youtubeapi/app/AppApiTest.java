@@ -1,11 +1,11 @@
 package com.liskovsoft.youtubeapi.app;
 
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.common.helpers.DefaultHeaders;
 import com.liskovsoft.youtubeapi.app.models.AppInfo;
 import com.liskovsoft.youtubeapi.app.models.PlayerData;
 import com.liskovsoft.youtubeapi.app.models.ClientData;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(RobolectricTestRunner.class)
 public class AppApiTest {
     private static final String POTOKEN_INPUT = "102307470137119736718||104417232878503778010";
-    private AppApiWrapper mAppApiWrapper;
+    private AppServiceInt mAppServiceInt;
 
     @Before
     public void setUp() {
@@ -30,7 +30,7 @@ public class AppApiTest {
 
         ShadowLog.stream = System.out; // catch Log class output
 
-        mAppApiWrapper = new AppApiWrapper();
+        mAppServiceInt = new AppServiceInt();
     }
 
     @Test
@@ -43,7 +43,7 @@ public class AppApiTest {
     public void testThatDecipherFunctionIsValid() {
         String playerUrl = getPlayerUrl(DefaultHeaders.USER_AGENT_TV);
 
-        PlayerData playerData = mAppApiWrapper.getPlayerData(playerUrl);
+        PlayerData playerData = mAppServiceInt.getPlayerData(playerUrl);
 
         assertNotNull("Decipher result not null", playerData);
 
@@ -51,7 +51,7 @@ public class AppApiTest {
         assertNotNull("Decipher function not null", decipherFunctionContent);
         assertFalse("Decipher function is not empty", decipherFunctionContent.isEmpty());
         assertTrue("Decipher function has proper content",
-                decipherFunctionContent.startsWith(";var ") && decipherFunctionContent.contains("function ") &&
+                Helpers.startsWithAny(decipherFunctionContent, ";var ", ";const ") && decipherFunctionContent.contains("function ") &&
                         decipherFunctionContent.endsWith(".join(\"\")}"));
     }
 
@@ -66,18 +66,6 @@ public class AppApiTest {
                 playbackNonceFunctionContent.contains("function getClientPlaybackNonce") && playbackNonceFunctionContent.endsWith("}"));
     }
 
-    @Ignore
-    @Test
-    public void testThrottleFunctionIsValid() {
-        PlayerData playerData = getPlayerData(DefaultHeaders.USER_AGENT_TV);
-
-        String throttleFunction = playerData.getThrottleFunction();
-        assertNotNull("Throttle function not null", throttleFunction);
-        assertFalse("Throttle function not empty", throttleFunction.isEmpty());
-        assertTrue("Throttle function has valid content", throttleFunction.startsWith("function throttleSignature")
-                && throttleFunction.endsWith(".join(\"\")}"));
-    }
-
     @Test
     public void testThatClientIdAndSecretNotEmpty() {
         ClientData clientData = getClientData(DefaultHeaders.USER_AGENT_TV);
@@ -87,7 +75,7 @@ public class AppApiTest {
     }
 
     private String getPlayerUrl(String userAgent) {
-        AppInfo appInfo = mAppApiWrapper.getAppInfo(userAgent);
+        AppInfo appInfo = mAppServiceInt.getAppInfo(userAgent);
 
         assertNotNull("AppInfo not null", appInfo);
 
@@ -99,7 +87,7 @@ public class AppApiTest {
     }
 
     private String getBaseUrl(String userAgent) {
-        AppInfo appInfo = mAppApiWrapper.getAppInfo(userAgent);
+        AppInfo appInfo = mAppServiceInt.getAppInfo(userAgent);
 
         assertNotNull("AppInfo not null", appInfo);
 
@@ -113,7 +101,7 @@ public class AppApiTest {
     private PlayerData getPlayerData(String userAgent) {
         String playerUrl = getPlayerUrl(userAgent);
 
-        PlayerData playerData = mAppApiWrapper.getPlayerData(playerUrl);
+        PlayerData playerData = mAppServiceInt.getPlayerData(playerUrl);
 
         assertNotNull("PlayerData not null", playerData);
 
@@ -123,7 +111,7 @@ public class AppApiTest {
     private ClientData getClientData(String userAgent) {
         String baseUrl = getBaseUrl(userAgent);
 
-        ClientData clientData = mAppApiWrapper.getClientData(baseUrl);
+        ClientData clientData = mAppServiceInt.getClientData(baseUrl);
 
         assertNotNull("Base data not null", clientData);
         return clientData;

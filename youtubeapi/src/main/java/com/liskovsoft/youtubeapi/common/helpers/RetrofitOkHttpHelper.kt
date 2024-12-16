@@ -6,6 +6,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.sharedutils.okhttp.OkHttpCommons
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.youtubeapi.app.AppConstants
+import com.liskovsoft.youtubeapi.app.AppService
 import com.liskovsoft.youtubeapi.search.SearchApi
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,10 +34,13 @@ internal object RetrofitOkHttpHelper {
             authSkipList.add(request)
     }
 
-    private val headers = mapOf(
-        "User-Agent" to DefaultHeaders.APP_USER_AGENT,
+    private val commonHeaders = mapOf(
         // Enable compression in production
         "Accept-Encoding" to DefaultHeaders.ACCEPT_ENCODING,
+    )
+
+    private val apiHeaders = mapOf(
+        "User-Agent" to DefaultHeaders.APP_USER_AGENT,
         "Referer" to "https://www.youtube.com/tv"
     )
 
@@ -61,11 +65,16 @@ internal object RetrofitOkHttpHelper {
             val headers = request.headers()
             val requestBuilder = request.newBuilder()
 
-            applyHeaders(this.headers, headers, requestBuilder)
+            applyHeaders(this.commonHeaders, headers, requestBuilder)
 
             val url = request.url().toString()
 
             if (Helpers.startsWithAny(url, *apiPrefixes)) {
+                // Empty Home fix (anonymous user) and improve Recommendations for everyone
+                headers["X-Goog-Visitor-Id"] ?: AppService.instance().visitorData?.let { requestBuilder.header("X-Goog-Visitor-Id", it) }
+
+                applyHeaders(this.apiHeaders, headers, requestBuilder)
+
                 val doSkipAuth = authSkipList.remove(request)
                 if (authHeaders.isEmpty() || doSkipAuth) {
                     applyQueryKeys(mapOf("key" to AppConstants.API_KEY, "prettyPrint" to "false"), request, requestBuilder)
@@ -84,18 +93,14 @@ internal object RetrofitOkHttpHelper {
         }
     }
 
-    private fun applyHeaders(newHeaders: Map<String, String>, oldHeaders: Headers, builder: Request.Builder) {
+    private fun applyHeaders(newHeaders: Map<String, String?>, oldHeaders: Headers, builder: Request.Builder) {
         for (header in newHeaders) {
             if (disableCompression && header.key == "Accept-Encoding") {
                 continue
             }
 
-            if (header.value == null) { // don't remove
-                continue
-            }
-
             // Don't override existing headers
-            oldHeaders[header.key] ?: builder.header(header.key, header.value)
+            oldHeaders[header.key] ?: header.value?.let { builder.header(header.key, it) } // NOTE: don't remove null check
         }
     }
 

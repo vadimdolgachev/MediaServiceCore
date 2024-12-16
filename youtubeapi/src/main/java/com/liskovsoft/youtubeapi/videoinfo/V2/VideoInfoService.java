@@ -32,7 +32,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private final static int VIDEO_INFO_ANDROID = 4;
     private final static int VIDEO_INFO_IOS = 5;
     private final static int VIDEO_INFO_EMBED = 6;
-    private final static int[] VIDEO_INFO_TYPE_LIST = {
+    private final static Integer[] VIDEO_INFO_TYPE_LIST = {
             VIDEO_INFO_TV, VIDEO_INFO_IOS, VIDEO_INFO_EMBED, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB
     };
     private int mVideoInfoType = -1;
@@ -59,7 +59,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
     public VideoInfo getVideoInfo(String videoId, String clickTrackingParams) {
         mSkipAuthBlock = mSkipAuth;
 
-        VideoInfo result = getRootVideoInfo(videoId, clickTrackingParams);
+        VideoInfo result = firstNonNull(videoId, clickTrackingParams);
 
         mSkipAuthBlock = false;
 
@@ -69,7 +69,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
         }
 
         if (mSkipAuth) {
-            result.sync(getRootVideoInfo(videoId, clickTrackingParams));
+            result.sync(firstNonNull(videoId, clickTrackingParams));
         }
 
         result = retryIfNeeded(result, videoId, clickTrackingParams);
@@ -95,6 +95,19 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         result.setAdaptiveFormats(adaptiveFormats);
         result.setRegularFormats(regularFormats);
+
+        return result;
+    }
+
+    private VideoInfo firstNonNull(String videoId, String clickTrackingParams) {
+        final int beginType = mVideoInfoType != -1 ? mVideoInfoType : VIDEO_INFO_TYPE_LIST[0];
+        int nextType = beginType;
+        VideoInfo result;
+
+        do {
+            result = getVideoInfo(nextType, videoId, clickTrackingParams);
+            nextType = Helpers.getNextValue(nextType, VIDEO_INFO_TYPE_LIST);
+        } while (result == null && nextType != beginType);
 
         return result;
     }
@@ -145,7 +158,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
         restoreVideoInfoType();
     }
 
-    public void fixPlaybackErrors() {
+    public void switchNextFormat() {
         MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_EXTENDED_HLS, false);
         nextVideoInfo();
         persistVideoInfoType();
@@ -165,7 +178,8 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private void nextVideoInfo() {
         boolean defaultValue = true;
 
-        if (mVideoInfoType != -1 && mSkipAuth == defaultValue) {
+        // Only TV can work with auth
+        if (mVideoInfoType == VIDEO_INFO_TV && mSkipAuth == defaultValue) {
             mSkipAuth = !defaultValue;
             return;
         }
@@ -245,7 +259,9 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         if (shouldObtainExtendedFormats(result) || result.isStoryboardBroken()) {
             Log.d(TAG, "Enable high bitrate formats...");
+            mSkipAuthBlock = true;
             VideoInfoHls videoInfoHls = getVideoInfoIOSHls(videoId, clickTrackingParams);
+            mSkipAuthBlock = false;
             if (videoInfoHls != null && shouldObtainExtendedFormats(result)) {
                 result.setHlsManifestUrl(videoInfoHls.getHlsManifestUrl());
             }
