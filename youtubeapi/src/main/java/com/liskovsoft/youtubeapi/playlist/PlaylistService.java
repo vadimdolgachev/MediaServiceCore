@@ -1,15 +1,20 @@
 package com.liskovsoft.youtubeapi.playlist;
 
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.youtubeapi.actions.models.ActionResult;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
+import com.liskovsoft.youtubeapi.playlist.impl.YouTubePlaylistInfo;
 import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
+
+import java.util.List;
+
 import retrofit2.Call;
 
 public class PlaylistService {
     private static PlaylistService sInstance;
     private final PlaylistApi mPlaylistManager;
 
-    private PlaylistService() {
+    protected PlaylistService() {
         mPlaylistManager = RetrofitHelper.create(PlaylistApi.class);
     }
 
@@ -21,11 +26,11 @@ public class PlaylistService {
         return sInstance;
     }
 
-    public PlaylistsResult getPlaylistsInfo(String videoId) {
+    public List<PlaylistInfo> getPlaylistsInfo(String videoId) {
         Call<PlaylistsResult> wrapper =
                 mPlaylistManager.getPlaylistsInfo(PlaylistApiHelper.getPlaylistsInfoQuery(videoId));
 
-        return RetrofitHelper.get(wrapper);
+        return YouTubePlaylistInfo.from(RetrofitHelper.get(wrapper));
     }
 
     public void addToPlaylist(String playlistId, String videoId) {

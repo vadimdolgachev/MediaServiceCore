@@ -1,16 +1,18 @@
 package com.liskovsoft.youtubeapi.service;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.CommentsService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ContentService;
-import com.liskovsoft.mediaserviceinterfaces.yt.LiveChatService;
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.NotificationsService;
-import com.liskovsoft.mediaserviceinterfaces.yt.RemoteControlService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.ChannelGroupService;
+import com.liskovsoft.mediaserviceinterfaces.CommentsService;
+import com.liskovsoft.mediaserviceinterfaces.ContentService;
+import com.liskovsoft.mediaserviceinterfaces.LiveChatService;
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.NotificationsService;
+import com.liskovsoft.mediaserviceinterfaces.RemoteControlService;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.app.AppService;
+import com.liskovsoft.youtubeapi.channelgroups.ChannelGroupServiceImpl;
 import com.liskovsoft.youtubeapi.common.locale.LocaleManager;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
 
@@ -81,6 +83,11 @@ public class YouTubeServiceManager implements ServiceManager {
     }
 
     @Override
+    public ChannelGroupService getChannelGroupService() {
+        return ChannelGroupServiceImpl.INSTANCE;
+    }
+
+    @Override
     public void invalidateCache() {
         invalidatePlaybackCache();
         VideoInfoService.instance().resetInfoType();
@@ -109,7 +116,7 @@ public class YouTubeServiceManager implements ServiceManager {
         LocaleManager.unhold();
         YouTubeSignInService.instance().invalidateCache(); // sections infinite loading fix (request timed out fix)
         AppService.instance().invalidateCache();
-        AppService.instance().invalidateVisitorData();
+        //AppService.instance().invalidateVisitorData();
         YouTubeMediaItemService.instance().invalidateCache();
     }
 
@@ -118,7 +125,7 @@ public class YouTubeServiceManager implements ServiceManager {
             return;
         }
 
-        mRefreshCoreDataAction = RxHelper.execute(RxHelper.fromVoidable(AppService.instance()::refreshCacheIfNeeded));
+        mRefreshCoreDataAction = RxHelper.execute(RxHelper.fromRunnable(AppService.instance()::refreshCacheIfNeeded));
     }
 
     private void refreshPoTokenIfNeeded() {

@@ -1,11 +1,11 @@
 package com.liskovsoft.youtubeapi.service.data;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.ChapterItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.v1.models.sections.Chip;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
@@ -270,6 +270,10 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
         return mSuggestions;
     }
 
+    public void setSuggestions(List<MediaGroup> suggestions) {
+        mSuggestions = suggestions;
+    }
+
     @Override
     public PlaylistInfo getPlaylistInfo() {
         return null;
@@ -288,5 +292,10 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     @Override
     public long getDurationMs() {
         return -1;
+    }
+
+    @Override
+    public String getBadgeText() {
+        return null;
     }
 }

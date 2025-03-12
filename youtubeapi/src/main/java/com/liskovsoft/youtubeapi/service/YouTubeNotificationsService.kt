@@ -1,14 +1,14 @@
 package com.liskovsoft.youtubeapi.service
 
-import com.liskovsoft.mediaserviceinterfaces.yt.NotificationsService
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState
+import com.liskovsoft.mediaserviceinterfaces.NotificationsService
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
 import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.youtubeapi.notifications.NotificationsServiceWrapper
 import io.reactivex.Observable
 
-object YouTubeNotificationsService: NotificationsService {
+internal object YouTubeNotificationsService: NotificationsService {
     private val mSignInService = YouTubeSignInService.instance()
 
     override fun getNotificationItems(): MediaGroup? {
@@ -34,11 +34,11 @@ object YouTubeNotificationsService: NotificationsService {
     }
 
     override fun hideNotificationObserve(item: MediaItem?): Observable<Void> {
-        return RxHelper.fromVoidable { hideNotification(item) }
+        return RxHelper.fromRunnable { hideNotification(item) }
     }
 
     override fun setNotificationStateObserve(state: NotificationState?): Observable<Void> {
-        return RxHelper.fromVoidable { setNotificationState(state) }
+        return RxHelper.fromRunnable { setNotificationState(state) }
     }
 
     private fun checkSigned() {

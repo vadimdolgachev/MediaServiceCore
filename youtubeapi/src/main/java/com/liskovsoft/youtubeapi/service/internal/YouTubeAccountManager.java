@@ -1,11 +1,14 @@
 package com.liskovsoft.youtubeapi.service.internal;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService.OnAccountChange;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
+import androidx.annotation.Nullable;
+
+import com.liskovsoft.mediaserviceinterfaces.SignInService.OnAccountChange;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.misc.WeakHashSet;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
+import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.auth.V2.AuthService;
 import com.liskovsoft.youtubeapi.auth.models.auth.RefreshToken;
 import com.liskovsoft.youtubeapi.auth.models.auth.UserCode;
@@ -13,6 +16,8 @@ import com.liskovsoft.youtubeapi.auth.models.info.AccountInt;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInService;
 import com.liskovsoft.youtubeapi.service.data.YouTubeAccount;
+import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
+
 import io.reactivex.Observable;
 
 import java.util.List;
@@ -21,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class YouTubeAccountManager {
     private static final String TAG = YouTubeAccountManager.class.getSimpleName();
     private static YouTubeAccountManager sInstance;
+    private boolean mStorageSynced;
     private final AuthService mAuthService;
     private final YouTubeSignInService mSignInService;
     private final WeakHashSet<OnAccountChange> mListeners = new WeakHashSet<>();
@@ -28,29 +34,55 @@ public class YouTubeAccountManager {
      * Fix ConcurrentModificationException when using {@link #getSelectedAccount()}
      */
     private final List<Account> mAccounts = new CopyOnWriteArrayList<Account>() {
+        //@Override
+        //public boolean add(Account account) {
+        //    if (account == null) {
+        //        return false;
+        //    }
+        //
+        //    merge(account);
+        //
+        //    // Don't remove these lines or you won't be able to enter to the account.
+        //    while (contains(account)) {
+        //        remove(account);
+        //    }
+        //
+        //    return super.add(account);
+        //}
+        //
+        //private void merge(Account account) {
+        //    int index = indexOf(account);
+        //
+        //    if (index != -1) {
+        //        Account matched = get(index);
+        //        ((YouTubeAccount) account).merge(matched);
+        //        remove(matched);
+        //    }
+        //}
+
         @Override
         public boolean add(Account account) {
             if (account == null) {
                 return false;
             }
 
-            merge(account);
-
-            // Don't remove these lines or you won't be able to enter to the account.
-            while (contains(account)) {
-                remove(account);
-            }
+            mergeAndRemove(account);
 
             return super.add(account);
         }
 
-        private void merge(Account account) {
+        private void mergeAndRemove(Account account) {
             int index = indexOf(account);
 
             if (index != -1) {
                 Account matched = get(index);
+
+                // Don't remove these lines or you won't be able to enter to the account.
+                while (contains(account)) {
+                    remove(account);
+                }
+
                 ((YouTubeAccount) account).merge(matched);
-                remove(matched);
             }
         }
     };
@@ -91,6 +123,7 @@ public class YouTubeAccountManager {
         });
     }
 
+    @Nullable
     public List<Account> getAccounts() {
         return mAccounts;
     }
@@ -196,7 +229,7 @@ public class YouTubeAccountManager {
             }
         }
 
-        mListeners.forEach(listener -> listener.onAccountChanged(getSelectedAccount()));
+        notifyListeners();
     }
 
     private void setAccountManagerData(String data) {
@@ -227,7 +260,11 @@ public class YouTubeAccountManager {
 
     public void addOnAccountChange(OnAccountChange listener) {
         if (!mListeners.contains(listener)) {
-            mListeners.add(listener);
+            if (listener instanceof MediaServicePrefs) {
+                mListeners.add(0, listener);
+            } else {
+                mListeners.add(listener);
+            }
         }
     }
 
@@ -247,8 +284,49 @@ public class YouTubeAccountManager {
 
     private void onAccountChanged() {
         mSignInService.invalidateCache();
+        AppService.instance().invalidateCache(); // regenerate visitor data
+        VideoInfoService.instance().resetInfoType(); // reset to the default format
+
+        notifyListeners();
+    }
+
+    /**
+     * Sync avatars, names and emails
+     */
+    public void syncStorage() {
+        if (mStorageSynced)
+            return;
+
+        List<Account> storedAccounts = getAccounts();
+
+        if (storedAccounts != null && !storedAccounts.isEmpty()) {
+            List<AccountInt> newAccounts = mAuthService.getAccounts();
+
+            Account selectedAccount = getSelectedAccount();
+
+            if (newAccounts != null) {
+                for (AccountInt newAccount : newAccounts) {
+                    YouTubeAccount account = YouTubeAccount.from(newAccount);
+                    account.setSelected(account.equals(selectedAccount));
+                    addAccount(account);
+                }
+                persistAccounts();
+            }
+        }
+
+        mStorageSynced = true;
+    }
+
+    private void notifyListeners() {
+        Account account = getSelectedAccount();
 
         // Fix sign in bug
-        mListeners.forEach(listener -> RxHelper.runUser(() -> listener.onAccountChanged(getSelectedAccount())));
+        mListeners.forEach(listener -> {
+            if (listener instanceof MediaServicePrefs) {
+                listener.onAccountChanged(account);
+            } else {
+                RxHelper.runUser(() -> listener.onAccountChanged(account));
+            }
+        });
     }
 }

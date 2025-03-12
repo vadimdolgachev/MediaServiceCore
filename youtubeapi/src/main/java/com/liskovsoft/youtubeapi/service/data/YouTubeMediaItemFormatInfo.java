@@ -1,9 +1,9 @@
 package com.liskovsoft.youtubeapi.service.data;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaFormat;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemStoryboard;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaSubtitle;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.app.AppService;
 import com.liskovsoft.youtubeapi.formatbuilders.hlsbuilder.YouTubeUrlListBuilder;
@@ -55,6 +55,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private float mLoudnessDb;
     private boolean mContainsDashVideoFormats;
     private boolean mIsHistoryBroken;
+    private String mPaidContentText;
 
     private YouTubeMediaItemFormatInfo() {
         mCreatedTimeMs = System.currentTimeMillis();
@@ -118,6 +119,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mIsAgeRestricted = videoInfo.isAgeRestricted();
         formatInfo.mHasExtendedHlsFormats = videoInfo.hasExtendedHlsFormats();
         formatInfo.mLoudnessDb = videoInfo.getLoudnessDb();
+        formatInfo.mPaidContentText = videoInfo.getPaidContentText();
 
         List<CaptionTrack> captionTracks = videoInfo.getCaptionTracks();
 
@@ -270,12 +272,20 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     public float getVolumeLevel() {
         float result = 1.0f;
 
+        //if (mLoudnessDb != 0) {
+        //    // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
+        //    // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
+        //    float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 50.0f);
+        //    result = Math.min(normalLevel, 2.5f);
+        //    result *= 0.6f; // minimize distortions
+        //}
+
         if (mLoudnessDb != 0) {
             // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
             // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
-            float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 50.0f);
-            result = Math.min(normalLevel, 2.5f);
-            result *= 0.6f; // minimize distortions
+            float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 20.0f);
+            result = Math.min(normalLevel, 7.5f); // 1.5 max volume
+            result *= 0.2f; // minimize distortions
         }
 
         return result;
@@ -363,8 +373,8 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     }
 
     @Override
-    public boolean isAgeRestricted() {
-        return mIsAgeRestricted;
+    public String getPaidContentText() {
+        return mPaidContentText;
     }
 
     public String getEventId() {

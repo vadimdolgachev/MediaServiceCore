@@ -10,11 +10,17 @@ public class AppInfoCached extends AppInfo {
     private final String mPlayerUrl;
     private final String mClientUrl;
     private final String mVisitorData;
+    private final long mCreationTimeMs;
 
     private AppInfoCached(String playerUrl, String clientUrl, String visitorData) {
+        this(playerUrl, clientUrl, visitorData, System.currentTimeMillis());
+    }
+
+    private AppInfoCached(String playerUrl, String clientUrl, String visitorData, long creationTimeMs) {
         mPlayerUrl = playerUrl;
         mClientUrl = clientUrl;
         mVisitorData = visitorData;
+        mCreationTimeMs = creationTimeMs;
     }
 
     public static AppInfoCached fromString(String spec) {
@@ -24,7 +30,12 @@ public class AppInfoCached extends AppInfo {
 
         String[] split = Helpers.split(DELIM, spec);
 
-        return new AppInfoCached(Helpers.parseStr(split, 0), Helpers.parseStr(split, 1), Helpers.parseStr(split, 2));
+        String playerUrl = Helpers.parseStr(split, 0);
+        String clientUrl = Helpers.parseStr(split, 1);
+        String visitorData = Helpers.parseStr(split, 2);
+        long creationTimeMs = Helpers.parseLong(split, 3);
+
+        return new AppInfoCached(playerUrl, clientUrl, visitorData, creationTimeMs);
     }
 
     public static AppInfoCached from(AppInfo appInfo) {
@@ -38,7 +49,7 @@ public class AppInfoCached extends AppInfo {
     @NonNull
     @Override
     public String toString() {
-        return Helpers.merge(DELIM, mPlayerUrl, mClientUrl, mVisitorData);
+        return Helpers.merge(DELIM, mPlayerUrl, mClientUrl, mVisitorData, mCreationTimeMs);
     }
 
     @Override
@@ -54,5 +65,13 @@ public class AppInfoCached extends AppInfo {
     @Override
     public String getVisitorData() {
         return mVisitorData;
+    }
+
+    public long getCreationTimeMs() {
+        return mCreationTimeMs;
+    }
+
+    public boolean validate() {
+        return mPlayerUrl != null && mClientUrl != null && mVisitorData != null;
     }
 }

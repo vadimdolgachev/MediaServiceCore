@@ -1,9 +1,9 @@
 package com.liskovsoft.youtubeapi.next.v2.impl
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.*
-import com.liskovsoft.mediaserviceinterfaces.yt.data.ChapterItem
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo
+import com.liskovsoft.mediaserviceinterfaces.data.*
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
 import com.liskovsoft.youtubeapi.common.models.gen.*
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResult
@@ -57,6 +57,7 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     private val nextMediaItem by lazy {
         nextVideoItem?.let { NextMediaItem(it) }
     }
+    var isSubscribedOverrideItem: Boolean? = null
     private val isSubscribedItem by lazy {
         videoOwner?.isSubscribed() ?: channelOwner?.isSubscribed() ?: false
     }
@@ -192,6 +193,8 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
 
     private val durationMsItem by lazy { ServiceHelper.timeTextToMillis(videoDetails?.getLengthText()) }
 
+    private val badgeTextItem by lazy { videoDetails?.getLengthText() }
+
     override fun getTitle(): String? {
         return videoTitle
     }
@@ -229,7 +232,7 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
     }
 
     override fun isSubscribed(): Boolean {
-        return isSubscribedItem
+        return isSubscribedOverrideItem ?: isSubscribedItem
     }
 
     override fun getParams(): String? {
@@ -294,5 +297,9 @@ internal data class MediaItemMetadataImpl(val watchNextResult: WatchNextResult,
 
     override fun getDurationMs(): Long {
         return durationMsItem
+    }
+
+    override fun getBadgeText(): String? {
+        return badgeTextItem
     }
 }

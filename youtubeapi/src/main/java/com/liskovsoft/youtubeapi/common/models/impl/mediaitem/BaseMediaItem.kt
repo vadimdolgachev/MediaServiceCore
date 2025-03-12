@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.impl.mediaitem
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
 import com.liskovsoft.sharedutils.helpers.Helpers
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
@@ -281,7 +281,7 @@ open class BaseMediaItem : MediaItem {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other is BaseMediaItem) {
+        if (other is MediaItem) {
             if (videoId != null) {
                 return videoId == other.videoId
             }

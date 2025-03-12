@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.browse.v2
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import junit.framework.Assert.assertNotNull
 
 object BrowseTestHelper {
@@ -12,7 +12,7 @@ object BrowseTestHelper {
 
     fun checkGuideMediaItem(mediaItem: MediaItem) {
         assertNotNull(mediaItem.title)
-        assertNotNull(mediaItem.channelId)
+        assertNotNull(mediaItem.channelId ?: mediaItem.reloadPageKey)
         assertNotNull(mediaItem.cardImageUrl)
         assertNotNull(mediaItem.backgroundImageUrl)
     }

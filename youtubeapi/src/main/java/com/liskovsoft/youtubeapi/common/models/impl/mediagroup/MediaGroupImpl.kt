@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.common.models.impl.mediagroup
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
 import com.liskovsoft.youtubeapi.common.models.gen.ItemWrapper
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseId
@@ -13,6 +13,7 @@ import com.liskovsoft.youtubeapi.common.models.impl.mediaitem.TabMediaItem
 import com.liskovsoft.youtubeapi.next.v2.gen.WatchNextResultContinuation
 import com.liskovsoft.youtubeapi.next.v2.gen.getItems
 import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
+import com.liskovsoft.youtubeapi.next.v2.gen.getShelves
 import com.liskovsoft.youtubeapi.notifications.gen.NotificationsResult
 import com.liskovsoft.youtubeapi.notifications.gen.getItems
 
@@ -64,11 +65,14 @@ internal data class ContinuationMediaGroup(
 
 internal data class WatchNexContinuationMediaGroup(
     private val continuation: WatchNextResultContinuation,
-    private val options: MediaGroupOptions
+    private val options: MediaGroupOptions,
+    private val overrideItems: List<ItemWrapper?>? = null,
+    private val overrideKey: String? = null
 ): BaseMediaGroup(options) {
-    override fun getItemWrappersInt(): List<ItemWrapper?>? = continuation.getItems()
-    override fun getNextPageKeyInt(): String? = continuation.getNextPageKey()
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = overrideItems?.sortedByDescending { it?.isLive() ?: false } ?: continuation.getItems() ?: getLastShelf()?.getItems()
+    override fun getNextPageKeyInt(): String? = if (overrideItems != null) overrideKey else continuation.getNextPageKey() ?: getLastShelf()?.getNextPageKey()
     override fun getTitleInt(): String? = null
+    private fun getLastShelf() = continuation.getShelves()?.lastOrNull() // Get main content of Channels section and skip SHORTS
 }
 
 internal data class RichSectionMediaGroup(
@@ -173,15 +177,19 @@ internal data class ChannelListMediaGroup(
 
         tabs.forEachIndexed { idx, it ->
             // Skip All subscriptions tab
-            if (idx == 0)
+            if (idx == 0 && it.getThumbnails() == null) {
                 return@forEachIndexed
+            }
 
             result.add(TabMediaItem(it, options.groupType))
         }
 
         if (sortBy == SORT_BY_NAME) result.sortBy { it.title?.lowercase() }
 
-        if (sortBy == SORT_BY_NEW_CONTENT) result.sortByDescending { it.hasNewContent() }
+        if (sortBy == SORT_BY_NEW_CONTENT) {
+            result.sortBy { it.title?.lowercase() }
+            result.sortByDescending { it.hasNewContent() }
+        }
 
         result
     }
@@ -224,4 +232,14 @@ internal data class SubscribedShortsMediaGroup(
     override fun getItemWrappersInt(): List<ItemWrapper?> = items
     override fun getNextPageKeyInt(): String? = null
     override fun getTitleInt(): String? = null
+}
+
+internal data class EmptyMediaGroup(
+    private val reloadPageKey: String,
+    private val type: Int,
+    private val title: String?
+): BaseMediaGroup(MediaGroupOptions(groupType = type)) {
+    override fun getItemWrappersInt(): List<ItemWrapper?>? = null
+    override fun getNextPageKeyInt(): String = reloadPageKey
+    override fun getTitleInt(): String? = title
 }

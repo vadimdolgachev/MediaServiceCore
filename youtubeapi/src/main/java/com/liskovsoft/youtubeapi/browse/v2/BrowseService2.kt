@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.browse.v2
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences
 import com.liskovsoft.youtubeapi.app.AppConstants
 import com.liskovsoft.youtubeapi.browse.v2.gen.*
@@ -16,16 +16,14 @@ import com.liskovsoft.youtubeapi.next.v2.gen.getNextPageKey
 import com.liskovsoft.youtubeapi.next.v2.gen.getShelves
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData
 
-internal object BrowseService2 {
+internal open class BrowseService2 {
     private val mBrowseApi = RetrofitHelper.create(BrowseApi::class.java)
 
-    //@JvmStatic
     //fun getHome(): List<MediaGroup?>? {
     //    val home = getBrowseRows(BrowseApiHelper.getHomeQueryWeb(), MediaGroup.TYPE_HOME)
     //    return if (home?.size ?: 0 < 5) listOfNotNull(home, getRecommended()).flatten() else home
     //}
 
-    @JvmStatic
     fun getHome(): Pair<List<MediaGroup?>?, String?>? {
         //val rows = getBrowseRows(BrowseApiHelper.getHomeQueryWeb(), MediaGroup.TYPE_HOME)
         //
@@ -37,22 +35,26 @@ internal object BrowseService2 {
         return getBrowseRowsTV(BrowseApiHelper.getHomeQuery(AppClient.TV), MediaGroup.TYPE_HOME)
     }
 
-    @JvmStatic
     fun getTrending(): List<MediaGroup?>? {
         return getBrowseRows(BrowseApiHelper.getTrendingQuery(AppClient.WEB), MediaGroup.TYPE_TRENDING, true)
     }
 
-    @JvmStatic
     fun getSports(): List<MediaGroup?>? {
         return getBrowseRowsTV(BrowseApiHelper.getSportsQuery(AppClient.TV), MediaGroup.TYPE_SPORTS)?.first
     }
 
-    @JvmStatic
+    fun getLive(): List<MediaGroup?>? {
+        return getBrowseRowsTV(BrowseApiHelper.getLiveQuery(AppClient.TV), MediaGroup.TYPE_LIVE)?.first
+    }
+
+    fun getMyVideos(): MediaGroup? {
+        return getBrowseGridTV(BrowseApiHelper.getMyVideosQuery(AppClient.TV), MediaGroup.TYPE_MY_VIDEOS)
+    }
+
     fun getMovies(): List<MediaGroup?>? {
         return getBrowseRowsTV(BrowseApiHelper.getMoviesQuery(AppClient.TV), MediaGroup.TYPE_MOVIES)?.first
     }
 
-    @JvmStatic
     fun getKidsHome(): List<MediaGroup?>? {
         val kidsResult = mBrowseApi.getBrowseResultKids(BrowseApiHelper.getKidsHomeQuery())
 
@@ -72,8 +74,7 @@ internal object BrowseService2 {
         }
     }
 
-    @JvmStatic
-    fun getSubscriptions(): MediaGroup? {
+    open fun getSubscriptions(): MediaGroup? {
         return getSubscriptionsTV()
     }
 
@@ -94,8 +95,7 @@ internal object BrowseService2 {
         }
     }
 
-    @JvmStatic
-    fun getSubscribedChannels(): MediaGroup? {
+    open fun getSubscribedChannels(): MediaGroup? {
         return getSubscribedChannelsTV() ?: getSubscribedChannelsWeb()
     }
 
@@ -111,8 +111,7 @@ internal object BrowseService2 {
         return RetrofitHelper.get(browseResult)?.let { it.getTabs()?.let { ChannelListMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS)) } }
     }
 
-    @JvmStatic
-    fun getSubscribedChannelsByName(): MediaGroup? {
+    open fun getSubscribedChannelsByName(): MediaGroup? {
         return getSubscribedChannelsByNameTV() ?: getSubscribedChannelsByNameWeb()
     }
 
@@ -128,8 +127,7 @@ internal object BrowseService2 {
         return RetrofitHelper.get(browseResult)?.let { it.getTabs()?.let { ChannelListMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS), SORT_BY_NAME) } }
     }
 
-    @JvmStatic
-    fun getSubscribedChannelsByNewContent(): MediaGroup? {
+    open fun getSubscribedChannelsByNewContent(): MediaGroup? {
         return getSubscribedChannelsByNewContentTV()
     }
 
@@ -139,7 +137,6 @@ internal object BrowseService2 {
         return RetrofitHelper.get(browseResult)?.let { it.getTabs()?.let { ChannelListMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS), SORT_BY_NEW_CONTENT) } }
     }
 
-    @JvmStatic
     fun getShorts(): MediaGroup? {
         return getShortsWeb() ?: getShortsWeb(true)
     }
@@ -158,7 +155,10 @@ internal object BrowseService2 {
         }
     }
 
-    @JvmStatic
+    fun getMusic(): List<MediaGroup?>? {
+        return getBrowseRowsTV(BrowseApiHelper.getMusicQuery(AppClient.TV), MediaGroup.TYPE_MUSIC)?.first
+    }
+
     fun getLikedMusic(): MediaGroup? {
         return getLikedMusicTV() ?: getLikedMusicWeb()
     }
@@ -175,22 +175,19 @@ internal object BrowseService2 {
         return RetrofitHelper.get(result)?.let { WatchNexContinuationMediaGroup(it, createOptions(MediaGroup.TYPE_MUSIC)) }
     }
 
-    @JvmStatic
     fun getNewMusicAlbums(): MediaGroup? {
         val result = mBrowseApi.getBrowseResult(BrowseApiHelper.getNewMusicAlbumsQuery())
 
         return RetrofitHelper.get(result, true)?.let { BrowseMediaGroup(it, createOptions(MediaGroup.TYPE_MUSIC)) }
     }
 
-    @JvmStatic
     fun getNewMusicVideos(): MediaGroup? {
         val result = mBrowseApi.getBrowseResult(BrowseApiHelper.getNewMusicVideosQuery())
 
         return RetrofitHelper.get(result, true)?.let { BrowseMediaGroup(it, createOptions(MediaGroup.TYPE_MUSIC)) }
     }
 
-    @JvmStatic
-    fun getMyPlaylists(): MediaGroup? {
+    open fun getMyPlaylists(): MediaGroup? {
         val result = mBrowseApi.getBrowseResultTV(BrowseApiHelper.getMyPlaylistQuery(AppClient.TV))
 
         return RetrofitHelper.get(result)?.let { BrowseMediaGroupTV(it, createOptions(MediaGroup.TYPE_USER_PLAYLISTS)) }
@@ -220,8 +217,7 @@ internal object BrowseService2 {
         }
     }
 
-    @JvmStatic
-    fun getChannelAsGrid(channelId: String?): MediaGroup? {
+    open fun getChannelAsGrid(channelId: String?): MediaGroup? {
         return getChannelVideosFullTV(channelId) ?: getChannelVideosFullWeb(channelId, true)
     }
 
@@ -248,7 +244,6 @@ internal object BrowseService2 {
         return null
     }
 
-    @JvmStatic
     fun getChannelAsGridOld(channelId: String?): MediaGroup? {
         if (channelId == null) {
             return null
@@ -259,7 +254,6 @@ internal object BrowseService2 {
         return RetrofitHelper.get(videos)?.let { BrowseMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS)) }
     }
 
-    @JvmStatic
     fun getChannelLive(channelId: String?): MediaGroup? {
         if (channelId == null) {
             return null
@@ -270,7 +264,6 @@ internal object BrowseService2 {
         return RetrofitHelper.get(live)?.let { LiveMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS)) }
     }
 
-    @JvmStatic
     fun getChannelSearch(channelId: String?, query: String?): MediaGroup? {
         return getChannelSearchWeb(channelId, query) ?: getChannelSearchWeb(channelId, query, true)
     }
@@ -285,7 +278,6 @@ internal object BrowseService2 {
         return RetrofitHelper.get(search, skipAuth)?.let { BrowseMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS)) }
     }
 
-    @JvmStatic
     fun getChannelSorting(channelId: String?): List<MediaGroup?>? {
         return getChannelSortingWeb(channelId) ?: getChannelSortingWeb(channelId, true)
     }
@@ -300,8 +292,7 @@ internal object BrowseService2 {
         return RetrofitHelper.get(videos, skipAuth)?.let { it.getChips()?.mapNotNull { if (it != null) ChipMediaGroup(it, createOptions(MediaGroup.TYPE_CHANNEL_UPLOADS)) else null } }
     }
 
-    @JvmStatic
-    fun getChannel(channelId: String?, params: String?): Pair<List<MediaGroup?>?, String?>? {
+    open fun getChannel(channelId: String?, params: String?): Pair<List<MediaGroup?>?, String?>? {
         return getChannelTV(channelId, params) ?: getChannelWeb(channelId, params, true)?.let { Pair(it, null) }
     }
 
@@ -360,7 +351,10 @@ internal object BrowseService2 {
         return getBrowseRowsTV(BrowseApiHelper.getChannelQuery(AppClient.TV, channelId, params), MediaGroup.TYPE_CHANNEL, MediaGroup.TYPE_CHANNEL_UPLOADS)
     }
 
-    @JvmStatic
+    open fun getGroup(reloadPageKey: String, type: Int, title: String?): MediaGroup? {
+        return continueTVGroup(EmptyMediaGroup(reloadPageKey, type, title), true)
+    }
+
     fun continueGroup(group: MediaGroup?): MediaGroup? {
         return when (group) {
             is ShortsMediaGroup -> continueShorts(group.nextPageKey) ?: continueShorts(group.nextPageKey, true)
@@ -371,7 +365,6 @@ internal object BrowseService2 {
         }
     }
 
-    @JvmStatic
     fun continueEmptyGroup(group: MediaGroup?): List<MediaGroup?>? {
         if (group?.nextPageKey != null) {
             return continueTVGroup(group)?.let { listOf(it) } ?: continueChipOrGroup(group, true)
@@ -382,7 +375,6 @@ internal object BrowseService2 {
         return null
     }
 
-    @JvmStatic
     fun continueSectionList(nextPageKey: String?, groupType: Int): Pair<List<MediaGroup?>?, String?>? {
         if (nextPageKey == null) {
             return null
@@ -427,7 +419,7 @@ internal object BrowseService2 {
         }
     }
 
-    private fun continueTVGroup(group: MediaGroup?): MediaGroup? {
+    private fun continueTVGroup(group: MediaGroup?, extraResults: Boolean = false): MediaGroup? {
         if (group?.nextPageKey == null) {
             return null
         }
@@ -436,24 +428,30 @@ internal object BrowseService2 {
             mBrowseApi.getContinuationResultTV(BrowseApiHelper.getContinuationQuery(AppClient.TV, group.nextPageKey))
 
         return RetrofitHelper.get(continuationResult)?.let {
-            WatchNexContinuationMediaGroup(it, createOptions(group.type)).apply { title = group.title }
+            // Prepare to move LIVE items to the top. Multiple results should be combined first.
+            val (overrideItems, overrideKey) = if (extraResults) continueIfNeeded(it.getItems(), it.getNextPageKey()) else Pair(null, null)
+
+            WatchNexContinuationMediaGroup(it, createOptions(group.type), overrideItems = overrideItems, overrideKey = overrideKey).apply { title = group.title }
         }
     }
 
     private fun createOptions(groupType: Int = MediaGroup.TYPE_SUBSCRIPTIONS, channelId: String? = null): MediaGroupOptions {
         val prefs = GlobalPreferences.sInstance
-        val removeShorts = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType) ||
-                (MediaGroup.TYPE_HOME == groupType && prefs?.isHideShortsFromHomeEnabled ?: false) ||
-                (MediaGroup.TYPE_HISTORY == groupType && prefs?.isHideShortsFromHistoryEnabled ?: false) ||
-                (MediaGroup.TYPE_CHANNEL == groupType && prefs?.isHideShortsFromChannelEnabled ?: false) ||
-                (MediaGroup.TYPE_TRENDING == groupType && prefs?.isHideShortsFromTrendingEnabled ?: false)
-        val removeLive = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && prefs?.isHideStreamsFromSubscriptionsEnabled ?: false)
-        val removeUpcoming = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && prefs?.isHideUpcomingFromSubscriptionsEnabled ?: false) ||
-                (MediaGroup.TYPE_CHANNEL == groupType && prefs?.isHideUpcomingFromChannelEnabled ?: false) ||
-                (MediaGroup.TYPE_HOME == groupType && prefs?.isHideUpcomingFromHomeEnabled ?: false)
-        val removeWatched = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && prefs?.isHideWatchedFromSubscriptionsEnabled ?: false) ||
-                (MediaGroup.TYPE_HOME == groupType && prefs?.isHideWatchedFromHomeEnabled ?: false) ||
-                (channelId == AppConstants.WATCH_LATER_CHANNEL_ID && MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER))
+        val data = MediaServiceData.instance()
+        val removeShorts = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS)) ||
+                (MediaGroup.TYPE_HOME == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_HOME)) ||
+                (MediaGroup.TYPE_HISTORY == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_HISTORY)) ||
+                (MediaGroup.TYPE_CHANNEL == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_CHANNEL)) ||
+                (MediaGroup.TYPE_CHANNEL_UPLOADS == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_CHANNEL)) ||
+                (MediaGroup.TYPE_TRENDING == groupType && data.isContentHidden(MediaServiceData.CONTENT_SHORTS_TRENDING))
+        val removeLive = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && data.isContentHidden(MediaServiceData.CONTENT_STREAMS_SUBSCRIPTIONS))
+        val removeUpcoming = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_SUBSCRIPTIONS)) ||
+                (MediaGroup.TYPE_CHANNEL == groupType && data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_CHANNEL)) ||
+                (MediaGroup.TYPE_CHANNEL_UPLOADS == groupType && data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_CHANNEL)) ||
+                (MediaGroup.TYPE_HOME == groupType && data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_HOME))
+        val removeWatched = (MediaGroup.TYPE_SUBSCRIPTIONS == groupType && data.isContentHidden(MediaServiceData.CONTENT_WATCHED_SUBSCRIPTIONS)) ||
+                (MediaGroup.TYPE_HOME == groupType && data.isContentHidden(MediaServiceData.CONTENT_WATCHED_HOME)) ||
+                (channelId == AppConstants.WATCH_LATER_CHANNEL_ID && data.isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER))
 
         return MediaGroupOptions(
             removeShorts,
@@ -496,12 +494,26 @@ internal object BrowseService2 {
         }
     }
 
+    private fun getBrowseGridTV(query: String, sectionType: Int, shouldContinue: Boolean = false): MediaGroup? {
+        val browseResult = mBrowseApi.getBrowseResultTV(query)
+
+        return RetrofitHelper.get(browseResult)?.let {
+            // Prepare to move LIVE items to the top. Multiple results should be combined first.
+            var continuation: Pair<List<ItemWrapper?>?, String?>? = null
+            if (shouldContinue) {
+                continuation = continueIfNeeded(it.getItems(), it.getContinuationToken())
+            }
+
+            BrowseMediaGroupTV(it, createOptions(sectionType), overrideItems = continuation?.first, overrideKey = continuation?.second)
+        }
+    }
+
     private fun addOrMerge(result: MutableList<MediaGroup?>, group: MediaGroup) {
         val filter = result.filter { it?.title == group.title }
 
         // Home section parsing downside: one row (e.g. Shorts) could be divided amount other videos
         if (filter.size == 1) {
-            filter.first()?.mediaItems?.addAll(group.mediaItems)
+            group.mediaItems?.let { filter.first()?.mediaItems?.addAll(it) }
         } else {
             result.add(group)
         }

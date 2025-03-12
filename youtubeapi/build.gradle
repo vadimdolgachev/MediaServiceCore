@@ -56,6 +56,7 @@ dependencies {
     implementation project(':commons-io-2.8.0') // My Android 4.3 fix
     implementation project(':sharedutils')
     implementation project(':mediaserviceinterfaces')
+    implementation project(':googleapi')
 
     implementation 'com.squareup.retrofit2:retrofit:' + retrofitVersion
     implementation 'com.squareup.retrofit2:converter-gson:' + retrofitVersion
@@ -86,4 +87,8 @@ dependencies {
 
     // https://github.com/florianingerl/com.florianingerl.util.regex
     implementation 'com.github.florianingerl.util:regex:1.1.11'
+
+    // NewPipe pot
+    implementation 'androidx.webkit:webkit:1.11.0' // Latest with Android 4.4 support
+    implementation 'com.grack:nanojson:1.7'
 }

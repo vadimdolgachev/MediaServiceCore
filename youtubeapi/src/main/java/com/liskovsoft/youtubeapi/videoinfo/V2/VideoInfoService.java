@@ -7,11 +7,14 @@ import androidx.annotation.Nullable;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
+import com.liskovsoft.youtubeapi.app.AppService;
+import com.liskovsoft.youtubeapi.app.PoTokenGate;
 import com.liskovsoft.youtubeapi.common.helpers.AppClient;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 import com.liskovsoft.youtubeapi.videoinfo.InitialResponse;
 import com.liskovsoft.youtubeapi.videoinfo.VideoInfoServiceBase;
+import com.liskovsoft.youtubeapi.videoinfo.models.TranslationLanguage;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHls;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
@@ -32,12 +35,21 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private final static int VIDEO_INFO_ANDROID = 4;
     private final static int VIDEO_INFO_IOS = 5;
     private final static int VIDEO_INFO_EMBED = 6;
+    private final static int WEB_EMBEDDED_PLAYER = 7;
+    private final static int ANDROID_VR = 8;
+    // NOTE: Add VIDEO_INFO_TV to bypass "Sign in to confirm you're not a bot" (rare case)
+    // NOTE: EMBED type doesn't support music videos but can fix 403 is some cases
     private final static Integer[] VIDEO_INFO_TYPE_LIST = {
-            VIDEO_INFO_TV, VIDEO_INFO_IOS, VIDEO_INFO_EMBED, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB
+            //VIDEO_INFO_TV, VIDEO_INFO_IOS, VIDEO_INFO_EMBED, VIDEO_INFO_MWEB, VIDEO_INFO_ANDROID, VIDEO_INFO_INITIAL, VIDEO_INFO_WEB
+            //VIDEO_INFO_WEB, VIDEO_INFO_MWEB, VIDEO_INFO_INITIAL, VIDEO_INFO_TV, VIDEO_INFO_IOS, VIDEO_INFO_EMBED, VIDEO_INFO_ANDROID
+            // VIDEO_INFO_WEB, VIDEO_INFO_TV
+            WEB_EMBEDDED_PLAYER, VIDEO_INFO_WEB, VIDEO_INFO_TV
     };
     private int mVideoInfoType = -1;
     private boolean mSkipAuth;
     private boolean mSkipAuthBlock;
+    private List<TranslationLanguage> mCachedTranslationLanguages;
+    private boolean mIsUnplayable;
 
     private interface VideoInfoCallback {
         VideoInfo call();
@@ -45,7 +57,6 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
     private VideoInfoService() {
         mVideoInfoApi = RetrofitHelper.create(VideoInfoApi.class);
-        initVideoInfo();
     }
 
     public static VideoInfoService instance() {
@@ -57,6 +68,10 @@ public class VideoInfoService extends VideoInfoServiceBase {
     }
 
     public VideoInfo getVideoInfo(String videoId, String clickTrackingParams) {
+        initVideoInfo();
+
+        AppService.instance().resetClientPlaybackNonce(); // unique value per each video info
+
         mSkipAuthBlock = mSkipAuth;
 
         VideoInfo result = firstNonNull(videoId, clickTrackingParams);
@@ -68,8 +83,10 @@ public class VideoInfoService extends VideoInfoServiceBase {
             return null;
         }
 
+        mIsUnplayable = result.isUnplayable();
+
         if (mSkipAuth) {
-            result.sync(firstNonNull(videoId, clickTrackingParams));
+            result.sync(getVideoInfo(VIDEO_INFO_TV, videoId, clickTrackingParams));
         }
 
         result = retryIfNeeded(result, videoId, clickTrackingParams);
@@ -105,7 +122,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
         VideoInfo result;
 
         do {
-            result = getVideoInfo(nextType, videoId, clickTrackingParams);
+            result = mSkipAuthBlock || isAuthSupported(nextType) ? getVideoInfo(nextType, videoId, clickTrackingParams) : null;
             nextType = Helpers.getNextValue(nextType, VIDEO_INFO_TYPE_LIST);
         } while (result == null && nextType != beginType);
 
@@ -135,6 +152,12 @@ public class VideoInfoService extends VideoInfoServiceBase {
             case VIDEO_INFO_WEB:
                 result = getVideoInfo(AppClient.WEB, videoId, clickTrackingParams);
                 break;
+            case WEB_EMBEDDED_PLAYER:
+                result = getVideoInfo(AppClient.WEB_EMBEDDED_PLAYER, videoId, clickTrackingParams);
+                break;
+            case ANDROID_VR:
+                result = getVideoInfo(AppClient.ANDROID_VR, videoId, clickTrackingParams);
+                break;
             case VIDEO_INFO_MWEB:
                 result = getVideoInfo(AppClient.MWEB, videoId, clickTrackingParams);
                 break;
@@ -154,12 +177,19 @@ public class VideoInfoService extends VideoInfoServiceBase {
     }
 
     private void initVideoInfo() {
+        if (mVideoInfoType != -1) {
+            return;
+        }
+
         resetData();
         restoreVideoInfoType();
     }
 
     public void switchNextFormat() {
-        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_EXTENDED_HLS, false);
+        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_EXTENDED_HLS, false); // skip additional formats fetching that produce an error
+        if (!mIsUnplayable && isPotSupported(mVideoInfoType) && PoTokenGate.resetCache()) {
+            return;
+        }
         nextVideoInfo();
         persistVideoInfoType();
     }
@@ -176,16 +206,14 @@ public class VideoInfoService extends VideoInfoServiceBase {
     }
 
     private void nextVideoInfo() {
-        boolean defaultValue = true;
-
-        // Only TV can work with auth
-        if (mVideoInfoType == VIDEO_INFO_TV && mSkipAuth == defaultValue) {
-            mSkipAuth = !defaultValue;
+        // The same format but without auth may behave better
+        if (mVideoInfoType != -1 && !mSkipAuth) {
+            mSkipAuth = true;
             return;
         }
 
         mVideoInfoType = Helpers.getNextValue(mVideoInfoType, VIDEO_INFO_TYPE_LIST);
-        mSkipAuth = defaultValue;
+        mSkipAuth = !isAuthSupported(mVideoInfoType) || MediaServiceData.instance().isPremiumFixEnabled();
     }
 
     private VideoInfo getVideoInfo(AppClient client, String videoId, String clickTrackingParams) {
@@ -210,19 +238,19 @@ public class VideoInfoService extends VideoInfoServiceBase {
     private VideoInfo getVideoInfo(AppClient client, String videoInfoQuery) {
         Call<VideoInfo> wrapper = mVideoInfoApi.getVideoInfo(videoInfoQuery, mAppService.getVisitorData(), client != null ? client.getUserAgent() : null);
 
-        return getVideoInfo(wrapper);
+        return getVideoInfo(wrapper, !isAuthSupported(client) || mSkipAuthBlock);
     }
 
     private VideoInfo getVideoInfoRestricted(AppClient client, String videoInfoQuery) {
         Call<VideoInfo> wrapper = mVideoInfoApi.getVideoInfoRestricted(videoInfoQuery, mAppService.getVisitorData(), client != null ? client.getUserAgent() : null);
 
-        return getVideoInfo(wrapper);
+        return getVideoInfo(wrapper, !isAuthSupported(client) || mSkipAuthBlock);
     }
 
-    private @Nullable VideoInfo getVideoInfo(Call<VideoInfo> wrapper) {
-        VideoInfo videoInfo = RetrofitHelper.get(wrapper, mSkipAuthBlock);
+    private @Nullable VideoInfo getVideoInfo(Call<VideoInfo> wrapper, boolean skipAuth) {
+        VideoInfo videoInfo = RetrofitHelper.get(wrapper, skipAuth);
 
-        if (videoInfo != null && mSkipAuthBlock) {
+        if (videoInfo != null && skipAuth) {
             videoInfo.setHistoryBroken(true);
         }
 
@@ -271,13 +299,20 @@ public class VideoInfoService extends VideoInfoServiceBase {
         }
 
         // TV and others has a limited number of auto generated subtitles
-        if (result.getTranslationLanguages() != null && result.getTranslationLanguages().size() < 50) {
+        if (result.hasSubtitles() && shouldUnlockMoreSubtitles()) {
             Log.d(TAG, "Enable full list of auto generated subtitles...");
-            mSkipAuthBlock = true;
-            VideoInfo webInfo = getVideoInfo(AppClient.WEB, videoId, clickTrackingParams);
-            mSkipAuthBlock = false;
-            if (webInfo != null) {
-                result.setTranslationLanguages(webInfo.getTranslationLanguages());
+
+            if (mCachedTranslationLanguages == null) {
+                mSkipAuthBlock = true;
+                VideoInfo webInfo = getVideoInfo(AppClient.WEB, videoId, clickTrackingParams);
+                mSkipAuthBlock = false;
+                if (webInfo != null) {
+                    mCachedTranslationLanguages = webInfo.getTranslationLanguages();
+                }
+            }
+
+            if (mCachedTranslationLanguages != null) {
+                result.setTranslationLanguages(mCachedTranslationLanguages);
             }
         }
     }
@@ -289,12 +324,14 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         VideoInfo result = null;
 
-        if (videoInfo.isUnplayable() && videoInfo.isRent()) {
+        if (videoInfo.isRent()) {
             Log.e(TAG, "Found rent content. Show trailer instead...");
             result = getVideoInfo(AppClient.TV, videoInfo.getTrailerVideoId(), clickTrackingParams);
         } else if (videoInfo.isUnplayable()) {
             result = getFirstPlayable(
-                    () -> getVideoInfo(AppClient.EMBED, videoId, clickTrackingParams), // Restricted (18+) videos
+                    isMusicRestricted(mVideoInfoType) ? () -> getVideoInfo(AppClient.WEB, videoId, clickTrackingParams) : null,
+                    () -> getVideoInfo(AppClient.TV, videoId, clickTrackingParams), // Supports Auth. Restricted (18+) videos
+                    //() -> getVideoInfo(AppClient.ANDROID_VR, videoId, clickTrackingParams), // Restricted (18+) videos (doesn't work without auth)
                     //() -> getVideoInfoRestricted(videoId, clickTrackingParams, AppClient.MWEB), // Restricted videos (no history)
                     () -> getVideoInfoGeo(AppClient.WEB, videoId, clickTrackingParams), // Video clip blocked in current location
                     () -> {
@@ -317,11 +354,14 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
         return result != null ? result : videoInfo;
     }
-    
+
     private VideoInfo getFirstPlayable(VideoInfoCallback... callbacks) {
         VideoInfo result = null;
 
         for (VideoInfoCallback callback : callbacks) {
+            if (callback == null)
+                continue;
+
             VideoInfo videoInfo = callback.call();
 
             if (videoInfo != null && !videoInfo.isUnplayable()) {
@@ -351,13 +391,7 @@ public class VideoInfoService extends VideoInfoServiceBase {
     }
 
     private void restoreVideoInfoType() {
-        if (!GlobalPreferences.isInitialized()) {
-            return;
-        }
-
-        MediaServiceData data = MediaServiceData.instance();
-
-        Pair<Integer, Boolean> videoInfoType = data.getVideoInfoType();
+        Pair<Integer, Boolean> videoInfoType = MediaServiceData.instance().getVideoInfoType();
         if (videoInfoType != null && videoInfoType.first != -1) {
             mVideoInfoType = videoInfoType.first;
             mSkipAuth = videoInfoType.second;
@@ -375,5 +409,27 @@ public class VideoInfoService extends VideoInfoServiceBase {
 
     private static boolean shouldObtainExtendedFormats(VideoInfo result) {
         return MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_EXTENDED_HLS) && result.isExtendedHlsFormatsBroken();
+    }
+
+    private static boolean shouldUnlockMoreSubtitles() {
+        return MediaServiceData.instance().isMoreSubtitlesUnlocked();
+    }
+
+    private boolean isMusicRestricted(int videoInfoType) {
+        return videoInfoType == VIDEO_INFO_EMBED || videoInfoType == WEB_EMBEDDED_PLAYER;
+    }
+
+    private static boolean isAuthSupported(int videoInfoType) {
+        // Only TV can work with auth
+        return videoInfoType == VIDEO_INFO_TV;
+    }
+
+    private static boolean isAuthSupported(AppClient client) {
+        // Only TV can work with auth
+        return client == AppClient.TV;
+    }
+
+    private boolean isPotSupported(int videoInfoType) {
+        return videoInfoType == VIDEO_INFO_WEB || videoInfoType == VIDEO_INFO_MWEB  || videoInfoType == WEB_EMBEDDED_PLAYER || videoInfoType == ANDROID_VR;
     }
 }

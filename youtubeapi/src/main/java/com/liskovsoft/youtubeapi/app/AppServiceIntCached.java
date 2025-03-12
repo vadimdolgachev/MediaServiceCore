@@ -10,12 +10,10 @@ import com.liskovsoft.youtubeapi.app.models.cached.ClientDataCached;
 import com.liskovsoft.youtubeapi.app.models.cached.PlayerDataCached;
 import com.liskovsoft.youtubeapi.app.nsig.NSigExtractor;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
-import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 public class AppServiceIntCached extends AppServiceInt {
     private static final String TAG = AppServiceIntCached.class.getSimpleName();
     private static final long CACHE_REFRESH_PERIOD_MS = 10 * 60 * 60 * 1_000; // check updated core files every 10 hours
-    private MediaServiceData mData;
     private AppInfoCached mAppInfo;
     private PlayerDataCached mPlayerData;
     private ClientDataCached mClientData;
@@ -25,14 +23,23 @@ public class AppServiceIntCached extends AppServiceInt {
     private final Object mPlayerSync = new Object();
 
     @Override
-    public synchronized AppInfo getAppInfo(String userAgent) {
+    protected synchronized AppInfo getAppInfo(String userAgent) {
         if (mAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
             return mAppInfo;
         }
 
-        if (mFallbackMode && getData().getAppInfo() != null) {
+        if (mFallbackMode && check(getData().getAppInfo())) {
             mAppInfo = getData().getAppInfo();
             mAppInfoUpdateTimeMs = System.currentTimeMillis();
+            // Reset dependent objects
+            mPlayerData = null;
+            mClientData = null;
+            return mAppInfo;
+        }
+
+        if (check(getData().getAppInfo()) && System.currentTimeMillis() - getData().getAppInfo().getCreationTimeMs() < CACHE_REFRESH_PERIOD_MS) {
+            mAppInfo = getData().getAppInfo();
+            mAppInfoUpdateTimeMs = getData().getAppInfo().getCreationTimeMs();
             // Reset dependent objects
             mPlayerData = null;
             mClientData = null;
@@ -53,7 +60,7 @@ public class AppServiceIntCached extends AppServiceInt {
     }
 
     @Override
-    public PlayerData getPlayerData(String playerUrl) {
+    protected PlayerData getPlayerData(String playerUrl) {
         synchronized (mPlayerSync) {
             return getPlayerDataInt(playerUrl);
         }
@@ -64,11 +71,18 @@ public class AppServiceIntCached extends AppServiceInt {
             return mPlayerData;
         }
 
+        // See https://github.com/yt-dlp/yt-dlp/issues/12398
+        if (playerUrl.contains("/player_ias_tce.vflset/")) {
+            Log.d(TAG, "Modifying tce player URL: %s", playerUrl);
+            playerUrl = playerUrl.replace("/player_ias_tce.vflset/", "/player_ias.vflset/");
+        }
+
         PlayerDataCached playerDataCached = getData().getPlayerData();
 
         if (playerDataCached != null && Helpers.equals(playerDataCached.getPlayerUrl(), playerUrl)) {
             mPlayerData = playerDataCached;
-            updateNSigExtractor(mPlayerData.getPlayerUrl());
+
+            persistPlayerDataOrFail();
 
             return mPlayerData;
         }
@@ -84,19 +98,18 @@ public class AppServiceIntCached extends AppServiceInt {
         return mPlayerData;
     }
 
-    private void updateNSigExtractor(String playerUrl) {
+    private boolean updateNSigExtractor(String playerUrl) {
         if (mNSigExtractor != null && Helpers.equals(mNSigExtractor.getPlayerUrl(), playerUrl)) {
-            return;
+            return true;
         }
 
         YouTubeMediaItemService.instance().invalidateCache();
         try {
             mNSigExtractor = super.getNSigExtractor(playerUrl);
+            return true;
         } catch (Throwable e) { // StackOverflowError | IllegalStateException
             e.printStackTrace();
-            mAppInfo = null;
-            mPlayerData = null;
-            mClientData = null;
+            return false;
         }
     }
 
@@ -108,7 +121,7 @@ public class AppServiceIntCached extends AppServiceInt {
     }
 
     @Override
-    public synchronized ClientData getClientData(String clientUrl) {
+    protected synchronized ClientData getClientData(String clientUrl) {
         if (mClientData != null) {
             return mClientData;
         }
@@ -135,7 +148,12 @@ public class AppServiceIntCached extends AppServiceInt {
 
     @Override
     public void invalidateCache() {
+        if (mFallbackMode) {
+            return;
+        }
+
         mAppInfo = null;
+        getData().setAppInfo(null);
     }
 
     @Override
@@ -145,20 +163,16 @@ public class AppServiceIntCached extends AppServiceInt {
         }
     }
 
-    private boolean check(AppInfo appInfo) {
-        return appInfo != null && appInfo.getPlayerUrl() != null && appInfo.getClientUrl() != null && appInfo.getVisitorData() != null;
+    private boolean check(AppInfoCached appInfo) {
+        return appInfo != null && appInfo.validate();
     }
 
-    private boolean check(PlayerData playerData) {
-        return playerData != null &&
-                playerData.getClientPlaybackNonceFunction() != null &&
-                playerData.getRawClientPlaybackNonceFunction() != null &&
-                playerData.getDecipherFunction() != null &&
-                playerData.getSignatureTimestamp() != null;
+    private boolean check(PlayerDataCached playerData) {
+        return playerData != null && playerData.validate();
     }
 
-    private boolean check(ClientData clientData) {
-        return clientData != null && clientData.getClientId() != null && clientData.getClientSecret() != null;
+    private boolean check(ClientDataCached clientData) {
+        return clientData != null && clientData.validate();
     }
 
     private boolean checkNSig() {
@@ -166,9 +180,7 @@ public class AppServiceIntCached extends AppServiceInt {
             return false;
         }
 
-        updateNSigExtractor(mPlayerData.getPlayerUrl());
-
-        return mPlayerData != null;
+        return updateNSigExtractor(mPlayerData.getPlayerUrl());
     }
 
     private void persistPlayerDataOrFail() {
@@ -179,13 +191,5 @@ public class AppServiceIntCached extends AppServiceInt {
             mAppInfo = null;
             mFallbackMode = true;
         }
-    }
-
-    private MediaServiceData getData() {
-        if (mData == null) {
-            mData = MediaServiceData.instance();
-        }
-
-        return mData;
     }
 }

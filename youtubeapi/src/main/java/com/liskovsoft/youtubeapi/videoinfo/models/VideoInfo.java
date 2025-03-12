@@ -84,6 +84,9 @@ public class VideoInfo {
     @JsonPath("$.playerConfig.audioConfig.loudnessDb")
     private float mLoudnessDb;
 
+    @JsonPath("$.paidContentOverlay.paidContentOverlayRenderer.text")
+    private TextItem mPaidContentText;
+
     // Values used in tracking actions
     private String mEventId;
     private String mVisitorMonitoringData;
@@ -289,8 +292,12 @@ public class VideoInfo {
         return getVideoDetails() != null && getVideoDetails().isLive();
     }
 
+    public boolean hasSubtitles() {
+        return mCaptionTracks != null;
+    }
+
     public String getPlayabilityStatus() {
-        return ServiceHelper.itemsToInfo(mPlayabilityReason, mPlayabilityDescription);
+        return ServiceHelper.createInfo(mPlayabilityReason, mPlayabilityDescription);
     }
 
     public String getStoryboardSpec() {
@@ -331,6 +338,10 @@ public class VideoInfo {
 
     public boolean isHfr() {
         return mDashManifestUrl != null && mDashManifestUrl.contains("/hfr/all");
+    }
+
+    public String getPaidContentText() {
+        return mPaidContentText != null ? mPaidContentText.getText() : null;
     }
 
     public boolean isValid() {

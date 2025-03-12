@@ -1,8 +1,12 @@
 package com.liskovsoft.youtubeapi.common.helpers;
 
+import android.annotation.SuppressLint;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.text.BidiFormatter;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.app.AppService;
@@ -14,12 +18,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ServiceHelper {
     private static final String BULLET_SYMBOL = "\u2022";
     private static final String ITEMS_DIVIDER = " " + BULLET_SYMBOL + " ";
     private static final String TIME_TEXT_DELIM = ":";
+    // Regex to extract hours, minutes, and seconds
+    private static final Pattern sIsoDurationPattern = Pattern.compile("PT(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?");
 
     public static String videoIdToFullUrl(String videoId) {
         if (videoId == null) {
@@ -122,13 +131,13 @@ public class ServiceHelper {
             country = localeManager.getCountry();
         }
         return String.format(postTemplate, language, country,
-                localeManager.getUtcOffsetMinutes(), appService.getVisitorData(), data1 != null ? data1 : "", data2);
+                localeManager.getUtcOffsetMinutes(), appService.getVisitorData(), data1 != null ? data1 : "", data2 != null ? data2 : "");
     }
 
     /**
      * Additional video info such as user, published etc.
      */
-    public static String itemsToInfo(Object... items) {
+    public static @Nullable String createInfo(Object... items) {
         return combineItems(ITEMS_DIVIDER, items);
     }
 
@@ -136,6 +145,9 @@ public class ServiceHelper {
         return combineItems(null, items);
     }
 
+    /**
+     * NOTE: ADDS SPECIAL BIDI CHARS. DON'T USE THIS INSIDE JSON
+     */
     public static String combineItems(String divider, Object... items) {
         StringBuilder result = new StringBuilder();
 
@@ -321,5 +333,48 @@ public class ServiceHelper {
         } else {
             return new DecimalFormat("#,##0").format(numValue);
         }
+    }
+    
+    @SuppressLint("DefaultLocale")
+    public static String convertIsoDurationToHHMMSS(String duration) {
+        if (duration == null) {
+            return null;
+        }
+
+        Matcher matcher = sIsoDurationPattern.matcher(duration);
+
+        if (matcher.matches()) {
+            // Extract hours, minutes, and seconds (default to 0 if null)
+            String hours = matcher.group(1) != null ? matcher.group(1) : "0";
+            String minutes = matcher.group(2) != null ? matcher.group(2) : "0";
+            String seconds = matcher.group(3) != null ? matcher.group(3) : "0";
+
+            // Parse integers
+            int hoursInt = Integer.parseInt(hours);
+            int minutesInt = Integer.parseInt(minutes);
+            int secondsInt = Integer.parseInt(seconds);
+
+            // Build the duration string dynamically
+            if (hoursInt > 0) {
+                return String.format("%d:%02d:%02d", hoursInt, minutesInt, secondsInt);
+            } else {
+                return String.format("%d:%02d", minutesInt, secondsInt);
+            }
+        }
+
+        return null;
+    }
+
+    public static String generateRandomId(int length) {
+        String charPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder randomId = new StringBuilder(length);
+        Random random = new Random();
+
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(charPool.length());
+            randomId.append(charPool.charAt(index));
+        }
+
+        return randomId.toString();
     }
 }

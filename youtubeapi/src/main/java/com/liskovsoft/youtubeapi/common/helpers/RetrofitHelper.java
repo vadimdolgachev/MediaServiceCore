@@ -27,7 +27,6 @@ import com.liskovsoft.youtubeapi.common.models.gen.ErrorResponse;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.net.ConnectException;
-import java.net.SocketException;
 import java.util.List;
 
 import okhttp3.Headers;
@@ -115,21 +114,14 @@ public class RetrofitHelper {
         try {
             return wrapper.execute();
         } catch (ConnectException e) {
-            // ConnectException - server is down or address is banned
-            // Usually happen on sites like returnyoutubedislikeapi.com
-            // We could skip it safe?
+            // ConnectException - server is down or address is banned (returnyoutubedislikeapi.com)
             e.printStackTrace();
-        } catch (SocketException e) {
-            // SocketException - no internet
-            // ConnectException - server is down or address is banned
-            //wrapper.cancel(); // fix background running when RxJava object is disposed?
-            e.printStackTrace();
-            throw new IllegalStateException(e); // notify caller about network condition
         } catch (IOException e) {
+            // SocketException - no internet
             // InterruptedIOException - Thread interrupted. Thread died!!
             // UnknownHostException: Unable to resolve host (DNS error) Thread died?
-            // Don't rethrow!!! These exceptions cannot be caught inside RxJava!!! Thread died!!!
             e.printStackTrace();
+            throw new IllegalStateException(e); // notify caller about network condition
         }
 
         return null;
@@ -207,7 +199,7 @@ public class RetrofitHelper {
             return;
         }
 
-        if (response.code() == 400) {
+        if (response.code() == 400 || response.code() == 403) {
             Gson gson = new GsonBuilder().create();
             try (ResponseBody body = response.errorBody()) {
                 String errorMsg;
@@ -218,10 +210,10 @@ public class RetrofitHelper {
                     errorMsg = error != null && error.getError() != null ? ErrorResponse.class.getSimpleName() + ": " + error.getError().getMessage() : null;
                 } catch (JsonSyntaxException e) {
                     AuthErrorResponse authError = gson.fromJson(errorData, AuthErrorResponse.class);
-                    errorMsg = AuthErrorResponse.class.getSimpleName() + ": " + authError.getError();
+                    errorMsg = "AuthError: " + authError.getError();
                 }
 
-                errorMsg = errorMsg != null ? errorMsg : "Unknown 400 error";
+                errorMsg = errorMsg != null ? errorMsg : String.format("Unknown %s error", response.code());
 
                 Log.e(TAG, errorMsg);
                 throw new IllegalStateException(errorMsg);

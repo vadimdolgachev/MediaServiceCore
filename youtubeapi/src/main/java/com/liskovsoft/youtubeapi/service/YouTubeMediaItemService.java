@@ -1,27 +1,31 @@
 package com.liskovsoft.youtubeapi.service;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.DeArrowData;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.DislikeData;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemStoryboard;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.SponsorSegment;
+import androidx.annotation.Nullable;
+
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.data.DeArrowData;
+import com.liskovsoft.mediaserviceinterfaces.data.DislikeData;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemStoryboard;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.SponsorSegment;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.actions.ActionsService;
+import com.liskovsoft.youtubeapi.actions.ActionsServiceWrapper;
 import com.liskovsoft.youtubeapi.block.SponsorBlockService;
 import com.liskovsoft.youtubeapi.block.data.SegmentList;
 import com.liskovsoft.youtubeapi.dearrow.DeArrowService;
 import com.liskovsoft.youtubeapi.feedback.FeedbackService;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
+import com.liskovsoft.youtubeapi.next.v2.WatchNextServiceWrapper;
 import com.liskovsoft.youtubeapi.playlist.PlaylistService;
-import com.liskovsoft.youtubeapi.playlist.models.PlaylistsResult;
+import com.liskovsoft.youtubeapi.playlist.PlaylistServiceWrapper;
+import com.liskovsoft.youtubeapi.playlistgroups.PlaylistGroupServiceImpl;
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
-import com.liskovsoft.youtubeapi.service.data.YouTubePlaylistInfo;
 import com.liskovsoft.youtubeapi.service.data.YouTubeSponsorSegment;
 import com.liskovsoft.youtubeapi.track.TrackingService;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
@@ -41,6 +45,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     private final ActionsService mActionsService;
     private final PlaylistService mPlaylistService;
     private final FeedbackService mFeedbackService;
+    private final WatchNextService mWatchNextService;
     private YouTubeMediaItemFormatInfo mCachedFormatInfo;
 
     private YouTubeMediaItemService() {
@@ -48,9 +53,10 @@ public class YouTubeMediaItemService implements MediaItemService {
         mSponsorBlockService = SponsorBlockService.instance();
         mTrackingService = TrackingService.instance();
         mVideoInfoService = VideoInfoService.instance();
-        mActionsService = ActionsService.instance();
-        mPlaylistService = PlaylistService.instance();
+        mActionsService = ActionsServiceWrapper.instance();
+        mPlaylistService = PlaylistServiceWrapper.instance();
         mFeedbackService = FeedbackService.instance();
+        mWatchNextService = WatchNextServiceWrapper.getInstance();
     }
 
     public static YouTubeMediaItemService instance() {
@@ -138,7 +144,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataV2(String videoId, String playlistId, int playlistIndex, String playlistParams) {
-        return WatchNextService.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
+        return mWatchNextService.getMetadata(videoId, playlistId, playlistIndex, playlistParams);
     }
 
     @Override
@@ -147,7 +153,7 @@ public class YouTubeMediaItemService implements MediaItemService {
     }
 
     private MediaItemMetadata getMetadataIntV2(String videoId) {
-        return WatchNextService.getMetadata(videoId);
+        return mWatchNextService.getMetadata(videoId);
     }
 
     //@Override
@@ -235,52 +241,52 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<Void> updateHistoryPositionObserve(MediaItem item, float positionSec) {
-        return RxHelper.fromVoidable(() -> updateHistoryPosition(item, positionSec));
+        return RxHelper.fromRunnable(() -> updateHistoryPosition(item, positionSec));
     }
 
     @Override
     public Observable<Void> updateHistoryPositionObserve(String videoId, float positionSec) {
-        return RxHelper.fromVoidable(() -> updateHistoryPosition(videoId, positionSec));
+        return RxHelper.fromRunnable(() -> updateHistoryPosition(videoId, positionSec));
     }
 
     @Override
     public Observable<Void> subscribeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> subscribe(item));
+        return RxHelper.fromRunnable(() -> subscribe(item));
     }
 
     @Override
     public Observable<Void> subscribeObserve(String channelId) {
-        return RxHelper.fromVoidable(() -> subscribe(channelId));
+        return RxHelper.fromRunnable(() -> subscribe(channelId));
     }
 
     @Override
     public Observable<Void> unsubscribeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> unsubscribe(item));
+        return RxHelper.fromRunnable(() -> unsubscribe(item));
     }
 
     @Override
     public Observable<Void> unsubscribeObserve(String channelId) {
-        return RxHelper.fromVoidable(() -> unsubscribe(channelId));
+        return RxHelper.fromRunnable(() -> unsubscribe(channelId));
     }
 
     @Override
     public Observable<Void> setLikeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> setLike(item));
+        return RxHelper.fromRunnable(() -> setLike(item));
     }
 
     @Override
     public Observable<Void> removeLikeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> removeLike(item));
+        return RxHelper.fromRunnable(() -> removeLike(item));
     }
 
     @Override
     public Observable<Void> setDislikeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> setDislike(item));
+        return RxHelper.fromRunnable(() -> setDislike(item));
     }
 
     @Override
     public Observable<Void> removeDislikeObserve(MediaItem item) {
-        return RxHelper.fromVoidable(() -> removeDislike(item));
+        return RxHelper.fromRunnable(() -> removeDislike(item));
     }
 
     @Override
@@ -348,23 +354,27 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<Void> markAsNotInterestedObserve(String feedbackToken) {
-        return RxHelper.fromVoidable(() -> markAsNotInterested(feedbackToken));
+        return RxHelper.fromRunnable(() -> markAsNotInterested(feedbackToken));
     }
 
     @Override
     public List<PlaylistInfo> getPlaylistsInfo(String videoId) {
         checkSigned();
 
-        PlaylistsResult playlistsInfo = mPlaylistService.getPlaylistsInfo(videoId);
-
-        return YouTubePlaylistInfo.from(playlistsInfo);
+        return mPlaylistService.getPlaylistsInfo(videoId);
     }
 
-    @Override
-    public void addToPlaylist(String playlistId, String videoId) {
+    private void addToPlaylist(String playlistId, String videoId) {
         checkSigned();
 
         mPlaylistService.addToPlaylist(playlistId, videoId);
+    }
+
+    private void addToPlaylist(String playlistId, MediaItem item) {
+        checkSigned();
+
+        PlaylistGroupServiceImpl.cachedItem = item;
+        mPlaylistService.addToPlaylist(playlistId, item.getVideoId());
     }
 
     @Override
@@ -388,11 +398,17 @@ public class YouTubeMediaItemService implements MediaItemService {
         mPlaylistService.setPlaylistOrder(playlistId, playlistOrder);
     }
 
-    @Override
-    public void savePlaylist(String playlistId) {
+    private void savePlaylist(String playlistId) {
         checkSigned();
 
         mPlaylistService.savePlaylist(playlistId);
+    }
+
+    private void savePlaylist(MediaItem item) {
+        checkSigned();
+
+        PlaylistGroupServiceImpl.cachedItem = item;
+        mPlaylistService.savePlaylist(item.getPlaylistId());
     }
 
     @Override
@@ -402,11 +418,17 @@ public class YouTubeMediaItemService implements MediaItemService {
         mPlaylistService.removePlaylist(playlistId);
     }
 
-    @Override
-    public void createPlaylist(String playlistName, String videoId) {
+    private void createPlaylist(String playlistName, String videoId) {
         checkSigned();
 
         mPlaylistService.createPlaylist(playlistName, videoId);
+    }
+
+    private void createPlaylist(String playlistName, @Nullable MediaItem item) {
+        checkSigned();
+
+        PlaylistGroupServiceImpl.cachedItem = item;
+        mPlaylistService.createPlaylist(playlistName, item != null ? item.getVideoId() : null);
     }
 
     @Override
@@ -430,37 +452,52 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<Void> addToPlaylistObserve(String playlistId, String videoId) {
-        return RxHelper.fromVoidable(() -> addToPlaylist(playlistId, videoId));
+        return RxHelper.fromRunnable(() -> addToPlaylist(playlistId, videoId));
+    }
+
+    @Override
+    public Observable<Void> addToPlaylistObserve(String playlistId, MediaItem item) {
+        return RxHelper.fromRunnable(() -> addToPlaylist(playlistId, item));
     }
 
     @Override
     public Observable<Void> removeFromPlaylistObserve(String playlistId, String videoId) {
-        return RxHelper.fromVoidable(() -> removeFromPlaylist(playlistId, videoId));
+        return RxHelper.fromRunnable(() -> removeFromPlaylist(playlistId, videoId));
     }
 
     @Override
     public Observable<Void> renamePlaylistObserve(String playlistId, String newName) {
-        return RxHelper.fromVoidable(() -> renamePlaylist(playlistId, newName));
+        return RxHelper.fromRunnable(() -> renamePlaylist(playlistId, newName));
     }
 
     @Override
     public Observable<Void> setPlaylistOrderObserve(String playlistId, int playlistOrder) {
-        return RxHelper.fromVoidable(() -> setPlaylistOrder(playlistId, playlistOrder));
+        return RxHelper.fromRunnable(() -> setPlaylistOrder(playlistId, playlistOrder));
     }
 
     @Override
     public Observable<Void> savePlaylistObserve(String playlistId) {
-        return RxHelper.fromVoidable(() -> savePlaylist(playlistId));
+        return RxHelper.fromRunnable(() -> savePlaylist(playlistId));
+    }
+
+    @Override
+    public Observable<Void> savePlaylistObserve(MediaItem item) {
+        return RxHelper.fromRunnable(() -> savePlaylist(item));
     }
 
     @Override
     public Observable<Void> removePlaylistObserve(String playlistId) {
-        return RxHelper.fromVoidable(() -> removePlaylist(playlistId));
+        return RxHelper.fromRunnable(() -> removePlaylist(playlistId));
     }
 
     @Override
     public Observable<Void> createPlaylistObserve(String playlistName, String videoId) {
-        return RxHelper.fromVoidable(() -> createPlaylist(playlistName, videoId));
+        return RxHelper.fromRunnable(() -> createPlaylist(playlistName, videoId));
+    }
+
+    @Override
+    public Observable<Void> createPlaylistObserve(String playlistName, MediaItem item) {
+        return RxHelper.fromRunnable(() -> createPlaylist(playlistName, item));
     }
 
     @Override
@@ -497,7 +534,7 @@ public class YouTubeMediaItemService implements MediaItemService {
 
     @Override
     public Observable<DislikeData> getDislikeDataObserve(String videoId) {
-        return RxHelper.fromNullable(() -> WatchNextService.getDislikeData(videoId));
+        return RxHelper.fromNullable(() -> mWatchNextService.getDislikeData(videoId));
     }
 
     public void invalidateCache() {

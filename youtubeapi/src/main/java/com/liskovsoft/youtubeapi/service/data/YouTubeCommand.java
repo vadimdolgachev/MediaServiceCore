@@ -1,6 +1,6 @@
 package com.liskovsoft.youtubeapi.service.data;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Command;
+import com.liskovsoft.mediaserviceinterfaces.data.Command;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 import com.liskovsoft.youtubeapi.lounge.models.commands.CommandItem;
@@ -21,6 +21,7 @@ public class YouTubeCommand implements Command {
     private String mDeviceId;
     private int mPlaylistIndex;
     private int mVolume;
+    private int mDelta;
     private int mKey = Command.KEY_UNDEFINED;
     private boolean mIsVoiceStarted;
 
@@ -52,10 +53,8 @@ public class YouTubeCommand implements Command {
                 break;
             case CommandItem.TYPE_SET_VOLUME:
                 VolumeParams volumeParams = info.getVolumeParams();
-                if (Objects.isNull(volumeParams.getDelta())) {
-                    command.mType = Command.TYPE_VOLUME;
-                    command.mVolume = Helpers.parseInt(volumeParams.getVolume());
-                }
+                command.mVolume = Helpers.parseInt(volumeParams.getVolume());
+                command.mDelta = Helpers.parseInt(volumeParams.getDelta());
                 break;
             case CommandItem.TYPE_PLAY:
                 command.mType = Command.TYPE_PLAY;
@@ -166,6 +165,11 @@ public class YouTubeCommand implements Command {
     @Override
     public int getVolume() {
         return mVolume;
+    }
+
+    @Override
+    public int getDelta() {
+        return mDelta;
     }
 
     @Override

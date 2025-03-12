@@ -1,11 +1,13 @@
 package com.liskovsoft.youtubeapi.next.v2
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.DislikeData
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata
+import com.liskovsoft.mediaserviceinterfaces.data.DislikeData
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata
 import com.liskovsoft.youtubeapi.app.AppService
 import com.liskovsoft.youtubeapi.browse.v1.BrowseApiHelper
+import com.liskovsoft.youtubeapi.channelgroups.ChannelGroupServiceImpl
+import com.liskovsoft.youtubeapi.channelgroups.models.ItemImpl
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper
 import com.liskovsoft.youtubeapi.common.models.impl.mediagroup.SuggestionsGroup
@@ -16,47 +18,45 @@ import com.liskovsoft.youtubeapi.next.v2.gen.getDislikeCount
 import com.liskovsoft.youtubeapi.next.v2.gen.getLikeCount
 import com.liskovsoft.youtubeapi.next.v2.gen.isEmpty
 import com.liskovsoft.youtubeapi.next.v2.impl.MediaItemMetadataImpl
+import com.liskovsoft.youtubeapi.service.YouTubeSignInService
 
-internal object WatchNextService {
+internal open class WatchNextService {
     private var mWatchNextApi = RetrofitHelper.create(WatchNextApi::class.java)
     private val mAppService = AppService.instance()
 
-    @JvmStatic
     fun getMetadata(videoId: String): MediaItemMetadata? {
         return getMetadata(videoId, null, 0)
     }
 
-    @JvmStatic
     fun getMetadata(item: MediaItem): MediaItemMetadata? {
         return getMetadata(item.videoId, item.playlistId, item.playlistIndex)
     }
 
-    @JvmStatic
-    fun getMetadata(videoId: String?, playlistId: String?, playlistIndex: Int): MediaItemMetadata? {
+    open fun getMetadata(videoId: String?, playlistId: String?, playlistIndex: Int): MediaItemMetadata? {
         return getMetadata(videoId, playlistId, playlistIndex, null)
     }
 
-    @JvmStatic
-    fun getMetadata(videoId: String?, playlistId: String?, playlistIndex: Int, playlistParams: String?): MediaItemMetadata? {
-        val watchNextResult = getWatchNextResult(videoId, playlistId, playlistIndex, playlistParams)
-        var suggestionsResult: WatchNextResult? = null
+    open fun getMetadata(videoId: String?, playlistId: String?, playlistIndex: Int, playlistParams: String?): MediaItemMetadata? {
+        val watchNext = getWatchNext(videoId, playlistId, playlistIndex, playlistParams) ?: return null
 
-        //if (watchNextResult?.isEmpty() == true) { // 3 items in a row temporal fix
-        //    RetrofitOkHttpHelper.skipAuth(true)
-        //    suggestionsResult = getWatchNextResult(videoId, playlistId, playlistIndex, playlistParams)
-        //    RetrofitOkHttpHelper.skipAuth(false)
-        //}
+        if (videoId == null && watchNext.isEmpty()) {
+            return null
+        }
 
-        return if (watchNextResult != null) MediaItemMetadataImpl(watchNextResult, suggestionsResult) else null
+        return MediaItemMetadataImpl(watchNext).apply {
+            channelId?.let {
+                ChannelGroupServiceImpl.cachedChannel = ItemImpl(it, author, authorImageUrl)
+                if (!YouTubeSignInService.instance().isSigned) {
+                    isSubscribedOverrideItem = ChannelGroupServiceImpl.isSubscribed(it)
+                } else if (isSubscribed != ChannelGroupServiceImpl.isSubscribed(it)) {
+                    ChannelGroupServiceImpl.subscribe(isSubscribed, it, author, authorImageUrl)
+                }
+            }
+        }
     }
 
-    @JvmStatic
     fun continueGroup(mediaGroup: MediaGroup?): MediaGroup? {
-        val nextKey = YouTubeHelper.extractNextKey(mediaGroup)
-
-        if (nextKey == null) {
-            return null;
-        }
+        val nextKey = YouTubeHelper.extractNextKey(mediaGroup) ?: return null
 
         var continuation = continueWatchNext(BrowseApiHelper.getContinuationQuery(nextKey))
 
@@ -67,7 +67,6 @@ internal object WatchNextService {
         return SuggestionsGroup.from(continuation, mediaGroup)
     }
 
-    @JvmStatic
     fun getDislikeData(videoId: String?): DislikeData? {
         return getDislikesResult(videoId)?.let {
              object : DislikeData {
@@ -90,15 +89,7 @@ internal object WatchNextService {
         }
     }
 
-    private fun getWatchNextResult(videoId: String?): WatchNextResult? {
-        return getWatchNext(WatchNextApiHelper.getWatchNextQuery(videoId!!))
-    }
-
-    private fun getWatchNextResult(videoId: String?, playlistId: String?, playlistIndex: Int): WatchNextResult? {
-        return getWatchNext(WatchNextApiHelper.getWatchNextQuery(videoId, playlistId, playlistIndex))
-    }
-
-    private fun getWatchNextResult(videoId: String?, playlistId: String?, playlistIndex: Int, playlistParams: String?): WatchNextResult? {
+    private fun getWatchNext(videoId: String?, playlistId: String?, playlistIndex: Int, playlistParams: String?): WatchNextResult? {
         return getWatchNext(WatchNextApiHelper.getWatchNextQuery(videoId, playlistId, playlistIndex, playlistParams))
     }
 

@@ -22,7 +22,10 @@ internal object BrowseApiHelper {
     private const val TRENDING = "\"browseId\":\"FEtrending\",\"params\":\"6gQJRkVleHBsb3Jl\""
     private const val SUBSCRIPTIONS = "\"browseId\":\"FEsubscriptions\""
     private const val SPORTS = "\"browseId\":\"FEtopics_sports\""
+    private const val LIVE = "\"browseId\":\"FEtopics_live\""
+    private const val MY_VIDEOS = "\"browseId\":\"FEmy_videos\""
     private const val MOVIES = "\"browseId\":\"FEtopics_movies\""
+    private const val MUSIC: String = "\"browseId\":\"FEtopics_music\""
     private const val LIKED_MUSIC = "\"browseId\":\"VLLM\""
     private const val LIKED_MUSIC_CONTINUATION = "4qmFsgIWEhRGRW11c2ljX2xpa2VkX3ZpZGVvcw%3D%3D"
     private const val NEW_MUSIC_VIDEOS = "\"browseId\":\"FEmusic_new_releases_videos\""
@@ -91,6 +94,10 @@ internal object BrowseApiHelper {
         return ServiceHelper.createQueryWeb(REEL)
     }
 
+    fun getMusicQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, MUSIC)
+    }
+
     fun getLikedMusicQuery(client: AppClient): String {
         return ServiceHelper.createQuery(client.browseTemplate, LIKED_MUSIC)
     }
@@ -128,6 +135,14 @@ internal object BrowseApiHelper {
 
     fun getSportsQuery(client: AppClient): String {
         return ServiceHelper.createQuery(client.browseTemplate, SPORTS)
+    }
+
+    fun getLiveQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, LIVE)
+    }
+
+    fun getMyVideosQuery(client: AppClient): String {
+        return ServiceHelper.createQuery(client.browseTemplate, MY_VIDEOS)
     }
 
     fun getMoviesQuery(client: AppClient): String {

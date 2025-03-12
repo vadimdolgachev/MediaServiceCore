@@ -1,11 +1,11 @@
 package com.liskovsoft.youtubeapi.service;
 
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
-import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.youtubeapi.auth.V2.AuthService;
 import com.liskovsoft.youtubeapi.auth.models.auth.AccessToken;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper;
@@ -54,19 +54,6 @@ public class YouTubeSignInService implements SignInService {
         return mAccountManager.signInObserve();
     }
 
-    @Override
-    public void signOut() {
-        // TODO: not implemented
-    }
-
-    @Override
-    public Observable<Void> signOutObserve() {
-        return RxHelper.create(emitter -> {
-            signOut();
-            emitter.onComplete();
-        });
-    }
-
     public void checkAuth() {
         updateAuthHeadersIfNeeded();
     }
@@ -89,6 +76,7 @@ public class YouTubeSignInService implements SignInService {
         mCachedAuthorizationHeader = createAuthorizationHeader(refreshToken);
         mCachedAuthorizationHeader2 = createAuthorizationHeader(refreshToken2);
         syncWithRetrofit();
+        mAccountManager.syncStorage();
     }
 
     @Override
@@ -98,18 +86,8 @@ public class YouTubeSignInService implements SignInService {
     }
 
     @Override
-    public Observable<Boolean> isSignedObserve() {
-        return RxHelper.fromCallable(this::isSigned);
-    }
-
-    @Override
     public List<Account> getAccounts() {
         return mAccountManager.getAccounts();
-    }
-
-    @Override
-    public Observable<List<Account>> getAccountsObserve() {
-        return RxHelper.fromCallable(this::getAccounts);
     }
 
     @Nullable
@@ -118,29 +96,19 @@ public class YouTubeSignInService implements SignInService {
         return mAccountManager.getSelectedAccount();
     }
 
-    /**
-     * For testing purposes
-     */
-    public void setAuthorizationHeader(String authorizationHeader) {
-        mCachedAuthorizationHeader = authorizationHeader;
-        mCachedAuthorizationHeader2 = null;
-        mCacheUpdateTime = System.currentTimeMillis();
-
-        syncWithRetrofit();
-    }
-
     public void invalidateCache() {
         mCachedAuthorizationHeader = null;
         mCacheUpdateTime = 0;
     }
 
+    // Fix empty content when quickly switch accounts???
     @Override
-    public void selectAccount(Account account) {
+    public synchronized void selectAccount(Account account) {
         mAccountManager.selectAccount(account);
     }
 
     @Override
-    public void removeAccount(Account account) {
+    public synchronized void removeAccount(Account account) {
         mAccountManager.removeAccount(account);
     }
 
@@ -181,6 +149,10 @@ public class YouTubeSignInService implements SignInService {
     }
 
     private void syncWithRetrofit() {
+        if (Helpers.isJUnitTest()) {
+            return;
+        }
+
         Map<String, String> headers = RetrofitOkHttpHelper.getAuthHeaders();
         Map<String, String> headers2 = RetrofitOkHttpHelper.getAuthHeaders2();
         headers.clear();

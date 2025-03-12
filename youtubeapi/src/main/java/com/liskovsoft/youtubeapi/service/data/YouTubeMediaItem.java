@@ -2,8 +2,8 @@ package com.liskovsoft.youtubeapi.service.data;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.browse.v1.models.grid.GridTab;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
@@ -477,6 +477,10 @@ public class YouTubeMediaItem implements MediaItem {
         return mPlaylistId;
     }
 
+    public void setPlaylistId(String playlistId) {
+        mPlaylistId = playlistId;
+    }
+
     @Override
     public String getParams() {
         return mParams;
@@ -574,6 +578,10 @@ public class YouTubeMediaItem implements MediaItem {
     @Override
     public String getReloadPageKey() {
         return mReloadPageKey;
+    }
+
+    public void setReloadPageKey(String reloadPageKey) {
+        mReloadPageKey = reloadPageKey;
     }
 
     @NonNull
