@@ -27,7 +27,7 @@ public class YouTubeServiceManager implements ServiceManager {
     private final ContentService mMediaGroupManager;
     private final MediaItemService mMediaItemManager;
     private final YouTubeLiveChatService mLiveChatService;
-    private final YouTubeCommentsService mCommentsService;
+    //private final YouTubeCommentsService mCommentsService;
     private Disposable mRefreshCoreDataAction;
     private Disposable mRefreshPoTokenAction;
 
@@ -38,7 +38,7 @@ public class YouTubeServiceManager implements ServiceManager {
         mMediaGroupManager = YouTubeContentService.instance();
         mMediaItemManager = YouTubeMediaItemService.instance();
         mLiveChatService = YouTubeLiveChatService.instance();
-        mCommentsService = YouTubeCommentsService.instance();
+        //mCommentsService = YouTubeCommentsService.instance();
     }
 
     public static ServiceManager instance() {
