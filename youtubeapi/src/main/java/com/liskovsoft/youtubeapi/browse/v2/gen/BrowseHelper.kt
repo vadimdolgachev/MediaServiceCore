@@ -6,9 +6,9 @@ import com.liskovsoft.youtubeapi.common.models.gen.ItemWrapper
 import com.liskovsoft.youtubeapi.common.models.gen.ThumbnailItem
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseId
 import com.liskovsoft.youtubeapi.common.models.gen.getBrowseParams
-import com.liskovsoft.youtubeapi.common.models.gen.getContinuationToken
 import com.liskovsoft.youtubeapi.common.models.gen.getFeedbackTokens
 import com.liskovsoft.youtubeapi.common.models.gen.getSubtitle
+import com.liskovsoft.youtubeapi.common.models.gen.getSuggestToken
 import com.liskovsoft.youtubeapi.common.models.gen.getText
 import com.liskovsoft.youtubeapi.common.models.gen.getTitle
 import com.liskovsoft.youtubeapi.common.models.gen.isLive
@@ -53,7 +53,7 @@ private const val TAB_STYLE_NEW_CONTENT = "NEW_CONTENT"
 
 internal fun TabRenderer.getItems(): List<ItemWrapper?>? = getListContents()?.flatMap { it?.getItems() ?: emptyList() } ?:
     getGridContents()?.mapNotNull { it?.getItem() } ?: getTVGrid()?.items ?: getTVList()?.getItems()
-internal fun TabRenderer.getShortItems(): List<ItemWrapper?>? = getGridContents()?.flatMap { it?.getItems() ?: emptyList() }
+internal fun TabRenderer.getShortItems(): List<ItemWrapper?>? = getGridContents()?.flatMap { it?.getItems() ?: emptyList() } ?: getTVList()?.getShortItems()
 internal fun TabRenderer.getContinuationToken(): String? = getListContents()?.firstNotNullOfOrNull {
         it?.getContinuationToken()
     } ?:
@@ -101,11 +101,12 @@ private fun RichSectionRenderer.getContents() = content?.richShelfRenderer?.cont
 
 internal fun ItemSectionRenderer.getTitle(): String? = getShelfRenderer()?.title?.getText()
 internal fun ItemSectionRenderer.getItems(): List<ItemWrapper?>? = getContents()?.let {
-    it.shelfRenderer?.content?.let { it.gridRenderer?.items ?: it.expandedShelfContentsRenderer?.items ?: it.horizontalListRenderer?.items } ?:
+    it.shelfRenderer?.getItemWrappers() ?:
     it.playlistVideoListRenderer?.contents ?:
     it.gridRenderer?.items ?:
     it.videoRenderer?.let { listOf(ItemWrapper(videoRenderer = it)) }
 }
+internal fun ItemSectionRenderer.getShortItems(): List<ItemWrapper?>? = getShelfRenderer()?.getItemWrappers()
 internal fun ItemSectionRenderer.getContinuationToken() = getContents()?.let {
     it.playlistVideoListRenderer?.getNextPageKey() ?:
     (it.gridRenderer ?: it.shelfRenderer?.content?.gridRenderer)?.getNextPageKey()
@@ -113,8 +114,8 @@ internal fun ItemSectionRenderer.getContinuationToken() = getContents()?.let {
 internal fun ItemSectionRenderer.getBrowseId() = getShelfRenderer()?.endpoint?.getBrowseId()
 internal fun ItemSectionRenderer.getBrowseParams() = getShelfRenderer()?.endpoint?.getBrowseParams()
 private fun ItemSectionRenderer.getContents() = contents?.lastOrNull() // TODO: which part of Subscriptions should I get? (the first one usually SHORTS)
-private fun ItemSectionRenderer.getShelfRenderer() = contents?.firstOrNull()?.shelfRenderer
-private fun ItemSectionRenderer.getGridRenderer() = contents?.firstOrNull()?.gridRenderer
+private fun ItemSectionRenderer.getShelfRenderer() = contents?.firstNotNullOfOrNull { it?.shelfRenderer }
+private fun ItemSectionRenderer.getGridRenderer() = contents?.firstNotNullOfOrNull { it?.gridRenderer }
 
 /////
 
@@ -146,6 +147,7 @@ internal fun GuideResult.getFirstSubs(): List<GuideItem?>? = getSubsRoot()?.item
 internal fun GuideResult.getCollapsibleSubs(): List<GuideItem?>? =
     getSubsRoot()?.items?.firstNotNullOfOrNull { it?.guideCollapsibleEntryRenderer }?.expandableItems?.mapNotNull { it?.guideEntryRenderer }
 internal fun GuideResult.getRecommended(): List<GuideItem?>? = items?.mapNotNull { it?.guideSectionRenderer }?.getOrNull(1)?.items?.mapNotNull { it?.guideEntryRenderer }
+internal fun GuideResult.getSuggestToken(): String? = responseContext?.getSuggestToken()
 private fun GuideResult.getSubsRoot() = items?.firstNotNullOfOrNull { it?.guideSubscriptionsSectionRenderer }
 
 internal fun GuideItem.getBrowseId() = navigationEndpoint?.getBrowseId()
@@ -170,7 +172,7 @@ private fun ReelResult.getWatchEndpoint(): ReelWatchEndpoint? = replacementEndpo
 private fun ReelResult.getPlayerHeader(): ReelPlayerHeaderRenderer? = overlay?.reelPlayerOverlayRenderer?.reelPlayerHeaderSupportedRenderers?.reelPlayerHeaderRenderer
 internal fun ReelResult.getVideoId(): String? = getWatchEndpoint()?.videoId
 internal fun ReelResult.getTitle(): String? = getPlayerHeader()?.reelTitleOnClickCommand?.getTitle() ?: getVideoInfo()?.getTitle()
-internal fun ReelResult.getSubtitle(): String? = getPlayerHeader()?.reelTitleOnClickCommand?.getSubtitle() ?:
+internal fun ReelResult.getSubtitle(): CharSequence? = getPlayerHeader()?.reelTitleOnClickCommand?.getSubtitle() ?:
     YouTubeHelper.createInfo(getVideoInfo()?.getChannelName(), getVideoInfo()?.getViews(), getVideoInfo()?.getPublishDate())
 private fun ReelResult.getVideoInfo(): EngagementPanel? = engagementPanels?.firstNotNullOfOrNull { if (it?.getTitle() != null) it else null }
 private fun ReelResult.getChannelName(): String? = getPlayerHeader()?.channelTitleText?.getText()
@@ -199,6 +201,7 @@ internal fun BrowseResultTV.getItems(): List<ItemWrapper?>? = getContent()?.grid
     ?: getContent()?.twoColumnRenderer?.rightColumn?.playlistVideoListRenderer?.contents
     ?: getSubscriptionsTab()?.getItems()
     ?: getShelves()?.getOrNull(0)?.getItems()
+internal fun BrowseResultTV.getShortItems(): List<ItemWrapper?>? = getSubscriptionsTab()?.getShortItems()
 internal fun BrowseResultTV.getContinuationToken(): String? = getSubscriptionsTab()?.getContinuationToken()
     ?: getContent()?.twoColumnRenderer?.rightColumn?.playlistVideoListRenderer?.continuations?.getContinuationKey()
     ?: getContent()?.sectionListRenderer?.continuations?.getContinuationKey()

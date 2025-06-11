@@ -4,8 +4,8 @@ import android.annotation.TargetApi
 import android.os.Build.VERSION
 import com.liskovsoft.sharedutils.helpers.DeviceHelpers
 import com.liskovsoft.youtubeapi.app.potokencloud.PoTokenCloudService
-import com.liskovsoft.youtubeapi.app.potokennp.PoTokenProviderImpl
-import com.liskovsoft.youtubeapi.app.potokennp.misc.PoTokenResult
+import com.liskovsoft.youtubeapi.app.potokennp2.PoTokenProviderImpl
+import com.liskovsoft.youtubeapi.app.potokennp2.misc.PoTokenResult
 
 internal object PoTokenGate {
     private var mNpPoToken: PoTokenResult? = null
@@ -37,9 +37,8 @@ internal object PoTokenGate {
     @JvmStatic
     fun updatePoToken() {
         if (supportsNpPot()) {
-            mNpPoToken = null
-            //if (npPoToken == null)
-            //    npPoToken = PoTokenProviderImpl.getWebClientPoToken("")
+            //mNpPoToken = null // only refresh
+            mNpPoToken = PoTokenProviderImpl.getWebClientPoToken("") // refresh and preload
         } else {
             PoTokenCloudService.updatePoToken()
         }

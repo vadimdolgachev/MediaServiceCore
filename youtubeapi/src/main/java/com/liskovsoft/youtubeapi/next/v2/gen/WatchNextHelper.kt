@@ -93,7 +93,7 @@ private fun ButtonStateItem.getButton(type: String) = buttons?.firstOrNull { it?
 ///////
 
 internal fun ShelfRenderer.getTitle() = title?.getText() ?: getShelf()?.title?.getText() ?: getShelf()?.avatarLockup?.avatarLockupRenderer?.title?.getText()
-internal fun ShelfRenderer.getItemWrappers() = content?.horizontalListRenderer?.items
+internal fun ShelfRenderer.getItemWrappers() = content?.let { it.horizontalListRenderer?.items ?: it.expandedShelfContentsRenderer?.items ?: it.gridRenderer?.items }
 internal fun ShelfRenderer.getNextPageKey() = content?.horizontalListRenderer?.continuations?.getContinuationKey()
 internal fun ShelfRenderer.getChipItems() = headerRenderer?.chipCloudRenderer?.chips
 private fun ShelfRenderer.getShelf() = headerRenderer?.shelfHeaderRenderer
@@ -166,17 +166,21 @@ internal fun EngagementPanel.getTopCommentsToken(): String? = getSubMenuItems()?
 internal fun EngagementPanel.getNewCommentsToken(): String? = getSubMenuItems()?.getOrNull(1)?.continuation?.getContinuationKey()
 internal fun EngagementPanel.isCommentsSection(): Boolean = engagementPanelSectionListRenderer?.panelIdentifier == "comment-item-section"
 internal fun EngagementPanel.isDescriptionSection(): Boolean = engagementPanelSectionListRenderer?.panelIdentifier == "video-description-ep-identifier"
-internal fun EngagementPanel.getTitle(): String? = getVideoDescription()?.title?.getText()
-internal fun EngagementPanel.getChannelName(): String? = getVideoDescription()?.channel?.getText()
-internal fun EngagementPanel.getViews(): String? = getVideoDescription()?.views?.getText()
-internal fun EngagementPanel.getPublishDate(): String? = getVideoDescription()?.publishDate?.getText()
-internal fun EngagementPanel.getBrowseId(): String? = getVideoDescription()?.channelNavigationEndpoint?.getBrowseId()
-internal fun EngagementPanel.getLikeCount(): String? = getVideoDescription()?.factoid?.firstOrNull()?.getValue()
-private fun EngagementPanel.getVideoDescription(): VideoDescriptionHeaderRenderer? =
-    engagementPanelSectionListRenderer?.content?.structuredDescriptionContentRenderer?.items?.firstNotNullOfOrNull { it?.videoDescriptionHeaderRenderer }
+internal fun EngagementPanel.getTitle(): String? = getDescriptionHeader()?.title?.getText()
+internal fun EngagementPanel.getChannelName(): String? = getDescriptionHeader()?.channel?.getText()
+internal fun EngagementPanel.getViews(): String? = getDescriptionHeader()?.views?.getText()
+internal fun EngagementPanel.getPublishDate(): String? = getDescriptionHeader()?.publishDate?.getText()
+internal fun EngagementPanel.getBrowseId(): String? = getDescriptionHeader()?.channelNavigationEndpoint?.getBrowseId()
+internal fun EngagementPanel.getLikeCount(): String? = getDescriptionHeader()?.factoid?.firstOrNull()?.getValue()
+internal fun EngagementPanel.getDescriptionText(): String? = getDescriptionBody()?.descriptionBodyText?.getText()
+private fun EngagementPanel.getDescriptionHeader(): VideoDescriptionHeaderRenderer? =
+    getDescriptionItems()?.firstNotNullOfOrNull { it?.videoDescriptionHeaderRenderer }
+private fun EngagementPanel.getDescriptionBody(): ExpandableVideoDescriptionBodyRenderer? =
+    getDescriptionItems()?.firstNotNullOfOrNull { it?.expandableVideoDescriptionBodyRenderer }
 private fun EngagementPanel.getSections() = engagementPanelSectionListRenderer?.content?.sectionListRenderer?.contents
 private fun EngagementPanel.getSubMenuItems() =
     engagementPanelSectionListRenderer?.header?.engagementPanelTitleHeaderRenderer?.menu?.sortFilterSubMenuRenderer?.subMenuItems
+private fun EngagementPanel.getDescriptionItems() = engagementPanelSectionListRenderer?.content?.structuredDescriptionContentRenderer?.items
 
 ///////
 

@@ -8,7 +8,7 @@ import com.liskovsoft.youtubeapi.auth.models.info.AccountInt;
 import com.liskovsoft.youtubeapi.auth.models.info.AccountsList;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper;
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper;
-import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2;
+import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +46,7 @@ public class AuthApiTest {
         mService = RetrofitHelper.create(AuthApi.class);
         mAppService = AppService.instance();
 
-        RetrofitOkHttpHelper.getAuthHeaders().put("Authorization", TestHelpersV2.getAuthorization());
+        RetrofitOkHttpHelper.getAuthHeaders().put("Authorization", TestHelpers.getAuthorization());
     }
     
     @Test
@@ -94,11 +94,18 @@ public class AuthApiTest {
 
         AccountsList accountsList = RetrofitHelper.get(wrapper);
 
-        AccountInt firstAccount = accountsList.getAccounts().get(0);
+        AccountInt selectedAccount = null;
 
-        assertNotNull("Contains Name", firstAccount.getName());
-        assertNotNull("Contains Thumbnails", firstAccount.getThumbnails());
-        assertTrue("Is selected", firstAccount.isSelected());
+        for (AccountInt account : accountsList.getAccounts()) {
+            if (account.isSelected()) {
+                selectedAccount = account;
+                break;
+            }
+        }
+
+        assertNotNull("Account not null", selectedAccount);
+        assertNotNull("Account contains Name", selectedAccount.getName());
+        assertNotNull("Account contains Thumbnails", selectedAccount.getThumbnails());
     }
 
     private boolean notEmpty(String userCode) {

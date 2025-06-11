@@ -319,16 +319,17 @@ private fun ItemWrapper.getFeedbackTokens() = getVideoItem()?.getFeedbackTokens(
 
 internal fun DefaultServiceEndpoint.getChannelIds() = getSubscribeEndpoint()?.channelIds
 internal fun DefaultServiceEndpoint.getParams() = getSubscribeEndpoint()?.params
-private fun DefaultServiceEndpoint.getSubscribeEndpoint() =
-    authDeterminedCommand?.authenticatedCommand?.subscribeEndpoint
+private fun DefaultServiceEndpoint.getSubscribeEndpoint() = authDeterminedCommand?.authenticatedCommand?.subscribeEndpoint
 
 /////
 
-internal fun ToggledServiceEndpoint.getParams() = subscribeEndpoint?.params ?: unsubscribeEndpoint?.params
+internal fun ToggledServiceEndpoint.getParams() = subscribeEndpoint?.params ?: unsubscribeEndpoint?.params ?: performCommentActionEndpoint?.action
 
 /////
 
 internal fun ToggleButtonRenderer.getParams() = defaultServiceEndpoint?.getParams() ?: toggledServiceEndpoint?.getParams()
+internal fun ToggleButtonRenderer.getDefaultParams() = defaultServiceEndpoint?.getParams()
+internal fun ToggleButtonRenderer.getToggleParams() = toggledServiceEndpoint?.getParams()
 
 //////
 
@@ -358,3 +359,19 @@ internal fun NotificationPreferenceButton.getCurrentStateId() = subscriptionNoti
 internal fun NotificationStateItem.getTitle() = inlineMenuButton?.buttonRenderer?.text?.getText()
 internal fun NotificationStateItem.getStateId() = stateId
 internal fun NotificationStateItem.getStateParams() = inlineMenuButton?.buttonRenderer?.serviceEndpoint?.modifyChannelNotificationPreferenceEndpoint?.params
+
+//////
+
+private const val SERVICE_SUGGEST = "SUGGEST"
+private const val SERVICE_GFEEDBACK = "GFEEDBACK"
+
+private const val KEY_E = "e"
+private const val KEY_LOGGED_IN = "logged_in"
+private const val KEY_SUGGESTXP = "sugexp"
+private const val KEY_SUGGEST_TOKEN = "suggest_token"
+
+internal fun ResponseContext.getSuggestToken(): String? = serviceTrackingParams?.firstNotNullOfOrNull {
+    if (it?.service == SERVICE_SUGGEST) {
+        it.params?.firstOrNull { it?.key == KEY_SUGGEST_TOKEN }?.value
+    } else null
+}

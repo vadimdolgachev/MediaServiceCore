@@ -22,7 +22,7 @@ public class SearchServiceUnsignedTest {
 
         ShadowLog.stream = System.out; // catch Log class output
 
-        mService = SearchService.instance();
+        mService = new SearchService();
     }
 
     @Test
@@ -31,6 +31,6 @@ public class SearchServiceUnsignedTest {
         assertTrue("search not empty?", searchResult.getItemWrappers().size() != 0);
 
         SearchResultContinuation nextSearchResult = mService.continueSearch(searchResult.getNextPageKey());
-        assertTrue("next search not empty?", nextSearchResult.getTileItems().size() != 0);
+        assertTrue("next search not empty?", nextSearchResult.getItemWrappers().size() != 0);
     }
 }

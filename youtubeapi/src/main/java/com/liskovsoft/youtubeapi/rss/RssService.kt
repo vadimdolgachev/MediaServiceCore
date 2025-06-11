@@ -3,21 +3,23 @@ package com.liskovsoft.youtubeapi.rss
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.sharedutils.helpers.Helpers
+import com.liskovsoft.youtubeapi.browse.v2.BrowseService2
 import com.liskovsoft.youtubeapi.browse.v2.BrowseService2Wrapper
 import com.liskovsoft.youtubeapi.common.api.FileApi
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitHelper
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaGroup
 import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CopyOnWriteArrayList
 
 internal object RssService {
     private val mFileApi = RetrofitHelper.create(FileApi::class.java)
     private const val RSS_URL: String = "https://www.youtube.com/feeds/videos.xml?channel_id="
-    private val mBrowseService2 = BrowseService2Wrapper.instance
 
     @JvmStatic
     fun getFeed(vararg channelIds: String): MediaGroup? {
@@ -41,25 +43,35 @@ internal object RssService {
     }
 
     private fun fetchFeeds(vararg channelIds: String): MutableList<MediaItem> = runBlocking {
-        val items = mutableListOf<MediaItem>()
+        val items = CopyOnWriteArrayList<MediaItem>()
 
         coroutineScope { // wait for all child coroutines complete
             for (channelId in channelIds) {
                 launch {
-                    appendFeed(channelId, items)
+                    fetchFeed(channelId)?.let { items.addAll(it) }
                 }
             }
         }
 
-        return@runBlocking items
+        return@runBlocking items.toMutableList()
     }
 
-    private suspend fun appendFeed(channelId: String, items: MutableList<MediaItem>) = withContext(Dispatchers.IO) {
+    private fun fetchFeeds2(vararg channelIds: String): MutableList<MediaItem> = runBlocking {
+        val deferreds = channelIds.map { channelId ->
+            async {
+                fetchFeed(channelId)
+            }
+        }
+
+        return@runBlocking deferreds.mapNotNull { it.await() }.flatten().toMutableList()
+    }
+
+    private suspend fun fetchFeed(channelId: String): List<MediaItem>? = withContext(Dispatchers.IO) {
         val rssContent = RetrofitHelper.get(mFileApi.getContent(RSS_URL + channelId))?.content
         rssContent?.let {
             val result = YouTubeRssParser(Helpers.toStream(rssContent)).parse()
             syncWithChannel(channelId, result)
-            items.addAll(result)
+            result
         }
     }
 
@@ -67,7 +79,7 @@ internal object RssService {
      * Add missing props and remove shorts etc
      */
     private fun syncWithChannel(channelId: String, result: List<MediaItem>) {
-        val group = mBrowseService2.getChannelAsGrid(channelId)
+        val group = getBrowseService2().getChannelAsGrid(channelId)
         val originItems = group?.mediaItems ?: return
 
         Helpers.removeIf(result) { item ->
@@ -86,4 +98,6 @@ internal object RssService {
             return@removeIf true
         }
     }
+
+    private fun getBrowseService2(): BrowseService2 = BrowseService2Wrapper
 }

@@ -1,12 +1,10 @@
-package com.liskovsoft.googleapi.common.helpers.tests;
+package com.liskovsoft.youtubeapi.common.helpers.tests;
 
-import com.liskovsoft.googleapi.common.ApiKeys;
 import com.liskovsoft.sharedutils.okhttp.OkHttpManager;
-import com.liskovsoft.googleapi.oauth2.OAuth2Service;
-import com.liskovsoft.googleapi.oauth2.models.auth.AccessToken;
+import com.liskovsoft.youtubeapi.auth.V2.AuthService;
+import com.liskovsoft.youtubeapi.auth.models.auth.AccessToken;
 
-public class TestHelpersV2 extends TestHelpersBase {
-    public static final String REFRESH_TOKEN = "";
+public class TestHelpers extends TestHelpersBase {
     private static String mAuthorization; // type: Bearer
 
     public static String getAuthorization() {
@@ -14,7 +12,7 @@ public class TestHelpersV2 extends TestHelpersBase {
             return mAuthorization;
         }
 
-        AccessToken token = OAuth2Service.instance().updateAccessToken(ApiKeys.REFRESH_TOKEN);
+        AccessToken token = AuthService.instance().getAccessTokenRaw(ApiKeys.RAW_JSON_AUTH_DATA_V2);
 
         if (token == null) {
             throw new IllegalStateException("Token is null");
@@ -31,6 +29,6 @@ public class TestHelpersV2 extends TestHelpersBase {
 
     public static boolean urlExists(String url) {
         // disable profiler because it could cause out of memory error
-        return OkHttpManager.instance(false).doGetRequest(url) != null;
+        return OkHttpManager.instance(false).doHeadRequest(url) != null;
     }
 }

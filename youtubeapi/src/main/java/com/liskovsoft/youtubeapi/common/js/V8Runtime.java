@@ -1,5 +1,7 @@
 package com.liskovsoft.youtubeapi.common.js;
 
+import androidx.annotation.Nullable;
+
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8ResultUndefined;
 import com.eclipsesource.v8.V8ScriptExecutionException;
@@ -37,18 +39,44 @@ public final class V8Runtime {
         sInstance = null;
     }
 
+    @Nullable
     public String evaluate(final String source) {
+        try {
+            return evaluateSafe(source);
+        } catch (V8ScriptExecutionException e) {
+            Log.e(TAG, e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public String evaluateWithErrors(final String source) throws V8ScriptExecutionException {
         return evaluateSafe(source);
     }
 
+    @Nullable
     public String evaluate(final List<String> sources) {
+        try {
+            return evaluateSafe(sources);
+        } catch (V8ScriptExecutionException e) {
+            Log.e(TAG, e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public String evaluateWithErrors(final List<String> sources) throws V8ScriptExecutionException {
         return evaluateSafe(sources);
     }
 
     /**
      * Not a thread safe. Possible 'Invalid V8 thread access' errors.
      */
-    private String evaluateUnsafe(final String source) {
+    private String evaluateUnsafe(final String source) throws V8ScriptExecutionException {
         String result = null;
 
         try {
@@ -57,9 +85,6 @@ public final class V8Runtime {
             }
             mRuntime.getLocker().acquire(); // Possible 'Invalid V8 thread access' errors
             result = mRuntime.executeStringScript(source);
-        } catch (V8ScriptExecutionException e) {
-            Log.e(TAG, e.getMessage());
-            e.printStackTrace();
         } finally {
             if (mRuntime != null) {
                 mRuntime.getLocker().release(); // Possible 'Invalid V8 thread access' errors
@@ -72,16 +97,13 @@ public final class V8Runtime {
     /**
      * Thread safe solution but performance a bit slow.
      */
-    private String evaluateSafe(final String source) {
+    private String evaluateSafe(final String source) throws V8ScriptExecutionException {
         V8 runtime = null;
-        String result = null;
+        String result;
 
         try {
             runtime = V8.createV8Runtime();
             result = runtime.executeStringScript(source);
-        } catch (V8ScriptExecutionException e) {
-            Log.e(TAG, e.getMessage());
-            e.printStackTrace();
         } finally {
             if (runtime != null) {
                 runtime.release(false);
@@ -94,7 +116,7 @@ public final class V8Runtime {
     /**
      * Thread safe solution but performance a bit slow.
      */
-    private String evaluateSafe(final List<String> sources) {
+    private String evaluateSafe(final List<String> sources) throws V8ScriptExecutionException {
         V8 runtime = null;
         String result = null;
 
@@ -107,9 +129,6 @@ public final class V8Runtime {
                     // NOP
                 }
             }
-        } catch (V8ScriptExecutionException e) {
-            Log.e(TAG, e.getMessage());
-            e.printStackTrace();
         } finally {
             if (runtime != null) {
                 runtime.release(false);

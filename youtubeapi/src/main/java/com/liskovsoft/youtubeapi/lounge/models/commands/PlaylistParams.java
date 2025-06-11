@@ -12,6 +12,9 @@ public class PlaylistParams {
     @JsonPath("$.videoIds")
     private String mVideoIds;
 
+    @JsonPath("$.languageCode")
+    private String mLanguageCode;
+
     @JsonPath("$.listId")
     private String mPlaylistId;
 
@@ -23,6 +26,10 @@ public class PlaylistParams {
 
     @JsonPath("$.ctt")
     private String mCtt;
+
+    public String getLanguageCode() {
+        return mLanguageCode;
+    }
 
     public String getPlaylistId() {
         return mPlaylistId;

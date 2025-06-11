@@ -87,6 +87,10 @@ internal data class ChannelsEndpoint(
     val params: String?
 )
 
+internal data class CommentEndpoint(
+    val action: String?
+)
+
 internal data class DefaultServiceEndpoint(
     val authDeterminedCommand: AuthDeterminedCommand?
 ) {
@@ -97,7 +101,8 @@ internal data class DefaultServiceEndpoint(
 
 internal data class ToggledServiceEndpoint(
     val subscribeEndpoint: ChannelsEndpoint?,
-    val unsubscribeEndpoint: ChannelsEndpoint?
+    val unsubscribeEndpoint: ChannelsEndpoint?,
+    val performCommentActionEndpoint: CommentEndpoint?
 )
 
 internal data class ShowEngagementPanelEndpoint(
@@ -119,7 +124,7 @@ internal data class ButtonRenderer(
 internal data class ToggleButtonRenderer(
     val isToggled: Boolean?,
     val isDisabled: Boolean?,
-    val defaultServiceEndpoint: DefaultServiceEndpoint?,
+    val defaultServiceEndpoint: ToggledServiceEndpoint?,
     val toggledServiceEndpoint: ToggledServiceEndpoint?
 )
 
@@ -644,3 +649,17 @@ internal data class AuthErrorResponse(
     val error: String?,
     val error_description: String?
 )
+
+internal data class ResponseContext(
+    val serviceTrackingParams: List<TrackingParam?>?
+)
+
+internal data class TrackingParam(
+    val service: String?,
+    val params: List<Param?>?
+) {
+    data class Param(
+        val key: String?,
+        val value: String?
+    )
+}

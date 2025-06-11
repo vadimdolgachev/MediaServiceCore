@@ -6,32 +6,28 @@ import com.liskovsoft.sharedutils.rx.RxHelper
 import com.liskovsoft.youtubeapi.comments.CommentsServiceInt
 import io.reactivex.Observable
 
-class YouTubeCommentsService private constructor(): CommentsService {
-    private val commentsServiceInt = CommentsServiceInt.instance()
-
-    override fun getComments(key: String?): CommentGroup? {
-        return commentsServiceInt?.getComments(key)
+internal object YouTubeCommentsService: CommentsService {
+    private fun getComments(key: String?): CommentGroup? {
+        return key?.let { CommentsServiceInt.getComments(key) }
     }
 
-    companion object {
-        private val TAG = YouTubeCommentsService::class.simpleName
-        private var sInstance: YouTubeCommentsService? = null
+    private fun toggleLike(key: String?) {
+        key?.let { CommentsServiceInt.toggleLike(key) }
+    }
 
-        @JvmStatic
-        fun instance(): YouTubeCommentsService? {
-            if (sInstance == null) {
-                sInstance = YouTubeCommentsService()
-            }
-            return sInstance
-        }
-
-        @JvmStatic
-        fun unhold() {
-            sInstance = null
-        }
+    private fun toggleDislike(key: String?) {
+        key?.let { CommentsServiceInt.toggleDislike(key) }
     }
 
     override fun getCommentsObserve(key: String?): Observable<CommentGroup> {
-        return RxHelper.fromNullable { getComments(key) }
+        return RxHelper.fromCallable { getComments(key) }
+    }
+
+    override fun toggleLikeObserve(key: String?): Observable<Void> {
+        return RxHelper.fromRunnable { toggleLike(key) }
+    }
+
+    override fun toggleDislikeObserve(key: String?): Observable<Void> {
+        return RxHelper.fromRunnable { toggleDislike(key) }
     }
 }

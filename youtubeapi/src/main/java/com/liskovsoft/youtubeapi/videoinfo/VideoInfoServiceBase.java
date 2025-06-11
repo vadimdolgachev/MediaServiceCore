@@ -34,6 +34,10 @@ public abstract class VideoInfoServiceBase {
         mFileApi = RetrofitHelper.create(FileApi.class);
     }
 
+    protected boolean isPotSupported() {
+        return false;
+    }
+
     protected void decipherFormats(List<? extends VideoFormat> formats) {
         if (formats == null) {
             return;
@@ -50,7 +54,9 @@ public abstract class VideoInfoServiceBase {
         // What this for? Could this fix throttling or maybe the source error?
         //applyAdditionalStrings(formats);
 
-        applyPoToken(formats, mAppService.getSessionPoToken());
+        if (isPotSupported()) {
+            applyPoToken(formats, mAppService.getSessionPoToken());
+        }
     }
 
     private static List<String> extractCipheredStrings(List<? extends VideoFormat> formats) {
@@ -64,6 +70,10 @@ public abstract class VideoInfoServiceBase {
     }
 
     private static void applyDecipheredStrings(List<? extends VideoFormat> formats, List<String> deciphered) {
+        if (deciphered == null) {
+            return;
+        }
+
         if (deciphered.size() != formats.size()) {
             throw new IllegalStateException("Sizes of formats and deciphered strings should match!");
         }
@@ -86,7 +96,7 @@ public abstract class VideoInfoServiceBase {
     }
 
     private static void applyThrottleFixedStrings(List<? extends VideoFormat> formats, List<String> throttleFixed) {
-        if (throttleFixed.isEmpty()) {
+        if (throttleFixed == null || throttleFixed.isEmpty()) {
             return;
         }
 

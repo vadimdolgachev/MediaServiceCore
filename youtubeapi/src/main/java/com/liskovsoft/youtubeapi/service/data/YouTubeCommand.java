@@ -24,6 +24,7 @@ public class YouTubeCommand implements Command {
     private int mDelta;
     private int mKey = Command.KEY_UNDEFINED;
     private boolean mIsVoiceStarted;
+    private String mSubLanguageCode;
 
     public static Command from(CommandItem info) {
         if (info == null) {
@@ -43,8 +44,8 @@ public class YouTubeCommand implements Command {
                 break;
             case CommandItem.TYPE_UPDATE_PLAYLIST:
                 command.mType = Command.TYPE_UPDATE_PLAYLIST;
-                playlistParams = info.getPlaylistParams();
-                command.mPlaylistId = playlistParams.getPlaylistId();
+                PlaylistParams playlistParams2 = info.getPlaylistParams();
+                command.mPlaylistId = playlistParams2.getPlaylistId();
                 break;
             case CommandItem.TYPE_SEEK_TO:
                 command.mType = Command.TYPE_SEEK;
@@ -82,9 +83,9 @@ public class YouTubeCommand implements Command {
                 break;
             case CommandItem.TYPE_REMOTE_DISCONNECTED:
                 command.mType = Command.TYPE_DISCONNECTED;
-                remoteParams = info.getRemoteParams();
-                command.mDeviceName = remoteParams.getDeviceName();
-                command.mDeviceId = remoteParams.getDeviceId();
+                RemoteParams remoteParams2 = info.getRemoteParams();
+                command.mDeviceName = remoteParams2.getDeviceName();
+                command.mDeviceId = remoteParams2.getDeviceId();
                 break;
             case CommandItem.TYPE_NOOP:
                 command.mType = Command.TYPE_IDLE;
@@ -119,12 +120,17 @@ public class YouTubeCommand implements Command {
                 break;
             case CommandItem.TYPE_SUBTITLES:
                 command.mType = Command.TYPE_SUBTITLES;
-                PlaylistParams params = info.getPlaylistParams();
-                command.mVideoId = params.getVideoId();
+                PlaylistParams playlistParams3 = info.getPlaylistParams();
+                command.mVideoId = playlistParams3.getVideoId();
+                command.mSubLanguageCode = playlistParams3.getLanguageCode();
                 break;
         }
 
         return command;
+    }
+
+    public String getSubLanguageCode() {
+        return mSubLanguageCode;
     }
 
     @Override

@@ -7,6 +7,7 @@ import androidx.test.rule.GrantPermissionRule;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
+import com.liskovsoft.youtubeapi.app.playerdata.PlayerDataExtractor;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import org.junit.Before;
@@ -54,9 +55,39 @@ public class AppServiceTest {
         assertFalse("Deciphered not empty", deciphered.isEmpty());
 
         for (String decipher : deciphered) {
-             assertNotEquals("Cipher and decipher not the same", decipher, cipher);
+             assertNotEquals("Cipher and decipher not the same", cipher, decipher);
         }
     }
+
+    @Test
+    public void testThatItemsDecipheredCorrectly2() {
+        List<String> ciphered = new ArrayList<>();
+        String cipher = "ADBVCGD2934FBBBBBDDDFFF";
+        ciphered.add(cipher);
+        ciphered.add(cipher);
+        ciphered.add(cipher);
+
+        PlayerDataExtractor extractor = new PlayerDataExtractor(AppConstants.playerUrls.get(0));
+
+        List<String> deciphered = extractor.decipherItems(ciphered);
+
+        assertNotNull("Deciphered not null", deciphered);
+        assertFalse("Deciphered not empty", deciphered.isEmpty());
+
+        for (String decipher : deciphered) {
+            assertNotEquals("Cipher and decipher not the same", cipher, decipher);
+        }
+    }
+
+    //@Ignore("Removed in the newer versions")
+    //@Test
+    //public void testCipherExtractor() {
+    //    for (String url : AppConstants.playerUrls) {
+    //        PlayerDataExtractor dataExtractor = new PlayerDataExtractor(url);
+    //
+    //        assertNotNull("Cipher found for url: " + url, dataExtractor.extractCipher());
+    //    }
+    //}
 
     @Test
     public void testPlaybackNonce() {

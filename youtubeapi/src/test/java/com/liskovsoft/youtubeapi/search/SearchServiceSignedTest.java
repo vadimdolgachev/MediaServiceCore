@@ -1,7 +1,7 @@
 package com.liskovsoft.youtubeapi.search;
 
 import com.liskovsoft.youtubeapi.common.helpers.RetrofitOkHttpHelper;
-import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpersV2;
+import com.liskovsoft.youtubeapi.common.helpers.tests.TestHelpers;
 import com.liskovsoft.youtubeapi.search.models.SearchResult;
 import com.liskovsoft.youtubeapi.search.models.SearchResultContinuation;
 import org.junit.Before;
@@ -26,9 +26,9 @@ public class SearchServiceSignedTest {
 
         ShadowLog.stream = System.out; // catch Log class output
 
-        mService = SearchService.instance();
+        mService = new SearchService();
 
-        RetrofitOkHttpHelper.getAuthHeaders().put("Authorization", TestHelpersV2.getAuthorization());
+        RetrofitOkHttpHelper.getAuthHeaders().put("Authorization", TestHelpers.getAuthorization());
     }
 
     @Test
@@ -37,7 +37,7 @@ public class SearchServiceSignedTest {
         assertTrue("search not empty?", searchResult.getItemWrappers().size() != 0);
 
         SearchResultContinuation nextSearchResult = mService.continueSearch(searchResult.getNextPageKey());
-        assertTrue("next search not empty?", nextSearchResult.getTileItems().size() != 0);
+        assertTrue("next search not empty?", nextSearchResult.getItemWrappers().size() != 0);
     }
 
     @Test

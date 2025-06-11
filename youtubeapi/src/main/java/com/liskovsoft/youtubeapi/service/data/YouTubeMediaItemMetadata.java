@@ -6,6 +6,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
 import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.youtubeapi.browse.v1.models.sections.Chip;
 import com.liskovsoft.youtubeapi.common.models.items.VideoItem;
@@ -22,8 +23,8 @@ import java.util.List;
 public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private static final String TAG = YouTubeMediaItemMetadata.class.getSimpleName();
     private String mTitle;
-    private String mSecondTitle;
-    private String mSecondTitleAlt;
+    private CharSequence mSecondTitle;
+    private CharSequence mSecondTitleAlt;
     private String mDescription;
     private String mAuthor;
     private String mAuthorImageUrl;
@@ -41,6 +42,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
     private List<MediaGroup> mSuggestions;
     private boolean mIsLive;
     private boolean mIsUpcoming;
+    private PlaylistInfo mPlaylistInfo;
 
     public static YouTubeMediaItemMetadata from(WatchNextResult watchNextResult) {
         if (watchNextResult == null) {
@@ -58,7 +60,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
         }
 
         if (videoDetails != null) {
-            mediaItemMetadata.mAuthor = videoDetails.getUserName();
+            mediaItemMetadata.mAuthor = Helpers.toString(videoDetails.getUserName());
             mediaItemMetadata.mChannelId = videoDetails.getChannelId();
             mediaItemMetadata.mTitle = videoDetails.getTitle();
             mediaItemMetadata.mVideoId = videoDetails.getVideoId();
@@ -97,7 +99,7 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
             mediaItemMetadata.mDescription = videoMetadata.getDescription();
             mediaItemMetadata.mDislikesCount = videoMetadata.getDislikesCount();
             mediaItemMetadata.mLikesCount = videoMetadata.getLikesCount();
-            mediaItemMetadata.mViewCount = videoMetadata.getViewCount();
+            mediaItemMetadata.mViewCount = Helpers.toString(videoMetadata.getViewCount());
             mediaItemMetadata.mPercentWatched = videoMetadata.getPercentWatched();
             mediaItemMetadata.mPublishedDate = videoMetadata.getPublishedDate();
             mediaItemMetadata.mIsLive = videoMetadata.isLive();
@@ -165,9 +167,17 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
         return mTitle;
     }
 
+    public void setTitle(String title) {
+        mTitle = title;
+    }
+
     @Override
-    public String getSecondTitle() {
+    public CharSequence getSecondTitle() {
         return mSecondTitle;
+    }
+
+    public void setSecondTitle(CharSequence secondTitle) {
+        mSecondTitle = secondTitle;
     }
 
     @Override
@@ -215,9 +225,17 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
         return mVideoId;
     }
 
+    public void setVideoId(String videoId) {
+        mVideoId = videoId;
+    }
+
     @Override
     public MediaItem getNextVideo() {
         return mNextVideo;
+    }
+
+    public void setNextVideo(MediaItem nextVideo) {
+        mNextVideo = nextVideo;
     }
 
     @Override
@@ -276,7 +294,11 @@ public class YouTubeMediaItemMetadata implements MediaItemMetadata {
 
     @Override
     public PlaylistInfo getPlaylistInfo() {
-        return null;
+        return mPlaylistInfo;
+    }
+
+    public void setPlaylistInfo(PlaylistInfo playlistInfo) {
+        mPlaylistInfo = playlistInfo;
     }
 
     @Override

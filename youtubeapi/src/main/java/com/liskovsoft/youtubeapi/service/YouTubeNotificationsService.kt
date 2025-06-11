@@ -5,32 +5,31 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem
 import com.liskovsoft.mediaserviceinterfaces.data.NotificationState
 import com.liskovsoft.sharedutils.rx.RxHelper
-import com.liskovsoft.youtubeapi.notifications.NotificationsServiceWrapper
+import com.liskovsoft.youtubeapi.notifications.NotificationsServiceInt
+import com.liskovsoft.youtubeapi.notifications.NotificationsServiceIntWrapper
 import io.reactivex.Observable
 
 internal object YouTubeNotificationsService: NotificationsService {
-    private val mSignInService = YouTubeSignInService.instance()
-
     override fun getNotificationItems(): MediaGroup? {
         checkSigned()
 
-        return NotificationsServiceWrapper.getItems()
+        return getNotificationServiceInt().getItems()
     }
 
     override fun hideNotification(item: MediaItem?) {
         checkSigned()
 
-        NotificationsServiceWrapper.hideNotification(item)
+        getNotificationServiceInt().hideNotification(item)
     }
 
     override fun setNotificationState(state: NotificationState?) {
         checkSigned()
 
-        NotificationsServiceWrapper.modifyNotification(state)
+        getNotificationServiceInt().modifyNotification(state)
     }
 
     override fun getNotificationItemsObserve(): Observable<MediaGroup> {
-        return RxHelper.fromNullable { notificationItems }
+        return RxHelper.fromCallable { notificationItems }
     }
 
     override fun hideNotificationObserve(item: MediaItem?): Observable<Void> {
@@ -42,6 +41,9 @@ internal object YouTubeNotificationsService: NotificationsService {
     }
 
     private fun checkSigned() {
-        mSignInService.checkAuth()
+        getYouTubeSignInService().checkAuth()
     }
+
+    private fun getYouTubeSignInService(): YouTubeSignInService = YouTubeSignInService.instance()
+    private fun getNotificationServiceInt(): NotificationsServiceInt = NotificationsServiceIntWrapper
 }

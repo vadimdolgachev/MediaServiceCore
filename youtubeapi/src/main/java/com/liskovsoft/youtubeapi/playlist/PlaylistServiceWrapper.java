@@ -1,9 +1,8 @@
 package com.liskovsoft.youtubeapi.playlist;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.liskovsoft.googleapi.youtubedata3.YouTubeDataServiceInt;
-import com.liskovsoft.googleapi.youtubedata3.impl.ItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.data.ItemGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
@@ -12,6 +11,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.youtubeapi.app.AppConstants;
 import com.liskovsoft.youtubeapi.channelgroups.models.ItemGroupImpl;
 import com.liskovsoft.youtubeapi.channelgroups.models.ItemImpl;
+import com.liskovsoft.youtubeapi.next.v2.WatchNextService;
 import com.liskovsoft.youtubeapi.next.v2.WatchNextServiceWrapper;
 import com.liskovsoft.youtubeapi.playlist.impl.YouTubePlaylistInfo;
 import com.liskovsoft.youtubeapi.playlistgroups.PlaylistGroupServiceImpl;
@@ -51,9 +51,9 @@ public class PlaylistServiceWrapper extends PlaylistService {
                     Collections.singletonList(ItemImpl.fromMediaItem(cachedVideo)));
             PlaylistGroupServiceImpl.addPlaylistGroup(playlist);
         } else { // Google api quota exceeded
-            MediaItemMetadata ytMetadata = WatchNextServiceWrapper.getInstance().getMetadata(videoId);
+            MediaItemMetadata ytMetadata = getWatchNextService().getMetadata(videoId);
             String title = ytMetadata != null ? ytMetadata.getTitle() : null;
-            String subtitle = ytMetadata != null ? ytMetadata.getSecondTitle() : null;
+            CharSequence subtitle = ytMetadata != null ? ytMetadata.getSecondTitle() : null;
             String badgeText = ytMetadata != null ? ytMetadata.getBadgeText() : null;
             String channelId = ytMetadata != null ? ytMetadata.getChannelId() : null;
             ItemGroup playlist = PlaylistGroupServiceImpl.createPlaylistGroup(playlistName, null,
@@ -150,9 +150,9 @@ public class PlaylistServiceWrapper extends PlaylistService {
             playlistGroup.add(ItemImpl.fromMediaItem(cachedVideo));
             PlaylistGroupServiceImpl.addPlaylistGroup(playlistGroup); // move to the top
         } else { // Google api quota exceeded
-            MediaItemMetadata ytMetadata = WatchNextServiceWrapper.getInstance().getMetadata(videoId);
+            MediaItemMetadata ytMetadata = getWatchNextService().getMetadata(videoId);
             String title = ytMetadata != null ? ytMetadata.getTitle() : null;
-            String subtitle = ytMetadata != null ? ytMetadata.getSecondTitle() : null;
+            CharSequence subtitle = ytMetadata != null ? ytMetadata.getSecondTitle() : null;
             String badgeText = ytMetadata != null ? ytMetadata.getBadgeText() : null;
             String channelId = ytMetadata != null ? ytMetadata.getChannelId() : null;
             playlistGroup.add(new ItemImpl(channelId, title, null, videoId, subtitle, badgeText));
@@ -233,5 +233,10 @@ public class PlaylistServiceWrapper extends PlaylistService {
         PlaylistInfo first = Helpers.findFirst(mCachedPlaylistInfos, item -> Helpers.equals(item.getPlaylistId(), playlistId));
 
         return first != null ? first.getTitle() : null;
+    }
+
+    @NonNull
+    private static WatchNextService getWatchNextService() {
+        return WatchNextServiceWrapper.INSTANCE;
     }
 }

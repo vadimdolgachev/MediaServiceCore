@@ -11,12 +11,13 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.sharedutils.prefs.SharedPreferencesBase;
 import com.liskovsoft.sharedutils.rx.RxHelper;
-import com.liskovsoft.youtubeapi.app.AppConstants;
+import com.liskovsoft.youtubeapi.app.PoTokenGate;
 import com.liskovsoft.youtubeapi.app.models.cached.AppInfoCached;
 import com.liskovsoft.youtubeapi.app.models.cached.ClientDataCached;
 import com.liskovsoft.youtubeapi.app.models.cached.PlayerDataCached;
-import com.liskovsoft.youtubeapi.app.nsig.NSigData;
+import com.liskovsoft.youtubeapi.app.playerdata.NSigData;
 import com.liskovsoft.youtubeapi.app.potokencloud.PoTokenResponse;
+import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
 
 import java.util.UUID;
 
@@ -49,9 +50,8 @@ public class MediaServiceData {
     private String mScreenId;
     private String mDeviceId;
     private String mVideoInfoVersion;
+    private String mSigDataVersion;
     private int mVideoInfoType;
-    private String mPlayerUrl;
-    private String mPlayerVersion;
     private String mVisitorCookie;
     private int mEnabledFormats;
     private int mHiddenContent;
@@ -61,9 +61,11 @@ public class MediaServiceData {
     private GlobalPreferences mGlobalPrefs;
     private PoTokenResponse mPoToken;
     private AppInfoCached mAppInfo;
+    private AppInfoCached mFailedAppInfo;
     private PlayerDataCached mPlayerData;
     private ClientDataCached mClientData;
     private NSigData mNSigData;
+    private NSigData mSigData;
     private boolean mIsMoreSubtitlesUnlocked;
     private boolean mIsPremiumFixEnabled;
 
@@ -88,6 +90,7 @@ public class MediaServiceData {
         if (Helpers.isJUnitTest()) {
             Log.d(TAG, "JUnit test is running. Skipping data restore...");
             mEnabledFormats = FORMATS_ALL; // Debug
+            mVideoInfoType = -1; // Required for testing
             return;
         }
 
@@ -151,27 +154,28 @@ public class MediaServiceData {
         persistData();
     }
 
-    //public String getPlayerUrl() {
-    //    if (Helpers.equals(mPlayerVersion, mAppVersion)) {
-    //        return mPlayerUrl;
-    //    }
-    //
-    //    return null;
-    //}
-    //
-    //public void setPlayerUrl(String url) {
-    //    mPlayerVersion = mAppVersion;
-    //    mPlayerUrl = url;
-    //    persistData();
-    //}
-
     @Nullable
     public NSigData getNSigData() {
-        return mNSigData;
+        if (Helpers.equals(mSigDataVersion, mAppVersion)) {
+            return mNSigData;
+        }
+
+        return null;
     }
 
     public void setNSigData(NSigData nSigData) {
+        mSigDataVersion = mAppVersion;
         mNSigData = nSigData;
+        persistData();
+    }
+
+    @Nullable
+    public NSigData getSigData() {
+        return mSigData;
+    }
+
+    public void setSigData(NSigData nSigData) {
+        mSigData = nSigData;
         persistData();
     }
 
@@ -192,6 +196,8 @@ public class MediaServiceData {
         }
 
         persistData();
+
+        YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
     }
 
     public boolean isFormatEnabled(int formats) {
@@ -232,8 +238,17 @@ public class MediaServiceData {
 
     public void setAppInfo(AppInfoCached appInfo) {
         mAppInfo = appInfo;
+        mFailedAppInfo = null;
 
         persistData();
+    }
+
+    public AppInfoCached getFailedAppInfo() {
+        return mFailedAppInfo;
+    }
+
+    public void setFailedAppInfo(AppInfoCached appInfo) {
+        mFailedAppInfo = appInfo;
     }
 
     public PlayerDataCached getPlayerData() {
@@ -259,6 +274,8 @@ public class MediaServiceData {
     public void unlockMoreSubtitles(boolean unlock) {
         mIsMoreSubtitlesUnlocked = unlock;
         persistData();
+
+        YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
     }
 
     public boolean isMoreSubtitlesUnlocked() {
@@ -268,10 +285,16 @@ public class MediaServiceData {
     public void enablePremiumFix(boolean enable) {
         mIsPremiumFixEnabled = enable;
         persistData();
+
+        YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
     }
 
     public boolean isPremiumFixEnabled() {
         return mIsPremiumFixEnabled;
+    }
+
+    public boolean supportsWebView() {
+        return PoTokenGate.supportsNpPot();
     }
 
     private void restoreData() {
@@ -284,20 +307,35 @@ public class MediaServiceData {
         // null for ScreenItem
         mScreenId = Helpers.parseStr(split, 1);
         mDeviceId = Helpers.parseStr(split, 2);
+        //String lastPlayerUrl = AppConstants.playerUrls.get(0); // fallback url for nfunc extractor
+        mVideoInfoVersion = Helpers.parseStr(split, 3);
+        mVideoInfoType = Helpers.parseInt(split, 4, -1);
+        mSkipAuth = Helpers.parseBoolean(split, 5);
         // entries here moved to the cache
-        //mVisitorCookie = Helpers.parseStr(split, 10);
-        mEnabledFormats = Helpers.parseInt(split, 11, FORMATS_DASH);
+        mEnabledFormats = Helpers.parseInt(split, 11, FORMATS_DASH | FORMATS_URL);
         // null
-        mSkipAuth = Helpers.parseBoolean(split, 13);
         mPoToken = Helpers.parseItem(split, 14, PoTokenResponse::fromString);
         mAppInfo = Helpers.parseItem(split, 15, AppInfoCached::fromString);
         mPlayerData = Helpers.parseItem(split, 16, PlayerDataCached::fromString);
         mClientData = Helpers.parseItem(split, 17, ClientDataCached::fromString);
         mHiddenContent = Helpers.parseInt(split, 18,
-                CONTENT_SHORTS_SUBSCRIPTIONS | CONTENT_SHORTS_HISTORY | CONTENT_SHORTS_TRENDING | CONTENT_UPCOMING_CHANNEL | CONTENT_UPCOMING_HOME);
+                CONTENT_SHORTS_SUBSCRIPTIONS | CONTENT_SHORTS_HISTORY | CONTENT_SHORTS_TRENDING | CONTENT_UPCOMING_CHANNEL | CONTENT_UPCOMING_HOME | CONTENT_UPCOMING_SUBSCRIPTIONS);
         mIsMoreSubtitlesUnlocked = Helpers.parseBoolean(split, 19);
         mIsPremiumFixEnabled = Helpers.parseBoolean(split, 20);
         mVisitorCookie = Helpers.parseStr(split, 21);
+    }
+
+    private void persistDataInt() {
+        if (mGlobalPrefs == null) {
+            return;
+        }
+
+        mGlobalPrefs.setMediaServiceData(
+                Helpers.mergeData(null, mScreenId, mDeviceId, mVideoInfoVersion,
+                        mVideoInfoType, mSkipAuth, null, null, null, null,
+                        null, mEnabledFormats, null, null, mPoToken, mAppInfo,
+                        mPlayerData, mClientData, mHiddenContent, mIsMoreSubtitlesUnlocked,
+                        mIsPremiumFixEnabled, mVisitorCookie));
     }
 
     private void restoreCachedData() {
@@ -305,46 +343,25 @@ public class MediaServiceData {
 
         String[] split = Helpers.splitData(cache);
 
-        mAppVersion = AppInfoHelpers.getAppVersionName(mGlobalPrefs.getContext());
+        mNSigData = Helpers.parseItem(split, 8, NSigData::fromString);
+        mSigData = Helpers.parseItem(split, 9, NSigData::fromString);
+        mSigDataVersion = Helpers.parseStr(split, 10);
+    }
 
-        String lastPlayerUrl = AppConstants.playerUrls.get(0); // fallback url for nfunc extractor
-        mVideoInfoVersion = Helpers.parseStr(split, 0);
-        mVideoInfoType = Helpers.parseInt(split, 1);
-        //mNFuncPlayerUrl = Helpers.parseStr(split, 2, lastPlayerUrl);
-        //mNFuncParams = Helpers.parseStrList(split, 3);
-        //mNFuncCode = Helpers.parseStr(split, 4);
-        mPlayerUrl = Helpers.parseStr(split, 5);
-        mPlayerVersion = Helpers.parseStr(split, 6);
-        mNSigData = Helpers.parseItem(split, 7, NSigData::fromString);
+    private void persistCachedDataInt() {
+        if (mCachedPrefs == null) {
+            return;
+        }
+
+        mCachedPrefs.setMediaServiceCache(
+                Helpers.mergeData(null, null,
+                        null, null, null, null, null, null, mNSigData, mSigData, mSigDataVersion));
     }
 
     private void persistData() {
         RxHelper.disposeActions(mPersistAction);
 
         // Improve memory usage by merging multiple persist requests
-        mPersistAction = RxHelper.runAsync(() -> { persistDataReal(); persistCachedDataReal(); }, 5_000);
-    }
-
-    private void persistDataReal() {
-        if (mGlobalPrefs == null) {
-            return;
-        }
-
-        mGlobalPrefs.setMediaServiceData(
-                Helpers.mergeData(null, mScreenId, mDeviceId, null, null,
-                        null, null, null, null, null,
-                        null, mEnabledFormats, null, mSkipAuth, mPoToken, mAppInfo,
-                        mPlayerData, mClientData, mHiddenContent, mIsMoreSubtitlesUnlocked,
-                        mIsPremiumFixEnabled, mVisitorCookie));
-    }
-
-    private void persistCachedDataReal() {
-        if (mCachedPrefs == null) {
-            return;
-        }
-
-        mCachedPrefs.setMediaServiceCache(
-                Helpers.mergeData(mVideoInfoVersion, mVideoInfoType,
-                        null, null, null, mPlayerUrl, mPlayerVersion, mNSigData));
+        mPersistAction = RxHelper.runAsync(() -> { persistDataInt(); persistCachedDataInt(); }, 5_000);
     }
 }

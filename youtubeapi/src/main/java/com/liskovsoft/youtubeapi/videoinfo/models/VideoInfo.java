@@ -284,8 +284,26 @@ public class VideoInfo {
         return result;
     }
 
+    public boolean containsRegularVideoInfo() {
+        if (getRegularFormats() == null) {
+            return false;
+        }
+
+        boolean result = false;
+
+        for (RegularVideoFormat format : getRegularFormats()) {
+            String mimeType = format.getMimeType();
+            if (mimeType != null && mimeType.startsWith("video/")) {
+                result = true;
+                break;
+            }
+        }
+
+        return result;
+    }
+
     public boolean isStoryboardBroken() {
-        return !isLive() && getStoryboardSpec() == null;
+        return !isLive() && getStoryboardSpec() == null && (containsAdaptiveVideoInfo() || containsRegularVideoInfo());
     }
 
     public boolean isLive() {
@@ -297,7 +315,7 @@ public class VideoInfo {
     }
 
     public String getPlayabilityStatus() {
-        return ServiceHelper.createInfo(mPlayabilityReason, mPlayabilityDescription);
+        return Helpers.toString(ServiceHelper.createInfo(mPlayabilityReason, mPlayabilityDescription));
     }
 
     public String getStoryboardSpec() {
@@ -341,17 +359,17 @@ public class VideoInfo {
     }
 
     public String getPaidContentText() {
-        return mPaidContentText != null ? mPaidContentText.getText() : null;
+        return mPaidContentText != null ? Helpers.toString(mPaidContentText.getText()) : null;
     }
 
-    public boolean isValid() {
-        if (STATUS_OFFLINE.equals(mPlayabilityStatus)) {
-            return true;
-        }
-
-        // Check that history data is present
-        return getEventId() != null && getVisitorMonitoringData() != null;
-    }
+    //public boolean isValid() {
+    //    if (STATUS_OFFLINE.equals(mPlayabilityStatus)) {
+    //        return true;
+    //    }
+    //
+    //    // Check that history data is present
+    //    return getEventId() != null && getVisitorMonitoringData() != null;
+    //}
 
     /**
      * Sync live data

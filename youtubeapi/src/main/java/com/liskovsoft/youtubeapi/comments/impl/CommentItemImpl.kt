@@ -29,7 +29,7 @@ internal data class CommentItemImpl(val commentItemWrapper: CommentItemWrapper):
 
     private val isLikedItem by lazy { commentRenderer?.isLiked ?: false }
 
-    private val likeCountItem by lazy { commentRenderer?.voteCount?.getText()?.let { "$it ${Helpers.THUMB_UP}" } }
+    private val likeCountItem by lazy { commentRenderer?.voteCount?.getText() }
 
     override fun getId(): String? = idItem
 
@@ -41,11 +41,13 @@ internal data class CommentItemImpl(val commentItemWrapper: CommentItemWrapper):
 
     override fun getPublishedDate(): String? = publishedDateItem
 
-    override fun getNestedCommentsKey(): String? = replyCountItem?.let { nestedCommentKeyItem } // empty replies fix
+    override fun getNestedCommentsKey(): String? = nestedCommentKeyItem
 
     override fun isLiked(): Boolean = isLikedItem
 
     override fun getLikeCount(): String? = likeCountItem
 
     override fun getReplyCount(): String? = replyCountItem
+
+    override fun isEmpty(): Boolean = replyCountItem == null || nestedCommentKeyItem == null // empty replies fix
 }

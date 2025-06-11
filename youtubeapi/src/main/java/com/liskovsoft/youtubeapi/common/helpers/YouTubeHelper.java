@@ -66,7 +66,7 @@ public final class YouTubeHelper {
     /**
      * Additional video info such as user, published etc.
      */
-    public static @Nullable String createInfo(Object... items) {
+    public static @Nullable CharSequence createInfo(Object... items) {
         return ServiceHelper.createInfo(items);
     }
 
@@ -132,9 +132,10 @@ public final class YouTubeHelper {
 
         String title = mediaItem.getTitle().toLowerCase();
 
-        long lengthMs = mediaItem.getDurationMs();
-        boolean isShortLength = lengthMs > 0 && lengthMs <= SHORTS_LEN_MS;
-        return isShortLength || mediaItem.isShorts() || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
+        //long lengthMs = mediaItem.getDurationMs();
+        //boolean isShortLength = lengthMs > 0 && lengthMs <= SHORTS_LEN_MS;
+        //return isShortLength || mediaItem.isShorts() || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
+        return mediaItem.isShorts() || title.contains("#short") || title.contains("#shorts") || title.contains("#tiktok");
     }
 
     public static boolean isMix(MediaItem mediaItem) {
@@ -227,5 +228,11 @@ public final class YouTubeHelper {
         }
 
         return lang.replace("-", HYPHEN_SIGN);
+    }
+
+    public static boolean isGridChannel(String channelId) {
+        //return Helpers.equalsAny(channelId, LIKED_MUSIC_BROWSE_ID, SUBSCRIBED_MUSIC_BROWSE_ID, PLAYED_MUSIC_BROWSE_ID);
+        // NOTE: user channel starts with 'UC'
+        return channelId != null && channelId.startsWith("FE");
     }
 }

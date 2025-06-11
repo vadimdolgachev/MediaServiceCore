@@ -103,9 +103,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
         formatInfo.mDashManifestUrl = videoInfo.getDashManifestUrl();
         formatInfo.mHlsManifestUrl = videoInfo.getHlsManifestUrl();
+        // BEGIN Tracking params
         formatInfo.mEventId = videoInfo.getEventId();
         formatInfo.mVisitorMonitoringData = videoInfo.getVisitorMonitoringData();
         formatInfo.mOfParam = videoInfo.getOfParam();
+        // END Tracking params
         formatInfo.mStoryboardSpec = videoInfo.getStoryboardSpec();
         formatInfo.mIsUnplayable = videoInfo.isUnplayable();
         formatInfo.mIsHistoryBroken = videoInfo.isHistoryBroken();
@@ -240,7 +242,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public boolean containsDashFormats() {
-        return mDashFormats != null;
+        return mDashFormats != null && !mDashFormats.isEmpty();
     }
 
     @Override
@@ -270,7 +272,8 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public float getVolumeLevel() {
-        float result = 1.0f;
+        //float result = 1.0f;
+        float result = 0.9f; // live a bit too loud
 
         //if (mLoudnessDb != 0) {
         //    // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
@@ -280,12 +283,35 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         //    result *= 0.6f; // minimize distortions
         //}
 
+        //if (mLoudnessDb != 0) {
+        //    // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
+        //    // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
+        //    float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 20.0f);
+        //    //float multiplier = 0.2f;
+        //    float multiplier = 0.3f;
+        //    result = Math.min(normalLevel, 1.5f / multiplier); // 1.5 max volume
+        //    result *= multiplier; // minimize distortions
+        //}
+
+        //if (mLoudnessDb != 0) {
+        //    // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
+        //    // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
+        //    float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 15.0f);
+        //    result = Math.min(normalLevel, 4f);
+        //    result *= 0.3f; // minimize distortions
+        //}
+
         if (mLoudnessDb != 0) {
             // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
             // -5db...5db (0.7...1.4) Base formula: normalLevel*10^(-db/20)
-            float normalLevel = (float) Math.pow(10.0f, -mLoudnessDb / 20.0f);
-            result = Math.min(normalLevel, 7.5f); // 1.5 max volume
-            result *= 0.2f; // minimize distortions
+            // Low test - R.E.M. and high test - Lindemann
+            float normalLevel = (float) Math.pow(10.0f, mLoudnessDb / 20.0f);
+            if (normalLevel > 1.95) { // don't normalize?
+                // System of a Down - Lonely Day
+                normalLevel = 1.0f;
+            }
+            // Calculate the result as subtract of the video volume and the max volume
+            result = 2.0f - normalLevel;
         }
 
         return result;
