@@ -9,12 +9,15 @@ import com.liskovsoft.youtubeapi.browse.v2.gen.getVideoId
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper
 import com.liskovsoft.youtubeapi.next.v2.gen.getContinuationKey
 
+// A badge before the image
 private const val BADGE_STYLE_LIVE = "LIVE"
 private const val BADGE_STYLE_UPCOMING = "UPCOMING"
 private const val BADGE_STYLE_SHORTS = "SHORTS"
 private const val BADGE_STYLE_DEFAULT = "DEFAULT"
-private const val BADGE_STYLE_MOVIE = "BADGE_STYLE_TYPE_YPC"
-private const val OLD_BADGE_STYLE_LIVE = "BADGE_STYLE_TYPE_LIVE_NOW"
+// A badge before the subtitle
+private const val STATUS_STYLE_MOVIE = "BADGE_STYLE_TYPE_YPC"
+private const val STATUS_STYLE_QUALITY = "BADGE_STYLE_TYPE_SIMPLE"
+private const val STATUS_STYLE_LIVE = "BADGE_STYLE_TYPE_LIVE_NOW"
 
 ///////////
 
@@ -46,22 +49,29 @@ internal fun ThumbnailItem.Thumbnail.getUrl(): String? {
 ////////
 
 internal fun NavigationEndpointItem.getBrowseId() = browseEndpoint?.browseId
-internal fun NavigationEndpointItem.getBrowseParams() = browseEndpoint?.params
-internal fun NavigationEndpointItem.getOverlayToggleButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.toggleButtonRenderer }
-internal fun NavigationEndpointItem.getOverlaySubscribeButton() = getContent()?.overlayPanelItemListRenderer?.items?.firstNotNullOfOrNull { it?.subscribeButtonRenderer }
+internal fun NavigationEndpointItem.getParams() = browseEndpoint?.params ?: watchEndpoint?.params
+internal fun NavigationEndpointItem.getOverlayToggleButton() = getOverlayItems()?.firstNotNullOfOrNull { it?.toggleButtonRenderer }
+internal fun NavigationEndpointItem.getOverlaySubscribeButton() = getOverlayItems()?.firstNotNullOfOrNull { it?.subscribeButtonRenderer }
 internal fun NavigationEndpointItem.isSubscribed() = getOverlaySubscribeButton()?.subscribed
-internal fun NavigationEndpointItem.getContinuations() = getContent()?.itemSectionRenderer?.continuations ?: getEngagementPanel()?.content?.sectionListRenderer?.contents?.firstOrNull()?.itemSectionRenderer?.continuations
-internal fun NavigationEndpointItem.getTitle() = getHeader()?.overlayPanelHeaderRenderer?.title?.getText()
-internal fun NavigationEndpointItem.getSubtitle() = getHeader()?.overlayPanelHeaderRenderer?.subtitle?.getText()
+internal fun NavigationEndpointItem.getContinuations() = getOverlayContent()?.itemSectionRenderer?.continuations
+    ?: getEngagementContents()?.firstOrNull()?.itemSectionRenderer?.continuations
+internal fun NavigationEndpointItem.getTitle() = getOverlayHeader()?.title?.getText()
+internal fun NavigationEndpointItem.getSubtitle() = getOverlayHeader()?.subtitle?.getText()
 internal fun NavigationEndpointItem.getStartTimeSeconds() = watchEndpoint?.startTimeSeconds
 internal fun NavigationEndpointItem.getVideoId() = watchEndpoint?.videoId ?: reelWatchEndpoint?.videoId
 internal fun NavigationEndpointItem.getPlaylistId() = watchEndpoint?.playlistId ?: watchPlaylistEndpoint?.playlistId
 internal fun NavigationEndpointItem.getIndex() = watchEndpoint?.index
+internal fun NavigationEndpointItem.getFeedbackToken() =
+    getOverlayItems()?.firstNotNullOfOrNull {
+        it?.compactLinkRenderer?.serviceEndpoint?.commandExecutorCommand?.commands?.firstNotNullOfOrNull { it.feedbackEndpoint?.feedbackToken }
+    }
 private fun NavigationEndpointItem.getOverlayPanel() = openPopupAction?.popup?.overlaySectionRenderer?.overlay
     ?.overlayTwoPanelRenderer?.actionPanel?.overlayPanelRenderer
 private fun NavigationEndpointItem.getEngagementPanel() = showEngagementPanelEndpoint?.engagementPanel?.engagementPanelSectionListRenderer
-private fun NavigationEndpointItem.getContent() = getOverlayPanel()?.content
-private fun NavigationEndpointItem.getHeader() = getOverlayPanel()?.header
+private fun NavigationEndpointItem.getOverlayContent() = getOverlayPanel()?.content
+private fun NavigationEndpointItem.getOverlayHeader() = getOverlayPanel()?.header?.overlayPanelHeaderRenderer
+private fun NavigationEndpointItem.getOverlayItems() = getOverlayContent()?.overlayPanelItemListRenderer?.items
+private fun NavigationEndpointItem.getEngagementContents() = getEngagementPanel()?.content?.sectionListRenderer?.contents
 
 ////////
 
@@ -107,12 +117,12 @@ internal fun VideoItem.getChannelId() =
     menu?.getBrowseId()
 internal fun VideoItem.getPlaylistId() = navigationEndpoint?.getPlaylistId()
 internal fun VideoItem.getPlaylistIndex() = navigationEndpoint?.getIndex()
-internal fun VideoItem.isLive(): Boolean = OLD_BADGE_STYLE_LIVE == getOldBadgeStyle() || BADGE_STYLE_LIVE == getBadgeStyle()
+internal fun VideoItem.isLive(): Boolean = STATUS_STYLE_LIVE == getStatusStyle() || BADGE_STYLE_LIVE == getBadgeStyle()
 internal fun VideoItem.isUpcoming() = BADGE_STYLE_UPCOMING == getBadgeStyle()
 internal fun VideoItem.isShorts() = BADGE_STYLE_SHORTS == getBadgeStyle()
-internal fun VideoItem.isMovie() = BADGE_STYLE_MOVIE == getBadgeStyle()
+internal fun VideoItem.isMovie() = STATUS_STYLE_MOVIE == getStatusStyle()
 internal fun VideoItem.getFeedbackTokens() = menu?.getFeedbackTokens()
-private fun VideoItem.getOldBadgeStyle() = badges?.firstNotNullOfOrNull { it?.metadataBadgeRenderer?.style }
+private fun VideoItem.getStatusStyle() = badges?.firstNotNullOfOrNull { it?.metadataBadgeRenderer?.style }
 private fun VideoItem.getBadgeStyle() = thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayTimeStatusRenderer?.style }
 
 ////////////
@@ -189,12 +199,14 @@ internal fun TileItem.getContentType() = contentType
 internal fun TileItem.getRichTextTileText() = header?.richTextTileHeaderRenderer?.textContent?.get(0)?.getText()
 internal fun TileItem.getContinuationToken() = onSelectCommand?.getContinuations()?.getContinuationKey()
 internal fun TileItem.isUpcoming() = BADGE_STYLE_UPCOMING == getBadgeStyle()
-internal fun TileItem.isMovie() = BADGE_STYLE_MOVIE == getBadgeStyle()
-internal fun TileItem.isShorts() = getBadgeStyle() == BADGE_STYLE_SHORTS || getBadgeStyle() == TILE_STYLE_SHORTS
+internal fun TileItem.isMovie() = STATUS_STYLE_MOVIE == getStatusStyle()
+internal fun TileItem.isShorts() = BADGE_STYLE_SHORTS == getBadgeStyle() || TILE_STYLE_SHORTS == getTileStyle()
 private fun TileItem.Header.getBadgeStyle() = tileHeaderRenderer?.thumbnailOverlays?.firstNotNullOfOrNull { it?.thumbnailOverlayTimeStatusRenderer?.style }
-private fun TileItem.Metadata.getBadgeStyle() = tileMetadataRenderer?.lines?.firstNotNullOfOrNull { it?.lineRenderer?.items?.firstNotNullOfOrNull { it?.lineItemRenderer?.badge?.metadataBadgeRenderer?.style } }
+private fun TileItem.Metadata.getStatusStyle() = tileMetadataRenderer?.lines?.firstNotNullOfOrNull { it?.lineRenderer?.items?.firstNotNullOfOrNull { it?.lineItemRenderer?.badge?.metadataBadgeRenderer?.style } }
 private fun TileItem.getMenu() = menu ?: onLongPressCommand?.showMenuCommand?.menu
-private fun TileItem.getBadgeStyle() = header?.getBadgeStyle() ?: metadata?.getBadgeStyle() ?: style
+private fun TileItem.getTileStyle() = style
+private fun TileItem.getBadgeStyle() = header?.getBadgeStyle()
+private fun TileItem.getStatusStyle() = metadata?.getStatusStyle()
 
 ////////////
 
@@ -347,6 +359,7 @@ internal fun IconItem.getType() = iconType
 
 internal fun MenuItem.getIconType() = menuServiceItemRenderer?.icon?.getType()
 internal fun MenuItem.getFeedbackToken() = menuServiceItemRenderer?.serviceEndpoint?.feedbackEndpoint?.feedbackToken
+    ?: menuServiceItemRenderer?.command?.getFeedbackToken()
 internal fun MenuItem.getNotificationToken() = menuServiceItemRenderer?.serviceEndpoint?.recordNotificationInteractionsEndpoint?.serializedInteractionsRequest
 internal fun MenuItem.getBrowseId() = menuNavigationItemRenderer?.navigationEndpoint?.getBrowseId()
 internal fun MenuItem.getPlaylistId() = menuNavigationItemRenderer?.navigationEndpoint?.getPlaylistId()

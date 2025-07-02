@@ -61,8 +61,8 @@ internal open class BrowseService2 {
             val result = mutableListOf<MediaGroup?>()
             it.getRootSection()?.let { result.add(KidsSectionMediaGroup(it, createOptions(MediaGroup.TYPE_KIDS_HOME))) }
             it.getSections()?.forEach {
-                if (it?.getItems() == null && it?.getBrowseParams() != null) {
-                    val kidsResultNested = mBrowseApi.getBrowseResultKids(BrowseApiHelper.getKidsHomeQuery(it.getBrowseParams()!!))
+                if (it?.getItems() == null && it?.getParams() != null) {
+                    val kidsResultNested = mBrowseApi.getBrowseResultKids(BrowseApiHelper.getKidsHomeQuery(it.getParams()!!))
                     RetrofitHelper.get(kidsResultNested)?.getRootSection()?.let {
                         result.add(KidsSectionMediaGroup(it, createOptions(MediaGroup.TYPE_KIDS_HOME)))
                     }
@@ -541,15 +541,20 @@ internal open class BrowseService2 {
     }
 
     private fun addOrMerge(result: MutableList<MediaGroup?>, group: MediaGroup) {
-        val filter = result.filter { it?.title == group.title }
-
-        // Home section parsing downside: one row (e.g. Shorts) could be divided amount other videos
-        if (filter.size == 1) {
-            group.mediaItems?.let { filter.first()?.mediaItems?.addAll(it) }
-        } else {
-            result.add(group)
-        }
+        // Always add, merging will be done later
+        result.add(group)
     }
+
+    //private fun addOrMerge(result: MutableList<MediaGroup?>, group: MediaGroup) {
+    //    val filter = result.filter { it?.title == group.title }
+    //
+    //    // Home section parsing downside: one row (e.g. Shorts) could be divided amount other videos
+    //    if (filter.size == 1) {
+    //        group.mediaItems?.let { filter.first()?.mediaItems?.addAll(it) }
+    //    } else {
+    //        result.add(group)
+    //    }
+    //}
 
     private fun getRecommendedWeb(): List<MediaGroup?>? {
         val guideResult = mBrowseApi.getGuideResult(ServiceHelper.createQueryWeb(""))

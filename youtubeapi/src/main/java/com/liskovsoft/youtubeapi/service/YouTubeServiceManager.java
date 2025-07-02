@@ -110,11 +110,11 @@ public class YouTubeServiceManager implements ServiceManager {
         getVideoInfoService().switchNextFormat();
     }
 
-    @Override
-    public void applyAntiBotFix() {
-        getYouTubeMediaItemService().invalidateCache();
-        refreshPoTokenIfNeeded();
-    }
+    //@Override
+    //public void applyAntiBotFix() {
+    //    getYouTubeMediaItemService().invalidateCache();
+    //    refreshPoTokenIfNeeded();
+    //}
 
     private void refreshCacheIfNeededInt() {
         if (RxHelper.isAnyActionRunning(mRefreshCoreDataAction)) {

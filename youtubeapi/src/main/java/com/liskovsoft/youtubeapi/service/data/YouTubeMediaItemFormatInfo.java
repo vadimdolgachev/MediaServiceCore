@@ -55,6 +55,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     private float mLoudnessDb;
     private boolean mContainsDashVideoFormats;
     private boolean mIsHistoryBroken;
+    private boolean mIsBotCheckError;
     private String mPaidContentText;
 
     private YouTubeMediaItemFormatInfo() {
@@ -111,6 +112,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
         formatInfo.mStoryboardSpec = videoInfo.getStoryboardSpec();
         formatInfo.mIsUnplayable = videoInfo.isUnplayable();
         formatInfo.mIsHistoryBroken = videoInfo.isHistoryBroken();
+        formatInfo.mIsBotCheckError = videoInfo.isUnknownRestricted();
         formatInfo.mPlayabilityStatus = videoInfo.getPlayabilityStatus();
         formatInfo.mIsStreamSeekable = videoInfo.isHfr() || videoInfo.isStreamSeekable();
         formatInfo.mStartTimestamp = videoInfo.getStartTimestamp();
@@ -272,8 +274,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
 
     @Override
     public float getVolumeLevel() {
-        //float result = 1.0f;
-        float result = 0.9f; // live a bit too loud
+        float result = 1.0f; // the live loudness
 
         //if (mLoudnessDb != 0) {
         //    // Original tv web: Math.min(1, 10 ** (-loudnessDb / 20))
@@ -348,7 +349,9 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
             return null;
         }
 
-        Storyboard storyboard = YouTubeStoryParser.from(mStoryboardSpec).extractStory();
+        YouTubeStoryParser storyParser = YouTubeStoryParser.from(mStoryboardSpec);
+        storyParser.setSegmentDurationUs(getSegmentDurationUs());
+        Storyboard storyboard = storyParser.extractStory();
 
         return YouTubeMediaItemStoryboard.from(storyboard);
     }
@@ -361,6 +364,11 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
     @Override
     public boolean isHistoryBroken() {
         return mIsHistoryBroken;
+    }
+
+    @Override
+    public boolean isBotCheckError() {
+        return mIsBotCheckError;
     }
 
     @Override

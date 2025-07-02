@@ -39,10 +39,10 @@ internal object NSigExtractor {
         return fixupNFunctionCode(JSInterpret.extractFunctionCode(jsCode, funcName), globalVar)
     }
 
-    private fun fixupNFunctionCode(data: Pair<List<String>, String>, globalVar: Triple<String?, List<String>?, String?>): Pair<List<String>, String> {
-        val argNames = data.first
-        var nSigCode = data.second
-        
+    private fun fixupNFunctionCode(funcCode: Pair<List<String>, String>, globalVar: Triple<String?, List<String>?, String?>): Pair<List<String>, String> {
+        val argNames = funcCode.first
+        var nSigCode = funcCode.second
+
         var varName = globalVar.first
         val globalList = globalVar.second
         val varCode = globalVar.third
@@ -191,5 +191,11 @@ internal object NSigExtractor {
         }
 
         return null
+    }
+
+    private fun extractNSig(funcCode: Pair<List<String>, String>, signature: String): String? {
+        val func = JSInterpret.extractFunctionFromCode(funcCode.first, funcCode.second)
+
+        return func(listOf(signature))
     }
 }
