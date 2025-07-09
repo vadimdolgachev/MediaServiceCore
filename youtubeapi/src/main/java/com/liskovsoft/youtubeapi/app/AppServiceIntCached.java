@@ -16,28 +16,11 @@ public class AppServiceIntCached extends AppServiceInt {
     private ClientDataCached mClientData;
     private PlayerDataExtractor mPlayerDataExtractor;
     private long mAppInfoUpdateTimeMs;
-    private boolean mFallbackMode;
     private final Object mPlayerSync = new Object();
 
     @Override
     protected synchronized AppInfo getAppInfo(String userAgent) {
         if (mAppInfo != null && System.currentTimeMillis() - mAppInfoUpdateTimeMs < CACHE_REFRESH_PERIOD_MS) {
-            return mAppInfo;
-        }
-
-        if (mFallbackMode && check(getData().getAppInfo())) {
-            mAppInfo = getData().getAppInfo();
-            mAppInfoUpdateTimeMs = System.currentTimeMillis();
-            // Reset dependent objects
-            mClientData = null;
-            return mAppInfo;
-        }
-
-        if (check(getData().getAppInfo()) && System.currentTimeMillis() - getData().getAppInfo().getCreationTimeMs() < CACHE_REFRESH_PERIOD_MS) {
-            mAppInfo = getData().getAppInfo();
-            mAppInfoUpdateTimeMs = getData().getAppInfo().getCreationTimeMs();
-            // Reset dependent objects
-            mClientData = null;
             return mAppInfo;
         }
 
@@ -47,8 +30,6 @@ public class AppServiceIntCached extends AppServiceInt {
 
         mAppInfo = AppInfoCached.from(appInfo);
         mAppInfoUpdateTimeMs = System.currentTimeMillis();
-        // Reset dependent objects
-        mClientData = null;
 
         return mAppInfo;
     }
@@ -56,7 +37,7 @@ public class AppServiceIntCached extends AppServiceInt {
     @Override
     public PlayerDataExtractor getPlayerDataExtractor(String playerUrl) {
         synchronized (mPlayerSync) {
-            if (mPlayerDataExtractor != null && Helpers.equals(mPlayerDataExtractor.getPlayerUrl(), playerUrl)) {
+            if (mPlayerDataExtractor != null && Helpers.equalsAny(playerUrl, mPlayerDataExtractor.getPlayerUrl(), getFailedPlayerUrl())) {
                 return mPlayerDataExtractor;
             }
 
@@ -64,31 +45,39 @@ public class AppServiceIntCached extends AppServiceInt {
             try {
                 mPlayerDataExtractor = super.getPlayerDataExtractor(playerUrl);
                 if (mPlayerDataExtractor.validate()) {
-                    getData().setAppInfo(mAppInfo);
+                    if (check(mAppInfo)) {
+                        getData().setAppInfo(mAppInfo);
+                    }
                 } else {
-                    getData().setFailedAppInfo(mAppInfo);
-                    mAppInfo = null;
-                    mFallbackMode = true;
+                    restoreSafePlayerVersion();
                 }
-                return mPlayerDataExtractor;
             } catch (Throwable e) { // StackOverflowError | IllegalStateException
                 e.printStackTrace();
-                mAppInfo = null;
-                mFallbackMode = true;
-                return null;
+                restoreSafePlayerVersion();
             }
+
+            return mPlayerDataExtractor;
+        }
+    }
+
+    private void restoreSafePlayerVersion() {
+        getData().setFailedAppInfo(mAppInfo);
+        if (check(getData().getAppInfo())) { // can restore?
+            mPlayerDataExtractor = super.getPlayerDataExtractor(getData().getAppInfo().getPlayerUrl());
+        } else {
+            mPlayerDataExtractor = super.getPlayerDataExtractor(AppConstants.playerUrls.get(0));
         }
     }
 
     @Override
     protected synchronized ClientData getClientData(String clientUrl) {
-        if (mClientData != null) {
+        if (mClientData != null && Helpers.equals(clientUrl, mClientData.getClientUrl())) {
             return mClientData;
         }
 
         ClientDataCached clientDataCached = getData().getClientData();
 
-        if (clientDataCached != null && Helpers.equals(clientDataCached.getClientUrl(), clientUrl)) {
+        if (clientDataCached != null && Helpers.equals(clientUrl, clientDataCached.getClientUrl())) {
             mClientData = clientDataCached;
             return mClientData;
         }
@@ -108,14 +97,7 @@ public class AppServiceIntCached extends AppServiceInt {
 
     @Override
     public void invalidateCache() {
-        if (mFallbackMode) {
-            return;
-        }
-
         mAppInfo = null;
-        mPlayerDataExtractor = null;
-        mClientData = null;
-        getData().setAppInfo(null);
         // Don't reset Player's cache. It's too heavy to recreate often.
         // Better do it inside MediaServiceData after the update
     }
@@ -133,5 +115,9 @@ public class AppServiceIntCached extends AppServiceInt {
 
     private boolean check(ClientDataCached clientData) {
         return clientData != null && clientData.validate();
+    }
+
+    private String getFailedPlayerUrl() {
+        return getData().getFailedAppInfo() != null ? getData().getFailedAppInfo().getPlayerUrl() : null;
     }
 }

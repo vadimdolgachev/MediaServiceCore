@@ -315,7 +315,7 @@ public class YouTubeMediaItemFormatInfo implements MediaItemFormatInfo {
             result = 2.0f - normalLevel;
         }
 
-        return result;
+        return result / 2;
     }
 
     @Override
